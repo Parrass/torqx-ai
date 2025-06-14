@@ -53,7 +53,13 @@ export const useTeamManagement = () => {
 
       if (error) throw error;
 
-      setUsers(data || []);
+      // Parse permissions from JSON to UserPermission[]
+      const parsedUsers = (data || []).map(user => ({
+        ...user,
+        permissions: Array.isArray(user.permissions) ? user.permissions as UserPermission[] : []
+      }));
+
+      setUsers(parsedUsers);
     } catch (err: any) {
       const errorMessage = err.message || 'Erro ao carregar usuários';
       setError(errorMessage);

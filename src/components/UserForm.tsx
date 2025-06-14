@@ -43,6 +43,7 @@ const roles = [
 const UserForm = ({ modules, onSubmit, loading = false, onCancel }: UserFormProps) => {
   const [permissions, setPermissions] = useState<Record<string, UserPermission>>({});
   const [showPermissions, setShowPermissions] = useState(false);
+  const [formData, setFormData] = useState<UserFormData | null>(null);
 
   const form = useForm<UserFormData>({
     resolver: zodResolver(userFormSchema),
@@ -70,8 +71,15 @@ const UserForm = ({ modules, onSubmit, loading = false, onCancel }: UserFormProp
   }, [modules]);
 
   const handleFormSubmit = async (data: UserFormData) => {
+    if (!data.email || !data.full_name || !data.role) {
+      return;
+    }
+
     const result = await onSubmit({
-      ...data,
+      email: data.email,
+      full_name: data.full_name,
+      phone: data.phone,
+      role: data.role,
       permissions
     });
 
@@ -79,22 +87,24 @@ const UserForm = ({ modules, onSubmit, loading = false, onCancel }: UserFormProp
       form.reset();
       setPermissions({});
       setShowPermissions(false);
+      setFormData(null);
     }
   };
 
-  const handleNext = () => {
-    form.trigger().then(isValid => {
-      if (isValid) {
-        setShowPermissions(true);
-      }
-    });
+  const handleNext = async () => {
+    const isValid = await form.trigger();
+    if (isValid) {
+      const values = form.getValues();
+      setFormData(values);
+      setShowPermissions(true);
+    }
   };
 
   const handleBack = () => {
     setShowPermissions(false);
   };
 
-  if (showPermissions) {
+  if (showPermissions && formData) {
     return (
       <div className="space-y-6">
         <Card className="border-0 shadow-sm">
@@ -114,22 +124,22 @@ const UserForm = ({ modules, onSubmit, loading = false, onCancel }: UserFormProp
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-gray-600">Nome:</span>
-                  <span className="ml-2 font-medium">{form.getValues('full_name')}</span>
+                  <span className="ml-2 font-medium">{formData.full_name}</span>
                 </div>
                 <div>
                   <span className="text-gray-600">E-mail:</span>
-                  <span className="ml-2 font-medium">{form.getValues('email')}</span>
+                  <span className="ml-2 font-medium">{formData.email}</span>
                 </div>
                 <div>
                   <span className="text-gray-600">Cargo:</span>
                   <span className="ml-2 font-medium">
-                    {roles.find(r => r.value === form.getValues('role'))?.label}
+                    {roles.find(r => r.value === formData.role)?.label}
                   </span>
                 </div>
-                {form.getValues('phone') && (
+                {formData.phone && (
                   <div>
                     <span className="text-gray-600">Telefone:</span>
-                    <span className="ml-2 font-medium">{form.getValues('phone')}</span>
+                    <span className="ml-2 font-medium">{formData.phone}</span>
                   </div>
                 )}
               </div>
@@ -140,7 +150,7 @@ const UserForm = ({ modules, onSubmit, loading = false, onCancel }: UserFormProp
               initialPermissions={[]}
               onSave={(newPermissions) => {
                 setPermissions(newPermissions);
-                handleFormSubmit(form.getValues());
+                handleFormSubmit(formData);
               }}
               loading={loading}
             />
