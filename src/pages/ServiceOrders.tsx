@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -355,7 +354,7 @@ const ServiceOrders = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {order.technician?.full_name || (
+                        {order.assigned_technician?.full_name || (
                           <span className="text-gray-400 italic">Não atribuído</span>
                         )}
                       </TableCell>

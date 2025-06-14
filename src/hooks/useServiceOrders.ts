@@ -33,8 +33,8 @@ export const useServiceOrders = () => {
 
     try {
       setLoading(true);
+      console.log('Fetching service orders for tenant:', user.user_metadata.tenant_id);
       
-      // Corrigindo a consulta para evitar ambiguidade no relacionamento
       const { data, error } = await supabase
         .from('service_orders')
         .select(`
@@ -149,3 +149,6 @@ export const useServiceOrders = () => {
     refetch: fetchServiceOrders,
   };
 };
+
+// Re-export the types for convenience
+export type { ServiceOrder, ServiceOrderStats } from '@/types/serviceOrder';
