@@ -1,13 +1,16 @@
+
 import React, { useState, useEffect } from 'react';
-import { 
-  DollarSign, Users, Car, Wrench, 
-  TrendingUp, AlertTriangle, 
-  Search, Bell
-} from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/DashboardLayout';
+import DashboardMetrics from '@/components/DashboardMetrics';
+import DashboardStats from '@/components/DashboardStats';
+import RecentActivity from '@/components/RecentActivity';
+import QuickActions from '@/components/QuickActions';
+import { AlertTriangle } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface DashboardMetrics {
   total_customers: number;
@@ -34,12 +37,22 @@ interface InventoryAlert {
   minimum_stock: number;
 }
 
+interface ServiceOrderStats {
+  total: number;
+  draft: number;
+  scheduled: number;
+  in_progress: number;
+  completed: number;
+  cancelled: number;
+}
+
 const Dashboard = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
   const [inventoryAlerts, setInventoryAlerts] = useState<InventoryAlert[]>([]);
+  const [serviceOrderStats, setServiceOrderStats] = useState<ServiceOrderStats | null>(null);
   const [dashboardLoading, setDashboardLoading] = useState(true);
 
   useEffect(() => {
@@ -63,13 +76,15 @@ const Dashboard = () => {
         { count: totalVehicles },
         { count: activeOrders },
         { data: ordersWithCost },
-        { data: alerts }
+        { data: alerts },
+        { data: allOrders }
       ] = await Promise.all([
         supabase.from('customers').select('*', { count: 'exact', head: true }),
         supabase.from('vehicles').select('*', { count: 'exact', head: true }),
         supabase.from('service_orders').select('*', { count: 'exact', head: true }).in('status', ['draft', 'in_progress', 'awaiting_approval']),
         supabase.from('service_orders').select('estimated_cost').eq('status', 'completed'),
-        supabase.from('inventory_alerts').select('*').limit(5)
+        supabase.from('inventory_alerts').select('*').limit(5),
+        supabase.from('service_orders').select('status')
       ]);
 
       const totalRevenue = ordersWithCost?.reduce((sum, order) => sum + (order.estimated_cost || 0), 0) || 0;
@@ -81,6 +96,40 @@ const Dashboard = () => {
         total_revenue: totalRevenue,
         inventory_alerts: alerts?.length || 0
       });
+
+      // Calcular estatísticas das ordens de serviço
+      if (allOrders) {
+        const stats = allOrders.reduce((acc, order) => {
+          acc.total++;
+          switch (order.status) {
+            case 'draft':
+              acc.draft++;
+              break;
+            case 'scheduled':
+              acc.scheduled++;
+              break;
+            case 'in_progress':
+              acc.in_progress++;
+              break;
+            case 'completed':
+              acc.completed++;
+              break;
+            case 'cancelled':
+              acc.cancelled++;
+              break;
+          }
+          return acc;
+        }, {
+          total: 0,
+          draft: 0,
+          scheduled: 0,
+          in_progress: 0,
+          completed: 0,
+          cancelled: 0
+        });
+
+        setServiceOrderStats(stats);
+      }
 
       // Carregar ordens recentes
       const { data: orders } = await supabase
@@ -122,41 +171,6 @@ const Dashboard = () => {
     }
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'bg-torqx-accent/10 text-torqx-accent';
-      case 'in_progress':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'draft':
-        return 'bg-gray-100 text-gray-800';
-      default:
-        return 'bg-blue-100 text-blue-800';
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'Concluída';
-      case 'in_progress':
-        return 'Em andamento';
-      case 'draft':
-        return 'Rascunho';
-      case 'awaiting_approval':
-        return 'Aguardando aprovação';
-      default:
-        return status;
-    }
-  };
-
   if (loading || dashboardLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -170,130 +184,76 @@ const Dashboard = () => {
 
   return (
     <DashboardLayout>
-      {/* Main Content */}
-      <main className="p-4 sm:p-6">
-        {/* Metrics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Receita Total</p>
-                <p className="text-2xl font-bold text-torqx-primary font-satoshi">
-                  {formatCurrency(metrics?.total_revenue || 0)}
-                </p>
-              </div>
-              <div className="p-3 rounded-xl bg-torqx-accent/10">
-                <DollarSign className="w-6 h-6 text-torqx-accent" />
-              </div>
-            </div>
+      <main className="p-4 sm:p-6 space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-torqx-primary font-satoshi">
+              Dashboard
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Bem-vindo de volta! Aqui está um resumo da sua oficina.
+            </p>
           </div>
-
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">OS Ativas</p>
-                <p className="text-2xl font-bold text-torqx-primary font-satoshi">
-                  {metrics?.active_service_orders || 0}
-                </p>
-              </div>
-              <div className="p-3 rounded-xl bg-yellow-100">
-                <Wrench className="w-6 h-6 text-yellow-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total de Clientes</p>
-                <p className="text-2xl font-bold text-torqx-primary font-satoshi">
-                  {metrics?.total_customers || 0}
-                </p>
-              </div>
-              <div className="p-3 rounded-xl bg-blue-100">
-                <Users className="w-6 h-6 text-blue-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total de Veículos</p>
-                <p className="text-2xl font-bold text-torqx-primary font-satoshi">
-                  {metrics?.total_vehicles || 0}
-                </p>
-              </div>
-              <div className="p-3 rounded-xl bg-green-100">
-                <Car className="w-6 h-6 text-green-600" />
-              </div>
+          <div className="mt-4 sm:mt-0">
+            <div className="text-sm text-gray-500">
+              Último update: {new Date().toLocaleString('pt-BR')}
             </div>
           </div>
         </div>
 
-        {/* Recent Orders and Alerts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-torqx-primary font-satoshi">
-                Ordens Recentes
-              </h3>
-              <a href="/service-orders" className="text-sm text-torqx-secondary hover:text-torqx-secondary-dark">
-                Ver todas
+        {/* Alertas de Estoque */}
+        {inventoryAlerts.length > 0 && (
+          <Alert className="border-amber-200 bg-amber-50">
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="text-amber-800">
+              <strong>Atenção:</strong> Você tem {inventoryAlerts.length} item(ns) com estoque baixo.
+              <a href="/inventory" className="ml-2 text-amber-700 underline hover:text-amber-900">
+                Verificar estoque
               </a>
-            </div>
-            <div className="space-y-4">
-              {recentOrders.length > 0 ? (
-                recentOrders.map((order) => (
-                  <div key={order.id} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg">
-                    <div>
-                      <p className="font-medium text-gray-900">OS #{order.order_number}</p>
-                      <p className="text-sm text-gray-600">{order.customer_name}</p>
-                      <p className="text-xs text-gray-500">{order.vehicle_info}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-medium text-torqx-primary">
-                        {formatCurrency(order.estimated_cost)}
-                      </p>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
-                        {getStatusText(order.status)}
-                      </span>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-gray-500 text-center py-4">Nenhuma ordem de serviço encontrada</p>
-              )}
-            </div>
-          </div>
+            </AlertDescription>
+          </Alert>
+        )}
 
-          {/* Inventory Alerts */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-torqx-primary font-satoshi">
-                Alertas de Estoque
-              </h3>
-              <a href="/inventory" className="text-sm text-torqx-secondary hover:text-torqx-secondary-dark">
-                Ver estoque
-              </a>
-            </div>
-            <div className="space-y-4">
-              {inventoryAlerts.length > 0 ? (
-                inventoryAlerts.map((alert) => (
-                  <div key={alert.id} className="flex items-center space-x-3 p-3 bg-red-50 rounded-lg">
-                    <AlertTriangle className="w-5 h-5 text-red-600" />
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900">{alert.name}</p>
-                      <p className="text-sm text-gray-600">
-                        Estoque: {alert.current_stock} (mínimo: {alert.minimum_stock})
-                      </p>
-                    </div>
+        {/* Métricas Principais */}
+        <DashboardMetrics metrics={metrics} />
+
+        {/* Estatísticas e Atividades */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          <div className="xl:col-span-2 space-y-6">
+            <DashboardStats serviceOrderStats={serviceOrderStats} />
+            <RecentActivity recentOrders={recentOrders} />
+          </div>
+          
+          <div className="space-y-6">
+            <QuickActions />
+            
+            {/* Alertas de Estoque Detalhados */}
+            {inventoryAlerts.length > 0 && (
+              <Card className="border-0 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-lg font-semibold text-torqx-primary font-satoshi flex items-center">
+                    <AlertTriangle className="w-5 h-5 text-amber-500 mr-2" />
+                    Alertas de Estoque
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {inventoryAlerts.map((alert) => (
+                      <div key={alert.id} className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-100">
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900 text-sm">{alert.name}</p>
+                          <p className="text-sm text-red-600">
+                            Estoque: {alert.current_stock} (mín: {alert.minimum_stock})
+                          </p>
+                        </div>
+                        <AlertTriangle className="w-4 h-4 text-red-500" />
+                      </div>
+                    ))}
                   </div>
-                ))
-              ) : (
-                <p className="text-gray-500 text-center py-4">Nenhum alerta de estoque</p>
-              )}
-            </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </main>
