@@ -29,7 +29,11 @@ export const useServiceOrders = () => {
   const operations = new ServiceOrderOperations(supabase, toast);
 
   const fetchServiceOrders = async () => {
-    if (!user?.user_metadata?.tenant_id) return;
+    if (!user?.user_metadata?.tenant_id) {
+      console.log('No tenant_id found in user metadata');
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
@@ -40,8 +44,7 @@ export const useServiceOrders = () => {
         .select(`
           *,
           customers!inner(name, phone),
-          vehicles!inner(brand, model, license_plate, year),
-          assigned_technician:users!service_orders_assigned_technician_id_fkey(full_name)
+          vehicles!inner(brand, model, license_plate, year)
         `)
         .eq('tenant_id', user.user_metadata.tenant_id)
         .order('created_at', { ascending: false });
@@ -53,11 +56,48 @@ export const useServiceOrders = () => {
 
       console.log('Raw service orders data:', data);
 
-      const transformedData = transformServiceOrderData(data || []);
-      console.log('Transformed service orders:', transformedData);
-      
-      setServiceOrders(transformedData);
-      setStats(createServiceOrderStats(transformedData));
+      if (data && data.length > 0) {
+        // Buscar os técnicos separadamente se necessário
+        const serviceOrdersWithTechnicians = await Promise.all(
+          data.map(async (order) => {
+            if (order.assigned_technician_id) {
+              const { data: technicianData } = await supabase
+                .from('users')
+                .select('full_name')
+                .eq('id', order.assigned_technician_id)
+                .eq('tenant_id', user.user_metadata.tenant_id)
+                .single();
+              
+              return {
+                ...order,
+                assigned_technician: technicianData ? { full_name: technicianData.full_name } : null
+              };
+            }
+            return {
+              ...order,
+              assigned_technician: null
+            };
+          })
+        );
+
+        const transformedData = transformServiceOrderData(serviceOrdersWithTechnicians);
+        console.log('Transformed service orders:', transformedData);
+        
+        setServiceOrders(transformedData);
+        setStats(createServiceOrderStats(transformedData));
+      } else {
+        console.log('No service orders found');
+        setServiceOrders([]);
+        setStats({
+          total: 0,
+          draft: 0,
+          scheduled: 0,
+          in_progress: 0,
+          completed: 0,
+          cancelled: 0,
+          total_revenue: 0,
+        });
+      }
       
     } catch (error) {
       console.error('Error fetching service orders:', error);
@@ -66,6 +106,7 @@ export const useServiceOrders = () => {
         description: 'Erro ao carregar ordens de serviço',
         variant: 'destructive',
       });
+      setServiceOrders([]);
     } finally {
       setLoading(false);
     }
