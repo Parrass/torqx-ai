@@ -7,8 +7,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import TorqxSidebar from '@/components/TorqxSidebar';
-import TorqxFooter from '@/components/TorqxFooter';
+import DashboardLayout from '@/components/DashboardLayout';
 
 interface DashboardMetrics {
   total_customers: number;
@@ -170,142 +169,135 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <TorqxSidebar />
-      
-      {/* Main content with padding to account for navbar and sidebar */}
-      <div className="md:pl-16 pt-16 flex-1">
-        {/* Main Content */}
-        <main className="p-4 sm:p-6">
-          {/* Metrics Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Receita Total</p>
-                  <p className="text-2xl font-bold text-torqx-primary font-satoshi">
-                    {formatCurrency(metrics?.total_revenue || 0)}
-                  </p>
-                </div>
-                <div className="p-3 rounded-xl bg-torqx-accent/10">
-                  <DollarSign className="w-6 h-6 text-torqx-accent" />
-                </div>
+    <DashboardLayout>
+      {/* Main Content */}
+      <main className="p-4 sm:p-6">
+        {/* Metrics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Receita Total</p>
+                <p className="text-2xl font-bold text-torqx-primary font-satoshi">
+                  {formatCurrency(metrics?.total_revenue || 0)}
+                </p>
               </div>
-            </div>
-
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">OS Ativas</p>
-                  <p className="text-2xl font-bold text-torqx-primary font-satoshi">
-                    {metrics?.active_service_orders || 0}
-                  </p>
-                </div>
-                <div className="p-3 rounded-xl bg-yellow-100">
-                  <Wrench className="w-6 h-6 text-yellow-600" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total de Clientes</p>
-                  <p className="text-2xl font-bold text-torqx-primary font-satoshi">
-                    {metrics?.total_customers || 0}
-                  </p>
-                </div>
-                <div className="p-3 rounded-xl bg-blue-100">
-                  <Users className="w-6 h-6 text-blue-600" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total de Veículos</p>
-                  <p className="text-2xl font-bold text-torqx-primary font-satoshi">
-                    {metrics?.total_vehicles || 0}
-                  </p>
-                </div>
-                <div className="p-3 rounded-xl bg-green-100">
-                  <Car className="w-6 h-6 text-green-600" />
-                </div>
+              <div className="p-3 rounded-xl bg-torqx-accent/10">
+                <DollarSign className="w-6 h-6 text-torqx-accent" />
               </div>
             </div>
           </div>
 
-          {/* Recent Orders and Alerts */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-torqx-primary font-satoshi">
-                  Ordens Recentes
-                </h3>
-                <a href="/service-orders" className="text-sm text-torqx-secondary hover:text-torqx-secondary-dark">
-                  Ver todas
-                </a>
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">OS Ativas</p>
+                <p className="text-2xl font-bold text-torqx-primary font-satoshi">
+                  {metrics?.active_service_orders || 0}
+                </p>
               </div>
-              <div className="space-y-4">
-                {recentOrders.length > 0 ? (
-                  recentOrders.map((order) => (
-                    <div key={order.id} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg">
-                      <div>
-                        <p className="font-medium text-gray-900">OS #{order.order_number}</p>
-                        <p className="text-sm text-gray-600">{order.customer_name}</p>
-                        <p className="text-xs text-gray-500">{order.vehicle_info}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium text-torqx-primary">
-                          {formatCurrency(order.estimated_cost)}
-                        </p>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
-                          {getStatusText(order.status)}
-                        </span>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-gray-500 text-center py-4">Nenhuma ordem de serviço encontrada</p>
-                )}
-              </div>
-            </div>
-
-            {/* Inventory Alerts */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-torqx-primary font-satoshi">
-                  Alertas de Estoque
-                </h3>
-                <a href="/inventory" className="text-sm text-torqx-secondary hover:text-torqx-secondary-dark">
-                  Ver estoque
-                </a>
-              </div>
-              <div className="space-y-4">
-                {inventoryAlerts.length > 0 ? (
-                  inventoryAlerts.map((alert) => (
-                    <div key={alert.id} className="flex items-center space-x-3 p-3 bg-red-50 rounded-lg">
-                      <AlertTriangle className="w-5 h-5 text-red-600" />
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900">{alert.name}</p>
-                        <p className="text-sm text-gray-600">
-                          Estoque: {alert.current_stock} (mínimo: {alert.minimum_stock})
-                        </p>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-gray-500 text-center py-4">Nenhum alerta de estoque</p>
-                )}
+              <div className="p-3 rounded-xl bg-yellow-100">
+                <Wrench className="w-6 h-6 text-yellow-600" />
               </div>
             </div>
           </div>
-        </main>
-        
-        <TorqxFooter />
-      </div>
-    </div>
+
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total de Clientes</p>
+                <p className="text-2xl font-bold text-torqx-primary font-satoshi">
+                  {metrics?.total_customers || 0}
+                </p>
+              </div>
+              <div className="p-3 rounded-xl bg-blue-100">
+                <Users className="w-6 h-6 text-blue-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total de Veículos</p>
+                <p className="text-2xl font-bold text-torqx-primary font-satoshi">
+                  {metrics?.total_vehicles || 0}
+                </p>
+              </div>
+              <div className="p-3 rounded-xl bg-green-100">
+                <Car className="w-6 h-6 text-green-600" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Recent Orders and Alerts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-torqx-primary font-satoshi">
+                Ordens Recentes
+              </h3>
+              <a href="/service-orders" className="text-sm text-torqx-secondary hover:text-torqx-secondary-dark">
+                Ver todas
+              </a>
+            </div>
+            <div className="space-y-4">
+              {recentOrders.length > 0 ? (
+                recentOrders.map((order) => (
+                  <div key={order.id} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg">
+                    <div>
+                      <p className="font-medium text-gray-900">OS #{order.order_number}</p>
+                      <p className="text-sm text-gray-600">{order.customer_name}</p>
+                      <p className="text-xs text-gray-500">{order.vehicle_info}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium text-torqx-primary">
+                        {formatCurrency(order.estimated_cost)}
+                      </p>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
+                        {getStatusText(order.status)}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500 text-center py-4">Nenhuma ordem de serviço encontrada</p>
+              )}
+            </div>
+          </div>
+
+          {/* Inventory Alerts */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-torqx-primary font-satoshi">
+                Alertas de Estoque
+              </h3>
+              <a href="/inventory" className="text-sm text-torqx-secondary hover:text-torqx-secondary-dark">
+                Ver estoque
+              </a>
+            </div>
+            <div className="space-y-4">
+              {inventoryAlerts.length > 0 ? (
+                inventoryAlerts.map((alert) => (
+                  <div key={alert.id} className="flex items-center space-x-3 p-3 bg-red-50 rounded-lg">
+                    <AlertTriangle className="w-5 h-5 text-red-600" />
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">{alert.name}</p>
+                      <p className="text-sm text-gray-600">
+                        Estoque: {alert.current_stock} (mínimo: {alert.minimum_stock})
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500 text-center py-4">Nenhum alerta de estoque</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </main>
+    </DashboardLayout>
   );
 };
 
