@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -37,7 +36,7 @@ export interface ServiceOrder {
   };
   technician?: {
     full_name: string;
-  };
+  } | null;
 }
 
 export interface ServiceOrderStats {
@@ -83,12 +82,22 @@ export const useServiceOrders = () => {
 
       if (error) throw error;
 
-      setServiceOrders(data || []);
+      // Transform the data to match our interface
+      const transformedData = (data || []).map(order => ({
+        ...order,
+        technician: order.technician && typeof order.technician === 'object' && 'full_name' in order.technician 
+          ? order.technician 
+          : null
+      })) as ServiceOrder[];
+
+      setServiceOrders(transformedData);
       
       // Calculate stats
-      const statsData = (data || []).reduce((acc, so) => {
+      const statsData = transformedData.reduce((acc, so) => {
         acc.total++;
-        acc[so.status as keyof ServiceOrderStats] = (acc[so.status as keyof ServiceOrderStats] as number) + 1;
+        if (so.status in acc) {
+          acc[so.status as keyof ServiceOrderStats] = (acc[so.status as keyof ServiceOrderStats] as number) + 1;
+        }
         if (so.final_cost) {
           acc.total_revenue += so.final_cost;
         }
@@ -120,13 +129,16 @@ export const useServiceOrders = () => {
     if (!user?.user_metadata?.tenant_id) return;
 
     try {
+      // Remove nested objects and only keep the fields that exist in the database
+      const { customers, vehicles, technician, ...cleanOrderData } = orderData;
+      
       const { data, error } = await supabase
         .from('service_orders')
-        .insert([{
-          ...orderData,
+        .insert({
+          ...cleanOrderData,
           tenant_id: user.user_metadata.tenant_id,
           created_by_user_id: user.id,
-        }])
+        })
         .select(`
           *,
           customers!inner(name, phone),
@@ -137,13 +149,21 @@ export const useServiceOrders = () => {
 
       if (error) throw error;
 
-      setServiceOrders(prev => [data, ...prev]);
+      // Transform the returned data
+      const transformedData = {
+        ...data,
+        technician: data.technician && typeof data.technician === 'object' && 'full_name' in data.technician 
+          ? data.technician 
+          : null
+      } as ServiceOrder;
+
+      setServiceOrders(prev => [transformedData, ...prev]);
       toast({
         title: 'Sucesso',
         description: 'Ordem de serviço criada com sucesso',
       });
 
-      return data;
+      return transformedData;
     } catch (error) {
       console.error('Error creating service order:', error);
       toast({
@@ -157,15 +177,18 @@ export const useServiceOrders = () => {
 
   const updateServiceOrder = async (id: string, updates: Partial<ServiceOrder>) => {
     try {
+      // Remove nested objects and only keep the fields that exist in the database
+      const { customers, vehicles, technician, ...cleanUpdates } = updates;
+      
       const { error } = await supabase
         .from('service_orders')
-        .update(updates)
+        .update(cleanUpdates)
         .eq('id', id);
 
       if (error) throw error;
 
       setServiceOrders(prev => 
-        prev.map(so => so.id === id ? { ...so, ...updates } : so)
+        prev.map(so => so.id === id ? { ...so, ...cleanUpdates } : so)
       );
 
       toast({

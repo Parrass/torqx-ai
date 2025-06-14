@@ -34,7 +34,8 @@ import {
   Clock,
   Users,
   TrendingUp,
-  AlertCircle
+  AlertCircle,
+  CheckCircle
 } from 'lucide-react';
 import { useServiceOrders, ServiceOrder } from '@/hooks/useServiceOrders';
 import ServiceOrderForm from '@/components/ServiceOrderForm';
