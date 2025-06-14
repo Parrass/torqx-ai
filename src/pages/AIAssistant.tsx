@@ -78,8 +78,8 @@ const AIAssistant = () => {
         </div>
 
         {/* Chat Container */}
-        <Card className="flex-1 flex flex-col">
-          <CardHeader className="border-b border-gray-200 py-4">
+        <Card className="flex-1 flex flex-col overflow-hidden">
+          <CardHeader className="border-b border-gray-200 py-4 flex-shrink-0">
             <CardTitle className="text-lg flex items-center gap-2">
               <Brain className="w-5 h-5 text-torqx-accent" />
               Chat com IA Torqx
@@ -94,13 +94,15 @@ const AIAssistant = () => {
             </CardTitle>
           </CardHeader>
           
-          <CardContent className="flex-1 flex flex-col p-0">
+          <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {messages.map((message) => (
-                <ChatMessage key={message.id} message={message} />
-              ))}
-              <div ref={messagesEndRef} />
+            <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
+              <div className="space-y-1">
+                {messages.map((message) => (
+                  <ChatMessage key={message.id} message={message} />
+                ))}
+                <div ref={messagesEndRef} />
+              </div>
             </div>
             
             {/* Input Area */}
@@ -110,6 +112,7 @@ const AIAssistant = () => {
 
         {/* Quick Actions */}
         <div className="mt-4">
+          <p className="text-sm text-gray-600 mb-3">Ações Rápidas:</p>
           <div className="flex flex-wrap gap-2">
             <Button 
               variant="outline" 
