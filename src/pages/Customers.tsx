@@ -14,6 +14,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Badge } from '@/components/ui/badge';
 import DashboardLayout from '@/components/DashboardLayout';
 import CustomerForm from '@/components/CustomerForm';
+import CustomerImport from '@/components/CustomerImport';
 import { useCustomers, useCustomerStats, useCreateCustomer, useUpdateCustomer, useDeleteCustomer, Customer } from '@/hooks/useCustomers';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -244,6 +245,7 @@ const Customers = () => {
                 <Download className="w-4 h-4 mr-2" />
                 Exportar
               </Button>
+              <CustomerImport />
               <Button onClick={() => setShowAddModal(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Novo Cliente
@@ -350,7 +352,6 @@ const Customers = () => {
           ))}
         </div>
 
-        {/* Empty state */}
         {customers.length === 0 && !isLoading && (
           <div className="text-center py-12">
             <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -381,7 +382,6 @@ const Customers = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Edit Customer Modal */}
         <Dialog open={!!editingCustomer} onOpenChange={() => setEditingCustomer(null)}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
