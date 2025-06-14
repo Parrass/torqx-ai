@@ -55,12 +55,23 @@ export const useWorkshopServices = () => {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) throw new Error('Usuário não autenticado');
 
+      // Buscar tenant_id do usuário
+      const { data: userProfile, error: userError } = await supabase
+        .from('users')
+        .select('tenant_id')
+        .eq('id', userData.user.id)
+        .single();
+
+      if (userError) throw userError;
+      if (!userProfile?.tenant_id) throw new Error('Tenant não encontrado para o usuário');
+
       const { data, error } = await supabase
         .from('workshop_services')
-        .insert([{
+        .insert({
           ...serviceData,
-          created_by_user_id: userData.user.id
-        }])
+          created_by_user_id: userData.user.id,
+          tenant_id: userProfile.tenant_id
+        })
         .select()
         .single();
 
