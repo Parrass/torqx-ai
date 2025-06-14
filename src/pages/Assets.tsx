@@ -8,6 +8,7 @@ import Cards from '../components/Cards';
 import Forms from '../components/Forms';
 import Tables from '../components/Tables';
 import Navigation from '../components/Navigation';
+import CommonComponents from '../components/CommonComponents';
 import Modals from '../components/Modals';
 
 const Assets = () => {
@@ -37,6 +38,7 @@ const Assets = () => {
         <Forms />
         <Tables />
         <Navigation />
+        <CommonComponents />
         <Modals />
         
         {/* Código de Exemplo */}
@@ -53,6 +55,7 @@ const Assets = () => {
                 <li>Seguir as cores e tipografia definidas</li>
                 <li>Implementar estados de loading, erro e sucesso</li>
                 <li>Criar formulários e tabelas padronizadas</li>
+                <li>Usar componentes comuns como navbar, sidebar e footer</li>
               </ul>
               <p className="mt-4 font-semibold">Sempre consulte esta página antes de criar novos componentes!</p>
             </div>

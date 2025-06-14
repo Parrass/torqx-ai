@@ -20,6 +20,7 @@ const Header = () => {
     { id: 'forms', label: 'Formulários' },
     { id: 'tables', label: 'Tabelas' },
     { id: 'navigation', label: 'Navegação' },
+    { id: 'common-components', label: 'Componentes' },
     { id: 'modals', label: 'Modais' }
   ];
 
