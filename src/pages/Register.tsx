@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ArrowRight, ArrowLeft, Check, Building, User, Wrench } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -102,7 +103,7 @@ const Register = () => {
     try {
       console.log('Iniciando processo de registro...');
       
-      // Primeiro, criar a conta do usuário
+      // Primeiro, criar a conta do usuário com Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -120,64 +121,70 @@ const Register = () => {
         throw authError;
       }
 
-      console.log('Usuário criado com sucesso:', authData.user?.id);
-
-      // Se o usuário foi criado e está autenticado, criar a oficina
-      if (authData.user) {
-        console.log('Criando oficina para o usuário:', authData.user.id);
-        
-        const { data: tenantData, error: tenantError } = await supabase
-          .from('tenants')
-          .insert({
-            name: formData.workshopName,
-            document_number: formData.documentNumber.replace(/\D/g, ''),
-            phone: formData.phone.replace(/\D/g, ''),
-            email: formData.email,
-            business_name: formData.businessName || formData.workshopName
-          })
-          .select()
-          .single();
-
-        if (tenantError) {
-          console.error('Erro ao criar oficina:', tenantError);
-          // Se falhar ao criar a oficina, podemos tentar deletar o usuário
-          // Mas não é necessário pois o usuário pode tentar novamente
-          throw new Error('Erro ao criar oficina: ' + tenantError.message);
-        }
-
-        console.log('Oficina criada com sucesso:', tenantData.id);
-
-        // Agora criar o registro na tabela users
-        const { error: userError } = await supabase
-          .from('users')
-          .insert({
-            id: authData.user.id,
-            email: formData.email,
-            full_name: formData.fullName,
-            role: 'owner',
-            tenant_id: tenantData.id,
-            status: 'active'
-          });
-
-        if (userError) {
-          console.error('Erro ao criar registro de usuário:', userError);
-          // Se falhar, tentar deletar a oficina criada
-          await supabase.from('tenants').delete().eq('id', tenantData.id);
-          throw new Error('Erro ao finalizar cadastro: ' + userError.message);
-        }
-
-        console.log('Registro de usuário criado com sucesso');
-
-        // Se chegou até aqui, o registro foi bem-sucedido
-        if (!authData.session) {
-          // Usuário precisa confirmar email
-          alert('Cadastro realizado com sucesso! Por favor, verifique seu email para confirmar a conta.');
-          navigate('/login');
-        } else {
-          // Login automático
-          navigate('/dashboard');
-        }
+      if (!authData.user) {
+        throw new Error('Falha ao criar usuário');
       }
+
+      console.log('Usuário criado com sucesso:', authData.user.id);
+
+      // Aguardar um pouco para garantir que o usuário está autenticado
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Verificar se o usuário está autenticado antes de prosseguir
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        // Se não há sessão, significa que o usuário precisa confirmar o email
+        alert('Cadastro realizado com sucesso! Por favor, verifique seu email para confirmar a conta.');
+        navigate('/login');
+        return;
+      }
+
+      console.log('Criando oficina para o usuário:', session.user.id);
+      
+      // Criar a oficina com o usuário autenticado
+      const { data: tenantData, error: tenantError } = await supabase
+        .from('tenants')
+        .insert({
+          name: formData.workshopName,
+          document_number: formData.documentNumber.replace(/\D/g, ''),
+          phone: formData.phone.replace(/\D/g, ''),
+          email: formData.email,
+          business_name: formData.businessName || formData.workshopName
+        })
+        .select()
+        .single();
+
+      if (tenantError) {
+        console.error('Erro ao criar oficina:', tenantError);
+        throw new Error('Erro ao criar oficina: ' + tenantError.message);
+      }
+
+      console.log('Oficina criada com sucesso:', tenantData.id);
+
+      // Criar o registro na tabela users
+      const { error: userError } = await supabase
+        .from('users')
+        .insert({
+          id: session.user.id,
+          email: formData.email,
+          full_name: formData.fullName,
+          role: 'owner',
+          tenant_id: tenantData.id,
+          status: 'active'
+        });
+
+      if (userError) {
+        console.error('Erro ao criar registro de usuário:', userError);
+        // Se falhar, tentar deletar a oficina criada
+        await supabase.from('tenants').delete().eq('id', tenantData.id);
+        throw new Error('Erro ao finalizar cadastro: ' + userError.message);
+      }
+
+      console.log('Registro de usuário criado com sucesso');
+
+      // Login automático já está funcionando
+      navigate('/dashboard');
 
     } catch (error: any) {
       console.error('Erro no registro:', error);

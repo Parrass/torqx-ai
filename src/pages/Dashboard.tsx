@@ -1,205 +1,165 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  BarChart3, Users, Car, Wrench, Package, Calendar, 
-  Brain, FileText, Settings, Search, Bell, User,
-  TrendingUp, TrendingDown, DollarSign,
-  AlertTriangle, Menu, X, Home
+  DollarSign, Users, Car, Wrench, Package, 
+  TrendingUp, TrendingDown, AlertTriangle, 
+  Search, Bell, Menu
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import { AppSidebar } from '@/components/AppSidebar';
 
 interface DashboardMetrics {
-  revenue: {
-    current: number;
-    previous: number;
-    growth_percentage: number;
-    trend: 'up' | 'down';
-  };
-  service_orders: {
-    total: number;
-    completed: number;
-    in_progress: number;
-    pending: number;
-    completion_rate: number;
-  };
-  customers: {
-    total: number;
-    new: number;
-    returning: number;
-    retention_rate: number;
-  };
-  avg_order_value: number;
+  total_customers: number;
+  total_vehicles: number;
+  active_service_orders: number;
+  total_revenue: number;
+  inventory_alerts: number;
 }
 
 interface RecentOrder {
   id: string;
-  customer: string;
-  vehicle: string;
-  status: 'in_progress' | 'completed';
-  value: number;
+  order_number: number;
+  customer_name: string;
+  vehicle_info: string;
+  status: string;
+  estimated_cost: number;
   created_at: string;
 }
 
 interface InventoryAlert {
-  item: string;
+  id: string;
+  name: string;
   current_stock: number;
   minimum_stock: number;
-  alert_level: 'critical' | 'warning';
-}
-
-interface DashboardData {
-  metrics: DashboardMetrics;
-  recent_orders: RecentOrder[];
-  inventory_alerts: InventoryAlert[];
 }
 
 const Dashboard = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
+  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
+  const [inventoryAlerts, setInventoryAlerts] = useState<InventoryAlert[]>([]);
+  const [dashboardLoading, setDashboardLoading] = useState(true);
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        // Dados simulados para demonstração
-        const mockData: DashboardData = {
-          metrics: {
-            revenue: {
-              current: 45250.00,
-              previous: 38900.00,
-              growth_percentage: 16.3,
-              trend: 'up'
-            },
-            service_orders: {
-              total: 127,
-              completed: 98,
-              in_progress: 15,
-              pending: 14,
-              completion_rate: 77.2
-            },
-            customers: {
-              total: 89,
-              new: 12,
-              returning: 77,
-              retention_rate: 86.5
-            },
-            avg_order_value: 356.30
-          },
-          recent_orders: [
-            {
-              id: '1001',
-              customer: 'Maria Silva',
-              vehicle: 'Toyota Corolla 2020',
-              status: 'in_progress',
-              value: 450.00,
-              created_at: '2025-01-15T10:30:00Z'
-            },
-            {
-              id: '1002',
-              customer: 'João Santos',
-              vehicle: 'Honda Civic 2019',
-              status: 'completed',
-              value: 280.00,
-              created_at: '2025-01-15T08:15:00Z'
-            },
-            {
-              id: '1003',
-              customer: 'Ana Costa',
-              vehicle: 'Ford Ka 2018',
-              status: 'in_progress',
-              value: 320.00,
-              created_at: '2025-01-14T16:20:00Z'
-            }
-          ],
-          inventory_alerts: [
-            {
-              item: 'Óleo Motor 5W30',
-              current_stock: 2,
-              minimum_stock: 5,
-              alert_level: 'critical'
-            },
-            {
-              item: 'Pastilhas de Freio',
-              current_stock: 8,
-              minimum_stock: 10,
-              alert_level: 'warning'
-            }
-          ]
-        };
-        
-        setDashboardData(mockData);
-      } catch (error) {
-        console.error('Erro ao carregar dashboard:', error);
-      } finally {
-        setLoading(false);
+    if (!loading && !user) {
+      navigate('/login');
+      return;
+    }
+
+    if (user) {
+      loadDashboardData();
+    }
+  }, [user, loading, navigate]);
+
+  const loadDashboardData = async () => {
+    try {
+      setDashboardLoading(true);
+
+      // Carregar métricas principais
+      const [
+        { count: totalCustomers },
+        { count: totalVehicles },
+        { count: activeOrders },
+        { data: ordersWithCost },
+        { data: alerts }
+      ] = await Promise.all([
+        supabase.from('customers').select('*', { count: 'exact', head: true }),
+        supabase.from('vehicles').select('*', { count: 'exact', head: true }),
+        supabase.from('service_orders').select('*', { count: 'exact', head: true }).in('status', ['draft', 'in_progress', 'awaiting_approval']),
+        supabase.from('service_orders').select('estimated_cost').eq('status', 'completed'),
+        supabase.from('inventory_alerts').select('*').limit(5)
+      ]);
+
+      const totalRevenue = ordersWithCost?.reduce((sum, order) => sum + (order.estimated_cost || 0), 0) || 0;
+
+      setMetrics({
+        total_customers: totalCustomers || 0,
+        total_vehicles: totalVehicles || 0,
+        active_service_orders: activeOrders || 0,
+        total_revenue: totalRevenue,
+        inventory_alerts: alerts?.length || 0
+      });
+
+      // Carregar ordens recentes
+      const { data: orders } = await supabase
+        .from('service_orders')
+        .select(`
+          id,
+          order_number,
+          status,
+          estimated_cost,
+          created_at,
+          customers (name),
+          vehicles (brand, model, year)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (orders) {
+        const formattedOrders: RecentOrder[] = orders.map(order => ({
+          id: order.id,
+          order_number: order.order_number,
+          customer_name: (order.customers as any)?.name || 'Cliente não informado',
+          vehicle_info: `${(order.vehicles as any)?.brand} ${(order.vehicles as any)?.model} ${(order.vehicles as any)?.year}`,
+          status: order.status,
+          estimated_cost: order.estimated_cost || 0,
+          created_at: order.created_at
+        }));
+        setRecentOrders(formattedOrders);
       }
-    };
 
-    fetchDashboardData();
-  }, []);
+      // Carregar alertas de estoque
+      if (alerts) {
+        setInventoryAlerts(alerts);
+      }
 
-  const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: Home, current: true },
-    { name: 'Clientes', href: '/customers', icon: Users, current: false },
-    { name: 'Veículos', href: '/vehicles', icon: Car, current: false },
-    { name: 'Ordens de Serviço', href: '/service-orders', icon: Wrench, current: false },
-    { name: 'Estoque', href: '/inventory', icon: Package, current: false },
-    { name: 'Agenda', href: '/appointments', icon: Calendar, current: false },
-    { name: 'IA Assistant', href: '/ai-assistant', icon: Brain, current: false },
-    { name: 'Relatórios', href: '/reports', icon: BarChart3, current: false },
-    { name: 'Configurações', href: '/settings', icon: Settings, current: false },
-  ];
-
-  interface MetricCardProps {
-    title: string;
-    value: number;
-    change?: number;
-    trend?: 'up' | 'down';
-    icon: React.ComponentType<{ className?: string }>;
-    format?: 'number' | 'currency' | 'percentage';
-  }
-
-  const MetricCard: React.FC<MetricCardProps> = ({ title, value, change, trend, icon: Icon, format = 'number' }) => {
-    const formatValue = (val: number) => {
-      if (format === 'currency') return `R$ ${val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
-      if (format === 'percentage') return `${val}%`;
-      return val.toLocaleString('pt-BR');
-    };
-
-    return (
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-gray-600">{title}</p>
-            <p className="text-2xl font-bold text-torqx-primary font-satoshi">{formatValue(value)}</p>
-          </div>
-          <div className={`p-3 rounded-xl ${
-            trend === 'up' ? 'bg-torqx-accent/10' : 'bg-red-100'
-          }`}>
-            <Icon className={`w-6 h-6 ${
-              trend === 'up' ? 'text-torqx-accent' : 'text-red-600'
-            }`} />
-          </div>
-        </div>
-        {change && (
-          <div className="mt-4 flex items-center">
-            {trend === 'up' ? (
-              <TrendingUp className="w-4 h-4 text-torqx-accent mr-1" />
-            ) : (
-              <TrendingDown className="w-4 h-4 text-red-600 mr-1" />
-            )}
-            <span className={`text-sm font-medium ${
-              trend === 'up' ? 'text-torqx-accent' : 'text-red-600'
-            }`}>
-              {change > 0 ? '+' : ''}{change}%
-            </span>
-            <span className="text-sm text-gray-500 ml-1">vs mês anterior</span>
-          </div>
-        )}
-      </div>
-    );
+    } catch (error) {
+      console.error('Erro ao carregar dados do dashboard:', error);
+    } finally {
+      setDashboardLoading(false);
+    }
   };
 
-  if (loading) {
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'bg-torqx-accent/10 text-torqx-accent';
+      case 'in_progress':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'draft':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-blue-100 text-blue-800';
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'Concluída';
+      case 'in_progress':
+        return 'Em andamento';
+      case 'draft':
+        return 'Rascunho';
+      case 'awaiting_approval':
+        return 'Aguardando aprovação';
+      default:
+        return status;
+    }
+  };
+
+  if (loading || dashboardLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -210,258 +170,176 @@ const Dashboard = () => {
     );
   }
 
-  if (!dashboardData) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-600">Erro ao carregar dados do dashboard</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Floating Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out rounded-r-2xl ${
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
-        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-torqx-secondary to-torqx-accent rounded-lg flex items-center justify-center">
-              <Wrench className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold text-torqx-primary font-satoshi">Torqx</span>
-          </div>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="p-2 rounded-lg hover:bg-gray-100"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <nav className="mt-6 px-3">
-          <div className="space-y-1">
-            {navigation.map((item) => (
-              <a
-                key={item.name}
-                href={item.href}
-                className={`group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  item.current
-                    ? 'bg-torqx-secondary text-white'
-                    : 'text-gray-700 hover:text-torqx-primary hover:bg-gray-50'
-                }`}
-              >
-                <item.icon className={`mr-3 h-5 w-5 ${
-                  item.current ? 'text-white' : 'text-gray-400 group-hover:text-torqx-primary'
-                }`} />
-                {item.name}
-              </a>
-            ))}
-          </div>
-        </nav>
-      </div>
-
-      {/* Overlay para sidebar mobile */}
-      {sidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40"
-          onClick={() => setSidebarOpen(false)}
-        ></div>
-      )}
-
-      {/* Main Content - Full Width */}
-      <div className="w-full">
-        {/* Floating Header */}
-        <header className="bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-100 sticky top-0 z-30">
-          <div className="flex items-center justify-between h-16 px-4 sm:px-6">
-            <div className="flex items-center">
-              <button
-                onClick={() => setSidebarOpen(true)}
-                className="p-2 rounded-lg hover:bg-gray-100 mr-2"
-              >
-                <Menu className="w-5 h-5" />
-              </button>
-              <h1 className="text-xl font-semibold text-torqx-primary font-satoshi">
-                Dashboard
-              </h1>
-            </div>
-
-            <div className="flex items-center space-x-4">
-              {/* Search */}
-              <div className="relative hidden sm:block">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  className="block w-64 pl-10 pr-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-torqx-secondary focus:border-transparent"
-                  placeholder="Buscar clientes, OS..."
-                />
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full">
+        <AppSidebar />
+        <SidebarInset className="flex-1">
+          {/* Header */}
+          <header className="bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-100 sticky top-0 z-30">
+            <div className="flex items-center justify-between h-16 px-4 sm:px-6">
+              <div className="flex items-center">
+                <SidebarTrigger />
+                <h1 className="ml-4 text-xl font-semibold text-torqx-primary font-satoshi">
+                  Dashboard
+                </h1>
               </div>
 
-              {/* Notifications */}
-              <button className="p-2 rounded-lg hover:bg-gray-100 relative">
-                <Bell className="w-5 h-5 text-gray-600" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-              </button>
-
-              {/* Profile */}
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-torqx-secondary rounded-full flex items-center justify-center">
-                  <User className="w-5 h-5 text-white" />
-                </div>
-                <div className="hidden sm:block">
-                  <p className="text-sm font-medium text-gray-900">João Silva</p>
-                  <p className="text-xs text-gray-500">Auto Service Silva</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* Dashboard Content */}
-        <main className="p-4 sm:p-6">
-          {/* Metrics Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <MetricCard
-              title="Receita Mensal"
-              value={dashboardData.metrics.revenue.current}
-              change={dashboardData.metrics.revenue.growth_percentage}
-              trend={dashboardData.metrics.revenue.trend}
-              icon={DollarSign}
-              format="currency"
-            />
-            <MetricCard
-              title="OS Ativas"
-              value={dashboardData.metrics.service_orders.in_progress}
-              icon={Wrench}
-            />
-            <MetricCard
-              title="Clientes Novos"
-              value={dashboardData.metrics.customers.new}
-              icon={Users}
-            />
-            <MetricCard
-              title="Ticket Médio"
-              value={dashboardData.metrics.avg_order_value}
-              icon={TrendingUp}
-              format="currency"
-            />
-          </div>
-
-          {/* Charts and Tables */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            {/* Revenue Chart */}
-            <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <h3 className="text-lg font-semibold text-torqx-primary mb-4 font-satoshi">
-                Receita dos Últimos 30 Dias
-              </h3>
-              <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center">
-                <p className="text-gray-500">Gráfico de receita (integrar Chart.js)</p>
-              </div>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <h3 className="text-lg font-semibold text-torqx-primary mb-4 font-satoshi">
-                Estatísticas Rápidas
-              </h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Taxa de Conclusão</span>
-                  <span className="text-sm font-medium text-torqx-primary">
-                    {dashboardData.metrics.service_orders.completion_rate}%
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-torqx-accent h-2 rounded-full" 
-                    style={{ width: `${dashboardData.metrics.service_orders.completion_rate}%` }}
-                  ></div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Retenção de Clientes</span>
-                  <span className="text-sm font-medium text-torqx-primary">
-                    {dashboardData.metrics.customers.retention_rate}%
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-torqx-secondary h-2 rounded-full" 
-                    style={{ width: `${dashboardData.metrics.customers.retention_rate}%` }}
-                  ></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Recent Orders and Alerts */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Recent Orders */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-torqx-primary font-satoshi">
-                  Ordens Recentes
-                </h3>
-                <a href="/service-orders" className="text-sm text-torqx-secondary hover:text-torqx-secondary-dark">
-                  Ver todas
-                </a>
-              </div>
-              <div className="space-y-4">
-                {dashboardData.recent_orders.map((order) => (
-                  <div key={order.id} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg">
-                    <div>
-                      <p className="font-medium text-gray-900">{order.customer}</p>
-                      <p className="text-sm text-gray-600">{order.vehicle}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-medium text-torqx-primary">
-                        R$ {order.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </p>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        order.status === 'completed' 
-                          ? 'bg-torqx-accent/10 text-torqx-accent' 
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {order.status === 'completed' ? 'Concluída' : 'Em andamento'}
-                      </span>
-                    </div>
+              <div className="flex items-center space-x-4">
+                {/* Search */}
+                <div className="relative hidden sm:block">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search className="h-5 w-5 text-gray-400" />
                   </div>
-                ))}
+                  <input
+                    type="text"
+                    className="block w-64 pl-10 pr-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-torqx-secondary focus:border-transparent"
+                    placeholder="Buscar clientes, OS..."
+                  />
+                </div>
+
+                {/* Notifications */}
+                <button className="p-2 rounded-lg hover:bg-gray-100 relative">
+                  <Bell className="w-5 h-5 text-gray-600" />
+                  {metrics && metrics.inventory_alerts > 0 && (
+                    <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                  )}
+                </button>
+              </div>
+            </div>
+          </header>
+
+          {/* Main Content */}
+          <main className="p-4 sm:p-6">
+            {/* Metrics Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Receita Total</p>
+                    <p className="text-2xl font-bold text-torqx-primary font-satoshi">
+                      {formatCurrency(metrics?.total_revenue || 0)}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-torqx-accent/10">
+                    <DollarSign className="w-6 h-6 text-torqx-accent" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">OS Ativas</p>
+                    <p className="text-2xl font-bold text-torqx-primary font-satoshi">
+                      {metrics?.active_service_orders || 0}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-yellow-100">
+                    <Wrench className="w-6 h-6 text-yellow-600" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Total de Clientes</p>
+                    <p className="text-2xl font-bold text-torqx-primary font-satoshi">
+                      {metrics?.total_customers || 0}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-blue-100">
+                    <Users className="w-6 h-6 text-blue-600" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Total de Veículos</p>
+                    <p className="text-2xl font-bold text-torqx-primary font-satoshi">
+                      {metrics?.total_vehicles || 0}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-green-100">
+                    <Car className="w-6 h-6 text-green-600" />
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Inventory Alerts */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-torqx-primary font-satoshi">
-                  Alertas de Estoque
-                </h3>
-                <a href="/inventory" className="text-sm text-torqx-secondary hover:text-torqx-secondary-dark">
-                  Ver estoque
-                </a>
+            {/* Recent Orders and Alerts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Recent Orders */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-torqx-primary font-satoshi">
+                    Ordens Recentes
+                  </h3>
+                  <a href="/service-orders" className="text-sm text-torqx-secondary hover:text-torqx-secondary-dark">
+                    Ver todas
+                  </a>
+                </div>
+                <div className="space-y-4">
+                  {recentOrders.length > 0 ? (
+                    recentOrders.map((order) => (
+                      <div key={order.id} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg">
+                        <div>
+                          <p className="font-medium text-gray-900">OS #{order.order_number}</p>
+                          <p className="text-sm text-gray-600">{order.customer_name}</p>
+                          <p className="text-xs text-gray-500">{order.vehicle_info}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-medium text-torqx-primary">
+                            {formatCurrency(order.estimated_cost)}
+                          </p>
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
+                            {getStatusText(order.status)}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-gray-500 text-center py-4">Nenhuma ordem de serviço encontrada</p>
+                  )}
+                </div>
               </div>
-              <div className="space-y-4">
-                {dashboardData.inventory_alerts.map((alert, index) => (
-                  <div key={index} className="flex items-center space-x-3 p-3 bg-red-50 rounded-lg">
-                    <AlertTriangle className="w-5 h-5 text-red-600" />
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900">{alert.item}</p>
-                      <p className="text-sm text-gray-600">
-                        Estoque: {alert.current_stock} (mínimo: {alert.minimum_stock})
-                      </p>
-                    </div>
-                  </div>
-                ))}
+
+              {/* Inventory Alerts */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-torqx-primary font-satoshi">
+                    Alertas de Estoque
+                  </h3>
+                  <a href="/inventory" className="text-sm text-torqx-secondary hover:text-torqx-secondary-dark">
+                    Ver estoque
+                  </a>
+                </div>
+                <div className="space-y-4">
+                  {inventoryAlerts.length > 0 ? (
+                    inventoryAlerts.map((alert) => (
+                      <div key={alert.id} className="flex items-center space-x-3 p-3 bg-red-50 rounded-lg">
+                        <AlertTriangle className="w-5 h-5 text-red-600" />
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900">{alert.name}</p>
+                          <p className="text-sm text-gray-600">
+                            Estoque: {alert.current_stock} (mínimo: {alert.minimum_stock})
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-gray-500 text-center py-4">Nenhum alerta de estoque</p>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        </main>
+          </main>
+        </SidebarInset>
       </div>
-    </div>
+    </SidebarProvider>
   );
 };
 
