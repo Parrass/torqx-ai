@@ -71,11 +71,11 @@ export const Sidebar = ({
   );
 };
 
-export const SidebarBody = (props: React.ComponentProps<typeof motion.div>) => {
+export const SidebarBody = (props: React.ComponentProps<"div">) => {
   return (
     <>
       <DesktopSidebar {...props} />
-      <MobileSidebar {...(props as React.ComponentProps<"div">)} />
+      <MobileSidebar {...props} />
     </>
   );
 };
@@ -84,16 +84,16 @@ export const DesktopSidebar = ({
   className,
   children,
   ...props
-}: React.ComponentProps<typeof motion.div>) => {
+}: React.ComponentProps<"div">) => {
   const { open, setOpen, animate } = useSidebar();
   return (
     <motion.div
       className={cn(
-        "h-full px-4 py-4 hidden md:flex md:flex-col bg-white dark:bg-torqx-primary w-[300px] flex-shrink-0 fixed left-0 top-0 z-50 shadow-lg border-r border-gray-200 dark:border-torqx-primary-light",
+        "h-full px-4 py-4 hidden md:flex md:flex-col bg-white dark:bg-torqx-primary w-[250px] flex-shrink-0 fixed left-0 top-0 z-50 shadow-lg border-r border-gray-200 dark:border-torqx-primary-light",
         className
       )}
       animate={{
-        width: animate ? (open ? "300px" : "60px") : "300px",
+        width: animate ? (open ? "250px" : "60px") : "250px",
       }}
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
@@ -174,7 +174,7 @@ export const SidebarLink = ({
     <a
       href={link.href}
       className={cn(
-        "flex items-center justify-start gap-2 group/sidebar py-3 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-torqx-primary-light transition-colors",
+        "flex items-center justify-start gap-2 group/sidebar py-2 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-torqx-primary-light transition-colors",
         className
       )}
       {...props}
