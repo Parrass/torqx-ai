@@ -53,10 +53,12 @@ export const useTeamManagement = () => {
 
       if (error) throw error;
 
-      // Parse permissions from JSON to UserPermission[]
+      // Parse permissions from JSON to UserPermission[] with proper type conversion
       const parsedUsers = (data || []).map(user => ({
         ...user,
-        permissions: Array.isArray(user.permissions) ? user.permissions as UserPermission[] : []
+        permissions: Array.isArray(user.permissions) 
+          ? (user.permissions as unknown as UserPermission[])
+          : []
       }));
 
       setUsers(parsedUsers);
@@ -99,22 +101,34 @@ export const useTeamManagement = () => {
     try {
       setLoading(true);
 
-      // Primeiro criar o usuário
+      // Get current user's tenant_id
+      const { data: currentUser } = await supabase
+        .from('users')
+        .select('tenant_id')
+        .eq('id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (!currentUser?.tenant_id) {
+        throw new Error('Tenant não encontrado');
+      }
+
+      // Create the user with proper field mapping
       const { data: newUser, error: userError } = await supabase
         .from('users')
         .insert({
           email: userData.email,
           full_name: userData.full_name,
-          phone: userData.phone,
+          phone: userData.phone || null,
           role: userData.role,
-          status: 'active'
+          status: 'active',
+          tenant_id: currentUser.tenant_id
         })
         .select()
         .single();
 
       if (userError) throw userError;
 
-      // Depois criar as permissões
+      // Create permissions
       const permissionsToInsert = Object.values(userData.permissions).map(permission => ({
         user_id: newUser.id,
         module_name: permission.module_name,
