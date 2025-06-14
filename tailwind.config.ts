@@ -104,7 +104,8 @@ export default {
 				spin: 'spin 1s linear infinite'
 			},
 			fontFamily: {
-				sans: ['Inter', 'system-ui', 'sans-serif']
+				sans: ['Inter', 'system-ui', 'sans-serif'],
+				satoshi: ['Satoshi', 'Inter', 'system-ui', 'sans-serif']
 			}
 		}
 	},
