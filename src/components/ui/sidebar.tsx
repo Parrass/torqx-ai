@@ -93,7 +93,7 @@ export const DesktopSidebar = ({
   return (
     <motion.div
       className={cn(
-        "h-[calc(100vh-4rem)] px-4 py-4 hidden md:flex md:flex-col bg-white dark:bg-torqx-primary w-[250px] flex-shrink-0 fixed left-0 top-16 z-40 shadow-lg border-r border-gray-200 dark:border-torqx-primary-light",
+        "h-screen px-4 py-4 hidden md:flex md:flex-col bg-white dark:bg-torqx-primary w-[250px] flex-shrink-0 fixed left-0 top-0 z-40 shadow-lg border-r border-gray-200 dark:border-torqx-primary-light",
         className
       )}
       animate={{
@@ -128,7 +128,7 @@ export const MobileSidebar = ({
               ease: "easeInOut",
             }}
             className={cn(
-              "fixed h-[calc(100vh-4rem)] w-80 top-16 left-0 bg-white dark:bg-torqx-primary p-6 z-50 flex flex-col shadow-xl border-r border-gray-200 dark:border-torqx-primary-light md:hidden",
+              "fixed h-screen w-80 top-0 left-0 bg-white dark:bg-torqx-primary p-6 z-50 flex flex-col shadow-xl border-r border-gray-200 dark:border-torqx-primary-light md:hidden",
               className
             )}
           >
