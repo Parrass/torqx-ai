@@ -1,11 +1,10 @@
 
 import React from 'react';
-import { Menu, Bell, Search, Wrench, User } from 'lucide-react';
-import { useSidebar } from '@/components/ui/sidebar';
+import { Bell, Search, Wrench, User } from 'lucide-react';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useAuth } from '@/contexts/AuthContext';
 
 const TorqxNavbar = () => {
-  const { setOpen } = useSidebar();
   const { user } = useAuth();
 
   return (
@@ -13,12 +12,7 @@ const TorqxNavbar = () => {
       <div className="flex items-center justify-between h-16 px-4 sm:px-6">
         <div className="flex items-center space-x-4">
           {/* Mobile menu button */}
-          <button 
-            className="md:hidden p-2 rounded-lg hover:bg-gray-100"
-            onClick={() => setOpen(true)}
-          >
-            <Menu className="w-5 h-5 text-torqx-primary" />
-          </button>
+          <SidebarTrigger />
           
           {/* Company Logo and Name */}
           <div className="flex items-center space-x-3">
@@ -64,7 +58,7 @@ const TorqxNavbar = () => {
             </div>
             <div className="hidden md:block">
               <p className="text-sm font-medium text-torqx-primary">
-                {user?.user_metadata?.full_name || 'Usuário'}
+                Usuário
               </p>
               <p className="text-xs text-gray-500">
                 {user?.email || 'user@example.com'}

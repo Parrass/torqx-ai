@@ -201,3 +201,90 @@ export const SidebarLink = ({
     </button>
   );
 };
+
+// Missing components that are needed
+export const SidebarContent = ({ children, className, ...props }: React.ComponentProps<"div">) => {
+  return (
+    <div className={cn("flex flex-col flex-1 overflow-y-auto", className)} {...props}>
+      {children}
+    </div>
+  );
+};
+
+export const SidebarGroup = ({ children, className, ...props }: React.ComponentProps<"div">) => {
+  return (
+    <div className={cn("px-3 py-2", className)} {...props}>
+      {children}
+    </div>
+  );
+};
+
+export const SidebarGroupContent = ({ children, className, ...props }: React.ComponentProps<"div">) => {
+  return (
+    <div className={cn("", className)} {...props}>
+      {children}
+    </div>
+  );
+};
+
+export const SidebarGroupLabel = ({ children, className, ...props }: React.ComponentProps<"div">) => {
+  return (
+    <div className={cn("px-2 text-xs font-semibold text-torqx-primary/60 dark:text-white/60 mb-2", className)} {...props}>
+      {children}
+    </div>
+  );
+};
+
+export const SidebarMenu = ({ children, className, ...props }: React.ComponentProps<"ul">) => {
+  return (
+    <ul className={cn("space-y-1", className)} {...props}>
+      {children}
+    </ul>
+  );
+};
+
+export const SidebarMenuItem = ({ children, className, ...props }: React.ComponentProps<"li">) => {
+  return (
+    <li className={cn("", className)} {...props}>
+      {children}
+    </li>
+  );
+};
+
+export const SidebarMenuButton = ({ children, className, asChild, ...props }: React.ComponentProps<"button"> & { asChild?: boolean }) => {
+  return (
+    <button className={cn("flex items-center gap-2 w-full px-2 py-1.5 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-torqx-primary-light transition-colors", className)} {...props}>
+      {children}
+    </button>
+  );
+};
+
+export const SidebarHeader = ({ children, className, ...props }: React.ComponentProps<"div">) => {
+  return (
+    <div className={cn("px-3 py-2 border-b border-gray-200 dark:border-torqx-primary-light", className)} {...props}>
+      {children}
+    </div>
+  );
+};
+
+export const SidebarFooter = ({ children, className, ...props }: React.ComponentProps<"div">) => {
+  return (
+    <div className={cn("px-3 py-2 border-t border-gray-200 dark:border-torqx-primary-light mt-auto", className)} {...props}>
+      {children}
+    </div>
+  );
+};
+
+export const SidebarTrigger = ({ className, ...props }: React.ComponentProps<"button">) => {
+  const { setOpen } = useSidebar();
+  
+  return (
+    <button
+      className={cn("p-2 rounded-lg hover:bg-gray-100 md:hidden", className)}
+      onClick={() => setOpen(true)}
+      {...props}
+    >
+      <Menu className="w-5 h-5" />
+    </button>
+  );
+};
