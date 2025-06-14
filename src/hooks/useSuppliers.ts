@@ -21,7 +21,9 @@ export const useSuppliers = () => {
     return (data || []).map(supplier => ({
       ...supplier,
       document_type: (supplier.document_type || 'cnpj') as 'cnpj' | 'cpf',
-      status: supplier.status as 'active' | 'inactive' | 'suspended'
+      status: supplier.status as 'active' | 'inactive' | 'suspended',
+      address: supplier.address as Supplier['address'] || {},
+      bank_info: supplier.bank_info as Supplier['bank_info'] || {}
     }));
   };
 
@@ -43,7 +45,9 @@ export const useSuppliers = () => {
     return {
       ...data,
       document_type: (data.document_type || 'cnpj') as 'cnpj' | 'cpf',
-      status: data.status as 'active' | 'inactive' | 'suspended'
+      status: data.status as 'active' | 'inactive' | 'suspended',
+      address: data.address as Supplier['address'] || {},
+      bank_info: data.bank_info as Supplier['bank_info'] || {}
     };
   };
 
@@ -62,7 +66,9 @@ export const useSuppliers = () => {
     return {
       ...updatedData,
       document_type: (updatedData.document_type || 'cnpj') as 'cnpj' | 'cpf',
-      status: updatedData.status as 'active' | 'inactive' | 'suspended'
+      status: updatedData.status as 'active' | 'inactive' | 'suspended',
+      address: updatedData.address as Supplier['address'] || {},
+      bank_info: updatedData.bank_info as Supplier['bank_info'] || {}
     };
   };
 
