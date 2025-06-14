@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -131,13 +132,21 @@ export const PurchaseForm = ({ isOpen, onClose, purchase }: PurchaseFormProps) =
 
   const onSubmit = async (data: PurchaseFormData) => {
     try {
-      // Validate that all items have required fields filled
-      const validItems = data.items.filter(item => 
-        item.description && 
-        item.description.trim() !== '' && 
-        item.quantity > 0 && 
-        item.unit_price >= 0
-      );
+      // Validate that all items have required fields filled and convert to proper format
+      const validItems = data.items
+        .filter(item => 
+          item.description && 
+          item.description.trim() !== '' && 
+          item.quantity > 0 && 
+          item.unit_price >= 0
+        )
+        .map(item => ({
+          description: item.description!,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          category: item.category || '',
+          notes: item.notes || '',
+        }));
 
       if (validItems.length === 0) {
         toast({
