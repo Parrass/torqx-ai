@@ -1,8 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowRight, ArrowLeft, Check, Building, User, Wrench } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 
 const Register = () => {
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     // Dados da oficina
@@ -18,6 +21,17 @@ const Register = () => {
   });
   const [errors, setErrors] = useState<any>({});
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    // Verificar se o usuário já está logado
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate('/dashboard');
+      }
+    };
+    checkUser();
+  }, [navigate]);
 
   const steps = [
     { id: 1, title: 'Dados da Oficina', icon: Building },
@@ -48,6 +62,7 @@ const Register = () => {
       if (!formData.fullName) newErrors.fullName = 'Nome completo é obrigatório';
       if (!formData.email) newErrors.email = 'Email é obrigatório';
       if (!formData.password) newErrors.password = 'Senha é obrigatória';
+      if (formData.password.length < 6) newErrors.password = 'Senha deve ter pelo menos 6 caracteres';
       if (formData.password !== formData.confirmPassword) {
         newErrors.confirmPassword = 'Senhas não coincidem';
       }
@@ -61,12 +76,68 @@ const Register = () => {
     if (!validateStep(2)) return;
     
     setIsLoading(true);
+    setErrors({});
+    
     try {
-      // Simulação de registro - integrar com Supabase depois
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      window.location.href = '/verify-email';
-    } catch (error) {
-      setErrors({ general: 'Erro ao criar conta' });
+      // Primeiro, criar o tenant (oficina)
+      const { data: tenantData, error: tenantError } = await supabase
+        .from('tenants')
+        .insert({
+          company_name: formData.workshopName,
+          cnpj: formData.documentNumber,
+          phone: formData.phone,
+          email: formData.email,
+          subdomain: formData.workshopName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+        })
+        .select()
+        .single();
+
+      if (tenantError) {
+        throw tenantError;
+      }
+
+      // Registrar o usuário com Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/dashboard`,
+          data: {
+            full_name: formData.fullName,
+            tenant_id: tenantData.id,
+            role: 'owner'
+          }
+        }
+      });
+
+      if (authError) {
+        // Se houver erro no registro do usuário, deletar o tenant criado
+        await supabase.from('tenants').delete().eq('id', tenantData.id);
+        throw authError;
+      }
+
+      // Se chegou até aqui, o registro foi bem-sucedido
+      if (authData.user && !authData.session) {
+        // Usuário precisa confirmar email
+        alert('Cadastro realizado com sucesso! Por favor, verifique seu email para confirmar a conta.');
+        navigate('/login');
+      } else {
+        // Login automático
+        navigate('/dashboard');
+      }
+
+    } catch (error: any) {
+      console.error('Erro no registro:', error);
+      
+      if (error.message.includes('User already registered')) {
+        setErrors({ general: 'Este email já está cadastrado. Tente fazer login.' });
+      } else if (error.message.includes('Password should be at least 6 characters')) {
+        setErrors({ password: 'A senha deve ter pelo menos 6 caracteres' });
+      } else if (error.message.includes('Invalid email')) {
+        setErrors({ email: 'Email inválido' });
+      } else {
+        setErrors({ general: error.message || 'Erro ao criar conta. Tente novamente.' });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -231,7 +302,7 @@ const Register = () => {
                     <input
                       type="password"
                       className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-torqx-secondary focus:border-transparent transition-all"
-                      placeholder="Mínimo 8 caracteres"
+                      placeholder="Mínimo 6 caracteres"
                       value={formData.password}
                       onChange={(e) => setFormData({...formData, password: e.target.value})}
                     />

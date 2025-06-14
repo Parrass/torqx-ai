@@ -26,12 +26,18 @@ const LandingHeader = () => {
           
           {/* CTAs */}
           <div className="hidden md:flex items-center space-x-4">
-            <button className="text-torqx-primary hover:text-torqx-secondary font-semibold transition-colors">
+            <a 
+              href="/login" 
+              className="text-torqx-primary hover:text-torqx-secondary font-semibold transition-colors"
+            >
               Entrar
-            </button>
-            <button className="bg-gradient-to-r from-torqx-secondary to-torqx-secondary-dark text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all">
-              Demo Gratuita
-            </button>
+            </a>
+            <a
+              href="/register"
+              className="bg-gradient-to-r from-torqx-secondary to-torqx-secondary-dark text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all"
+            >
+              Criar Conta
+            </a>
           </div>
           
           {/* Menu Mobile (Hamburger) */}
@@ -56,10 +62,13 @@ const LandingHeader = () => {
               <a href="#casos" className="block py-2 text-gray-600 hover:text-torqx-primary">Casos de Sucesso</a>
               <a href="#precos" className="block py-2 text-gray-600 hover:text-torqx-primary">Preços</a>
               <div className="pt-4 space-y-2">
-                <button className="block w-full text-left py-2 text-torqx-primary font-semibold">Entrar</button>
-                <button className="block w-full bg-gradient-to-r from-torqx-secondary to-torqx-secondary-dark text-white px-6 py-3 rounded-xl font-semibold">
-                  Demo Gratuita
-                </button>
+                <a href="/login" className="block w-full text-left py-2 text-torqx-primary font-semibold">Entrar</a>
+                <a 
+                  href="/register"
+                  className="block w-full bg-gradient-to-r from-torqx-secondary to-torqx-secondary-dark text-white px-6 py-3 rounded-xl font-semibold text-center"
+                >
+                  Criar Conta
+                </a>
               </div>
             </div>
           </div>

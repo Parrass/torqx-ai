@@ -1,6 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, Wrench } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 
 interface FormErrors {
   email?: string;
@@ -9,6 +11,7 @@ interface FormErrors {
 }
 
 const Login = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -17,9 +20,21 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
 
+  useEffect(() => {
+    // Verificar se o usuário já está logado
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate('/dashboard');
+      }
+    };
+    checkUser();
+  }, [navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setErrors({});
     
     // Validação básica
     const newErrors: FormErrors = {};
@@ -33,11 +48,24 @@ const Login = () => {
     }
     
     try {
-      // Simulação de login - integrar com Supabase depois
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      window.location.href = '/dashboard';
+      const { error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+          setErrors({ general: 'Email ou senha incorretos' });
+        } else if (error.message.includes('Email not confirmed')) {
+          setErrors({ general: 'Por favor, confirme seu email antes de fazer login' });
+        } else {
+          setErrors({ general: error.message });
+        }
+      } else {
+        navigate('/dashboard');
+      }
     } catch (error) {
-      setErrors({ general: 'Erro ao fazer login' });
+      setErrors({ general: 'Erro ao fazer login. Tente novamente.' });
     } finally {
       setIsLoading(false);
     }
@@ -201,7 +229,7 @@ const Login = () => {
         </div>
       </div>
 
-      {/* Lado direito - Imagem (hidden em mobile) */}
+      {/* Lado direito - Imagem */}
       <div className="hidden lg:block relative flex-1">
         <div className="absolute inset-0 bg-gradient-to-br from-torqx-primary/90 to-torqx-secondary/90"></div>
         <img
