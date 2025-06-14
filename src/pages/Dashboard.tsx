@@ -222,20 +222,20 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-torqx-primary text-white shadow-lg transform transition-transform duration-300 ease-in-out ${
+      {/* Floating Sidebar */}
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out rounded-r-2xl ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      } lg:translate-x-0 lg:static lg:inset-0`}>
-        <div className="flex items-center justify-between h-16 px-6 border-b border-torqx-primary-light">
+      }`}>
+        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-gradient-to-r from-torqx-secondary to-torqx-accent rounded-lg flex items-center justify-center">
               <Wrench className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-bold text-white font-satoshi">Torqx</span>
+            <span className="text-xl font-bold text-torqx-primary font-satoshi">Torqx</span>
           </div>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="lg:hidden p-2 rounded-lg hover:bg-torqx-primary-light"
+            className="p-2 rounded-lg hover:bg-gray-100"
           >
             <X className="w-5 h-5" />
           </button>
@@ -250,11 +250,11 @@ const Dashboard = () => {
                 className={`group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                   item.current
                     ? 'bg-torqx-secondary text-white'
-                    : 'text-gray-300 hover:text-white hover:bg-torqx-primary-light'
+                    : 'text-gray-700 hover:text-torqx-primary hover:bg-gray-50'
                 }`}
               >
                 <item.icon className={`mr-3 h-5 w-5 ${
-                  item.current ? 'text-white' : 'text-gray-400 group-hover:text-white'
+                  item.current ? 'text-white' : 'text-gray-400 group-hover:text-torqx-primary'
                 }`} />
                 {item.name}
               </a>
@@ -263,23 +263,23 @@ const Dashboard = () => {
         </nav>
       </div>
 
-      {/* Overlay para mobile */}
+      {/* Overlay para sidebar mobile */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black bg-opacity-50 z-40"
           onClick={() => setSidebarOpen(false)}
         ></div>
       )}
 
-      {/* Main Content */}
-      <div className="lg:pl-64">
-        {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-100">
+      {/* Main Content - Full Width */}
+      <div className="w-full">
+        {/* Floating Header */}
+        <header className="bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-100 sticky top-0 z-30">
           <div className="flex items-center justify-between h-16 px-4 sm:px-6">
             <div className="flex items-center">
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="lg:hidden p-2 rounded-lg hover:bg-gray-100 mr-2"
+                className="p-2 rounded-lg hover:bg-gray-100 mr-2"
               >
                 <Menu className="w-5 h-5" />
               </button>
