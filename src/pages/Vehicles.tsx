@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Car, Plus, Search, Filter, MoreVertical, 
@@ -276,24 +275,6 @@ const Vehicles = () => {
       </div>
     </DialogContent>
   );
-
-  const getMaintenanceStatusColor = (status: string) => {
-    switch (status) {
-      case 'ok': return 'text-emerald-600 bg-emerald-100';
-      case 'due_soon': return 'text-yellow-600 bg-yellow-100';
-      case 'overdue': return 'text-red-600 bg-red-100';
-      default: return 'text-gray-600 bg-gray-100';
-    }
-  };
-
-  const getMaintenanceStatusText = (status: string) => {
-    switch (status) {
-      case 'ok': return 'Em dia';
-      case 'due_soon': return 'Vence em breve';
-      case 'overdue': return 'Atrasada';
-      default: return 'Indefinido';
-    }
-  };
 
   if (loading) {
     return (
