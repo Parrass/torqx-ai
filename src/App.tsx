@@ -13,6 +13,7 @@ import Customers from "./pages/Customers";
 import Vehicles from "./pages/Vehicles";
 import ServiceOrders from "./pages/ServiceOrders";
 import Inventory from "./pages/Inventory";
+import AIAssistant from "./pages/AIAssistant";
 import ForgotPassword from "./pages/ForgotPassword";
 import NotFound from "./pages/NotFound";
 
@@ -35,6 +36,7 @@ const App = () => (
           <Route path="/vehicles" element={<Vehicles />} />
           <Route path="/service-orders" element={<ServiceOrders />} />
           <Route path="/inventory" element={<Inventory />} />
+          <Route path="/ai-assistant" element={<AIAssistant />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
