@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   LayoutDashboard,
@@ -36,13 +37,13 @@ interface MenuItemProps {
 }
 
 const TorqxSidebar = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast()
 
   const handleLogout = async () => {
     try {
-      await logout();
+      // Simple navigation to login for now
       navigate('/login');
     } catch (error) {
       toast({
@@ -100,11 +101,11 @@ const TorqxSidebar = () => {
         <div className="px-6 py-4">
           <div className="flex items-center space-x-2">
             <Avatar>
-              <AvatarImage src={user?.avatar_url || "https://github.com/shadcn.png"} alt={user?.full_name} />
-              <AvatarFallback>{user?.full_name?.substring(0, 2).toUpperCase()}</AvatarFallback>
+              <AvatarImage src="https://github.com/shadcn.png" alt="User" />
+              <AvatarFallback>{user?.email?.substring(0, 2).toUpperCase() || 'U'}</AvatarFallback>
             </Avatar>
             <div className="space-y-0.5">
-              <h4 className="text-sm font-semibold">{user?.full_name}</h4>
+              <h4 className="text-sm font-semibold">{user?.email || 'Usuário'}</h4>
               <p className="text-xs text-gray-500">{user?.email}</p>
             </div>
           </div>
