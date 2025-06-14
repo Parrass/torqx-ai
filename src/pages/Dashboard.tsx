@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import TorqxSidebar from '@/components/TorqxSidebar';
+import TorqxFooter from '@/components/TorqxFooter';
 
 interface DashboardMetrics {
   total_customers: number;
@@ -169,44 +170,13 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       <TorqxSidebar />
       
-      {/* Main content with padding to account for sidebar */}
-      <div className="md:pl-16">
-        {/* Header */}
-        <header className="bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-100 sticky top-0 z-30">
-          <div className="flex items-center justify-between h-16 px-4 sm:px-6">
-            <h1 className="text-xl font-semibold text-torqx-primary font-satoshi">
-              Dashboard
-            </h1>
-
-            <div className="flex items-center space-x-4">
-              {/* Search */}
-              <div className="relative hidden sm:block">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  className="block w-64 pl-10 pr-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-torqx-secondary focus:border-transparent"
-                  placeholder="Buscar clientes, OS..."
-                />
-              </div>
-
-              {/* Notifications */}
-              <button className="p-2 rounded-lg hover:bg-gray-100 relative">
-                <Bell className="w-5 h-5 text-gray-600" />
-                {metrics && metrics.inventory_alerts > 0 && (
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                )}
-              </button>
-            </div>
-          </div>
-        </header>
-
+      {/* Main content with padding to account for navbar and sidebar */}
+      <div className="md:pl-16 pt-16 flex-1">
         {/* Main Content */}
-        <main className="p-4 sm:p-6 pt-20 md:pt-6">
+        <main className="p-4 sm:p-6">
           {/* Metrics Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all">
@@ -268,7 +238,6 @@ const Dashboard = () => {
 
           {/* Recent Orders and Alerts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Recent Orders */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-torqx-primary font-satoshi">
@@ -333,6 +302,8 @@ const Dashboard = () => {
             </div>
           </div>
         </main>
+        
+        <TorqxFooter />
       </div>
     </div>
   );

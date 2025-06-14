@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import TorqxSidebar from '@/components/TorqxSidebar';
+import TorqxFooter from '@/components/TorqxFooter';
 
 interface InventoryItem {
   id: string;
@@ -335,37 +336,37 @@ const Inventory = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       <TorqxSidebar />
       
-      {/* Main content with padding to account for sidebar */}
-      <div className="md:pl-16">
-        {/* Header */}
-        <header className="bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-100 sticky top-0 z-30">
-          <div className="flex items-center justify-between h-16 px-4 sm:px-6">
-            <h1 className="text-xl font-semibold text-torqx-primary font-satoshi">
+      {/* Main content with padding to account for navbar and sidebar */}
+      <div className="md:pl-16 pt-16 flex-1">
+        <div className="p-6">
+          {/* Page Title */}
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-torqx-primary font-satoshi mb-2">
               Estoque
             </h1>
-            
-            <div className="flex items-center space-x-4">
-              <Button variant="outline" size="sm">
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Atualizar
-              </Button>
-              <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Novo Item
-                  </Button>
-                </DialogTrigger>
-                <AddInventoryModal />
-              </Dialog>
+            <div className="flex items-center justify-between">
+              <p className="text-gray-600">Controle seu inventário de peças e produtos</p>
+              <div className="flex items-center space-x-4">
+                <Button variant="outline" size="sm">
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Atualizar
+                </Button>
+                <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Novo Item
+                    </Button>
+                  </DialogTrigger>
+                  <AddInventoryModal />
+                </Dialog>
+              </div>
             </div>
           </div>
-        </header>
 
-        <div className="p-6 pt-20 md:pt-6">
           {/* Stats */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
             <Card>
@@ -457,6 +458,7 @@ const Inventory = () => {
             ))}
           </div>
 
+          {/* Empty state */}
           {filteredInventory.length === 0 && (
             <div className="text-center py-12">
               <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -473,6 +475,8 @@ const Inventory = () => {
             </div>
           )}
         </div>
+        
+        <TorqxFooter />
       </div>
     </div>
   );

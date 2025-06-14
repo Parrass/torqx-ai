@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import TorqxSidebar from '@/components/TorqxSidebar';
+import TorqxFooter from '@/components/TorqxFooter';
 
 interface Customer {
   id: string;
@@ -203,56 +204,47 @@ const Customers = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <TorqxSidebar />
-        <div className="md:pl-16">
-          <div className="p-6 pt-20 md:pt-6">
-            <div className="animate-pulse space-y-4">
-              <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[1, 2, 3, 4, 5, 6].map(i => (
-                  <div key={i} className="h-64 bg-gray-200 rounded-xl"></div>
-                ))}
-              </div>
-            </div>
-          </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-torqx-secondary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando clientes...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       <TorqxSidebar />
       
-      {/* Main content with padding to account for sidebar */}
-      <div className="md:pl-16">
-        {/* Header */}
-        <header className="bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-100 sticky top-0 z-30">
-          <div className="flex items-center justify-between h-16 px-4 sm:px-6">
-            <h1 className="text-xl font-semibold text-torqx-primary font-satoshi">
+      {/* Main content with padding to account for navbar and sidebar */}
+      <div className="md:pl-16 pt-16 flex-1">
+        <div className="p-6">
+          {/* Page Title */}
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-torqx-primary font-satoshi mb-2">
               Clientes
             </h1>
-            
-            <div className="flex items-center space-x-4">
-              <Button variant="outline" size="sm">
-                <Download className="w-4 h-4 mr-2" />
-                Exportar
-              </Button>
-              <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Novo Cliente
-                  </Button>
-                </DialogTrigger>
-                <AddCustomerModal />
-              </Dialog>
+            <div className="flex items-center justify-between">
+              <p className="text-gray-600">Gerencie seus clientes e relacionamentos</p>
+              <div className="flex items-center space-x-4">
+                <Button variant="outline" size="sm">
+                  <Download className="w-4 h-4 mr-2" />
+                  Exportar
+                </Button>
+                <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Novo Cliente
+                    </Button>
+                  </DialogTrigger>
+                  <AddCustomerModal />
+                </Dialog>
+              </div>
             </div>
           </div>
-        </header>
 
-        <div className="p-6 pt-20 md:pt-6">
           {/* Stats */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
             <Card>
@@ -338,6 +330,7 @@ const Customers = () => {
             ))}
           </div>
 
+          {/* Empty state */}
           {filteredCustomers.length === 0 && (
             <div className="text-center py-12">
               <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -354,6 +347,8 @@ const Customers = () => {
             </div>
           )}
         </div>
+        
+        <TorqxFooter />
       </div>
     </div>
   );

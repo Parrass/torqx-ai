@@ -93,7 +93,7 @@ export const DesktopSidebar = ({
   return (
     <motion.div
       className={cn(
-        "h-full px-4 py-4 hidden md:flex md:flex-col bg-white dark:bg-torqx-primary w-[250px] flex-shrink-0 fixed left-0 top-0 z-50 shadow-lg border-r border-gray-200 dark:border-torqx-primary-light",
+        "h-[calc(100vh-4rem)] px-4 py-4 hidden md:flex md:flex-col bg-white dark:bg-torqx-primary w-[250px] flex-shrink-0 fixed left-0 top-16 z-40 shadow-lg border-r border-gray-200 dark:border-torqx-primary-light",
         className
       )}
       animate={{
@@ -117,50 +117,41 @@ export const MobileSidebar = ({
   const { open, setOpen } = useSidebar();
   return (
     <>
-      <div
-        className={cn(
-          "h-16 px-4 py-4 flex flex-row md:hidden items-center justify-between bg-white dark:bg-torqx-primary w-full shadow-sm border-b border-gray-200 dark:border-torqx-primary-light fixed top-0 left-0 z-40"
-        )}
-        {...props}
-      >
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-gradient-to-r from-torqx-secondary to-torqx-accent rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">T</span>
-          </div>
-          <span className="text-xl font-bold text-torqx-primary font-satoshi">Torqx</span>
-        </div>
-        <div className="flex justify-end z-20">
-          <Menu
-            className="text-torqx-primary dark:text-white cursor-pointer h-6 w-6"
-            onClick={() => setOpen(!open)}
-          />
-        </div>
-        <AnimatePresence>
-          {open && (
-            <motion.div
-              initial={{ x: "-100%", opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: "-100%", opacity: 0 }}
-              transition={{
-                duration: 0.3,
-                ease: "easeInOut",
-              }}
-              className={cn(
-                "fixed h-full w-full inset-0 bg-white dark:bg-torqx-primary p-10 z-[100] flex flex-col justify-between",
-                className
-              )}
-            >
-              <div
-                className="absolute right-10 top-10 z-50 text-torqx-primary dark:text-white cursor-pointer"
-                onClick={() => setOpen(!open)}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ x: "-100%", opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: "-100%", opacity: 0 }}
+            transition={{
+              duration: 0.3,
+              ease: "easeInOut",
+            }}
+            className={cn(
+              "fixed h-[calc(100vh-4rem)] w-80 top-16 left-0 bg-white dark:bg-torqx-primary p-6 z-50 flex flex-col shadow-xl border-r border-gray-200 dark:border-torqx-primary-light md:hidden",
+              className
+            )}
+          >
+            <div className="flex justify-end mb-4">
+              <button
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-torqx-primary-light"
+                onClick={() => setOpen(false)}
               >
-                <X />
-              </div>
-              {children}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+                <X className="w-5 h-5 text-torqx-primary dark:text-white" />
+              </button>
+            </div>
+            {children}
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Mobile overlay */}
+      {open && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setOpen(false)}
+        />
+      )}
     </>
   );
 };
