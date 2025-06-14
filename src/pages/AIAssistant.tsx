@@ -5,7 +5,7 @@ import {
   Lightbulb, TrendingUp, AlertCircle,
   MessageSquare, Zap, Target, BarChart3,
   Clock, CheckCircle, RefreshCw, Settings,
-  Menu, X, Users, Car, Wrench, Package
+  Menu, X, Users, Car, Wrench, Package, Home
 } from 'lucide-react';
 
 interface Message {
@@ -46,7 +46,7 @@ const AIAssistant = () => {
 
   // Navigation items
   const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: Users, current: false },
+    { name: 'Dashboard', href: '/dashboard', icon: Home, current: false },
     { name: 'Clientes', href: '/customers', icon: Users, current: false },
     { name: 'Veículos', href: '/vehicles', icon: Car, current: false },
     { name: 'Ordens de Serviço', href: '/service-orders', icon: Wrench, current: false },
@@ -263,77 +263,73 @@ const AIAssistant = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
+      {/* Floating Sidebar */}
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out rounded-r-2xl ${
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}>
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
-          <div className="flex items-center">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-emerald-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">T</span>
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-lg flex items-center justify-center">
+              <Wrench className="w-5 h-5 text-white" />
             </div>
-            <span className="ml-3 text-xl font-bold text-slate-900">Torqx</span>
+            <span className="text-xl font-bold text-slate-900">Torqx</span>
           </div>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="lg:hidden p-1 rounded-md text-gray-400 hover:text-gray-500"
+            className="p-2 rounded-lg hover:bg-gray-100"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5" />
           </button>
         </div>
-        
-        <nav className="mt-5 px-2">
+
+        <nav className="mt-6 px-3">
           <div className="space-y-1">
-            {navigation.map((item) => {
-              const Icon = item.icon;
-              return (
-                <a
-                  key={item.name}
-                  href={item.href}
-                  className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
-                    item.current
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
-                >
-                  <Icon className={`mr-3 h-5 w-5 ${
-                    item.current ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500'
-                  }`} />
-                  {item.name}
-                </a>
-              );
-            })}
+            {navigation.map((item) => (
+              <a
+                key={item.name}
+                href={item.href}
+                className={`group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  item.current
+                    ? 'bg-blue-500 text-white'
+                    : 'text-gray-700 hover:text-blue-500 hover:bg-gray-50'
+                }`}
+              >
+                <item.icon className={`mr-3 h-5 w-5 ${
+                  item.current ? 'text-white' : 'text-gray-400 group-hover:text-blue-500'
+                }`} />
+                {item.name}
+              </a>
+            ))}
           </div>
         </nav>
       </div>
 
-      {/* Mobile sidebar overlay */}
+      {/* Overlay para sidebar mobile */}
       {sidebarOpen && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-75 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40"
+          onClick={() => setSidebarOpen(false)}
+        ></div>
       )}
 
-      {/* Main content */}
-      <div className="lg:ml-64">
-        <div className="flex items-center justify-between h-16 px-6 bg-white border-b border-gray-200">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="lg:hidden p-1 rounded-md text-gray-400 hover:text-gray-500"
-          >
-            <Menu className="w-6 h-6" />
-          </button>
-          <h1 className="text-lg font-semibold text-slate-900">Assistente de IA</h1>
-        </div>
-
-        <div className="p-6">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900">
+      {/* Main Content - Full Width */}
+      <div className="w-full">
+        {/* Floating Header */}
+        <header className="bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-100 sticky top-0 z-30">
+          <div className="flex items-center justify-between h-16 px-4 sm:px-6">
+            <div className="flex items-center">
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="p-2 rounded-lg hover:bg-gray-100 mr-2"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+              <h1 className="text-xl font-semibold text-slate-900">
                 Assistente de IA
               </h1>
-              <p className="text-slate-600 mt-1">
-                Insights inteligentes para otimizar sua oficina
-              </p>
             </div>
-            <div className="flex space-x-3 mt-4 sm:mt-0">
+
+            <div className="flex space-x-3">
               <button className="flex items-center px-4 py-2 text-slate-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Atualizar
@@ -344,7 +340,10 @@ const AIAssistant = () => {
               </button>
             </div>
           </div>
+        </header>
 
+        {/* Dashboard Content */}
+        <main className="p-4 sm:p-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Chat Interface */}
             <div className="lg:col-span-2">
@@ -490,7 +489,7 @@ const AIAssistant = () => {
               ))}
             </div>
           </div>
-        </div>
+        </main>
       </div>
     </div>
   );

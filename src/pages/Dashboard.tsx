@@ -144,7 +144,7 @@ const Dashboard = () => {
     { name: 'Ordens de Serviço', href: '/service-orders', icon: Wrench, current: false },
     { name: 'Estoque', href: '/inventory', icon: Package, current: false },
     { name: 'Agenda', href: '/appointments', icon: Calendar, current: false },
-    { name: 'IA Assistant', href: '/ai', icon: Brain, current: false },
+    { name: 'IA Assistant', href: '/ai-assistant', icon: Brain, current: false },
     { name: 'Relatórios', href: '/reports', icon: BarChart3, current: false },
     { name: 'Configurações', href: '/settings', icon: Settings, current: false },
   ];
