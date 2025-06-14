@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Users, Plus, Search, Filter, MoreVertical, 
@@ -39,7 +38,7 @@ const Customers = () => {
     { name: 'Clientes', href: '/customers', icon: Users, current: true },
     { name: 'Veículos', href: '/vehicles', icon: Car, current: false },
     { name: 'Ordens de Serviço', href: '/service-orders', icon: Wrench, current: false },
-    { name: 'Estoque', href: '/inventory', icon: Users, current: false },
+    { name: 'Estoque', href: '/inventory', icon: Package, current: false },
     { name: 'Agendamentos', href: '/appointments', icon: Users, current: false },
     { name: 'Relatórios', href: '/reports', icon: Users, current: false },
   ];
