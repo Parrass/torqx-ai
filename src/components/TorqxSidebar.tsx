@@ -11,7 +11,8 @@ import {
   Settings,
   Home,
   LogOut,
-  Palette
+  Palette,
+  ShoppingCart
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -59,6 +60,11 @@ const TorqxSidebar = () => {
       label: 'Estoque',
       href: '/inventory',
       icon: <Package className="text-torqx-primary dark:text-white h-4 w-4 flex-shrink-0" />
+    },
+    {
+      label: 'Compras',
+      href: '/purchases',
+      icon: <ShoppingCart className="text-torqx-primary dark:text-white h-4 w-4 flex-shrink-0" />
     },
     {
       label: 'Agenda',
