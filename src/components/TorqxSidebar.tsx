@@ -1,139 +1,123 @@
-
 import React from 'react';
-import { 
-  Calendar, 
-  Car, 
-  Users, 
-  Wrench, 
-  Package, 
-  BarChart3, 
-  Brain, 
+import {
+  LayoutDashboard,
+  Users,
+  Car,
+  ClipboardList,
+  Package,
+  Calendar,
+  BarChart3,
+  Bot,
+  MessageSquare,
+  FolderOpen,
   Settings,
-  Home,
-  LogOut,
-  Palette
+  ShoppingCart,
 } from 'lucide-react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { Separator } from "@/components/ui/separator"
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
+import { Button } from "@/components/ui/button"
+import { Menu } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Sidebar, SidebarBody, SidebarLink, useSidebar } from '@/components/ui/sidebar';
-import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useToast } from "@/hooks/use-toast"
+
+interface MenuItemProps {
+  icon: React.ComponentType<any>;
+  label: string;
+  href: string;
+}
 
 const TorqxSidebar = () => {
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
-  const { user, signOut } = useAuth();
-  const { open } = useSidebar();
+  const { toast } = useToast()
 
-  const handleSignOut = async () => {
+  const handleLogout = async () => {
     try {
-      await signOut();
+      await logout();
       navigate('/login');
     } catch (error) {
-      console.error('Erro ao fazer logout:', error);
+      toast({
+        title: "Erro ao fazer logout",
+        description: "Por favor, tente novamente.",
+        variant: "destructive",
+      })
     }
   };
 
-  const links = [
-    {
-      label: 'Dashboard',
-      href: '/dashboard',
-      icon: <Home className="text-torqx-primary dark:text-white h-4 w-4 flex-shrink-0" />
-    },
-    {
-      label: 'Clientes',
-      href: '/customers',
-      icon: <Users className="text-torqx-primary dark:text-white h-4 w-4 flex-shrink-0" />
-    },
-    {
-      label: 'Veículos',
-      href: '/vehicles',
-      icon: <Car className="text-torqx-primary dark:text-white h-4 w-4 flex-shrink-0" />
-    },
-    {
-      label: 'OS',
-      href: '/service-orders',
-      icon: <Wrench className="text-torqx-primary dark:text-white h-4 w-4 flex-shrink-0" />
-    },
-    {
-      label: 'Estoque',
-      href: '/inventory',
-      icon: <Package className="text-torqx-primary dark:text-white h-4 w-4 flex-shrink-0" />
-    },
-    {
-      label: 'Agenda',
-      href: '/appointments',
-      icon: <Calendar className="text-torqx-primary dark:text-white h-4 w-4 flex-shrink-0" />
-    },
-    {
-      label: 'IA',
-      href: '/ai-assistant',
-      icon: <Brain className="text-torqx-primary dark:text-white h-4 w-4 flex-shrink-0" />
-    },
-    {
-      label: 'WhatsApp IA',
-      href: '/whatsapp-ai',
-      icon: <Brain className="text-torqx-primary dark:text-white h-4 w-4 flex-shrink-0" />
-    },
-    {
-      label: 'Relatórios',
-      href: '/reports',
-      icon: <BarChart3 className="text-torqx-primary dark:text-white h-4 w-4 flex-shrink-0" />
-    },
-    {
-      label: 'Assets',
-      href: '/assets',
-      icon: <Palette className="text-torqx-primary dark:text-white h-4 w-4 flex-shrink-0" />
-    },
-    {
-      label: 'Config',
-      href: '/settings',
-      icon: <Settings className="text-torqx-primary dark:text-white h-4 w-4 flex-shrink-0" />
-    }
+  const menuItems: MenuItemProps[] = [
+    { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
+    { icon: Users, label: 'Clientes', href: '/customers' },
+    { icon: Car, label: 'Veículos', href: '/vehicles' },
+    { icon: ClipboardList, label: 'Ordens de Serviço', href: '/service-orders' },
+    { icon: Package, label: 'Estoque', href: '/inventory' },
+    { icon: ShoppingCart, label: 'Compras', href: '/purchases' },
+    { icon: Calendar, label: 'Agendamentos', href: '/appointments' },
+    { icon: BarChart3, label: 'Relatórios', href: '/reports' },
+    { icon: Bot, label: 'Assistente IA', href: '/ai-assistant' },
+    { icon: MessageSquare, label: 'WhatsApp IA', href: '/whatsapp-ai' },
+    { icon: FolderOpen, label: 'Assets', href: '/assets' },
+    { icon: Settings, label: 'Configurações', href: '/settings' },
   ];
 
   return (
-    <Sidebar>
-      <SidebarBody>
-        {/* Navigation Links */}
-        <div className="flex flex-col gap-0.5 flex-1">
-          {links.map((link, idx) => (
-            <SidebarLink key={idx} link={link} />
+    <Sheet>
+      <SheetTrigger asChild>
+        <Button variant="ghost" size="icon">
+          <Menu className="h-5 w-5" />
+        </Button>
+      </SheetTrigger>
+      <SheetContent className="w-full sm:w-[280px] p-0">
+        <SheetHeader className="px-6 pt-6 pb-4">
+          <SheetTitle>Menu</SheetTitle>
+          <SheetDescription>
+            Navegue pelas funcionalidades do sistema.
+          </SheetDescription>
+        </SheetHeader>
+        <Separator />
+        <div className="py-4">
+          {menuItems.map((item, index) => (
+            <Button
+              key={index}
+              variant="ghost"
+              className="w-full justify-start px-6 hover:bg-gray-100 font-medium"
+              onClick={() => navigate(item.href)}
+            >
+              <item.icon className="h-4 w-4 mr-2" />
+              <span>{item.label}</span>
+            </Button>
           ))}
         </div>
-        
-        {/* User Section at Bottom */}
-        <div className="border-t border-gray-200 dark:border-torqx-primary-light pt-2 mt-2">
-          {/* User Info */}
-          <div className="flex items-center gap-2 px-2 py-1.5 mb-1 min-h-[36px]">
-            <div className="w-6 h-6 bg-torqx-secondary rounded-full flex items-center justify-center flex-shrink-0">
-              <span className="text-white text-xs font-semibold">
-                {user?.email?.charAt(0).toUpperCase() || 'U'}
-              </span>
-            </div>
-            <div className={`flex-1 min-w-0 overflow-hidden transition-all duration-300 ${open ? 'opacity-100 w-auto' : 'opacity-0 w-0'}`}>
-              <p className="text-xs font-medium text-torqx-primary dark:text-white truncate">
-                {user?.user_metadata?.full_name || 'Usuário'}
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                {user?.email}
-              </p>
+        <Separator />
+        <div className="px-6 py-4">
+          <div className="flex items-center space-x-2">
+            <Avatar>
+              <AvatarImage src={user?.avatar_url || "https://github.com/shadcn.png"} alt={user?.full_name} />
+              <AvatarFallback>{user?.full_name?.substring(0, 2).toUpperCase()}</AvatarFallback>
+            </Avatar>
+            <div className="space-y-0.5">
+              <h4 className="text-sm font-semibold">{user?.full_name}</h4>
+              <p className="text-xs text-gray-500">{user?.email}</p>
             </div>
           </div>
-          
-          {/* Logout Button */}
-          <button
-            onClick={handleSignOut}
-            className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-red-600 dark:text-red-400 min-h-[36px]"
+          <Button
+            variant="outline"
+            className="w-full mt-4 justify-center"
+            onClick={handleLogout}
           >
-            <LogOut className="h-4 w-4 flex-shrink-0" />
-            <span className={`text-xs whitespace-nowrap overflow-hidden transition-all duration-300 ${open ? 'opacity-100 w-auto' : 'opacity-0 w-0'}`}>
-              Sair
-            </span>
-          </button>
+            Sair
+          </Button>
         </div>
-      </SidebarBody>
-    </Sidebar>
+      </SheetContent>
+    </Sheet>
   );
 };
 
