@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Index from '@/pages/Index';
@@ -19,6 +20,7 @@ import NotFound from '@/pages/NotFound';
 import Assets from '@/pages/Assets';
 import TeamManagement from './pages/TeamManagement';
 import WorkshopSettings from './pages/WorkshopSettings';
+import WorkshopServices from './pages/WorkshopServices';
 
 function App() {
   return (
@@ -41,6 +43,7 @@ function App() {
         <Route path="/settings" element={<Settings />} />
         <Route path="/team-management" element={<TeamManagement />} />
         <Route path="/workshop-settings" element={<WorkshopSettings />} />
+        <Route path="/workshop-services" element={<WorkshopServices />} />
         <Route path="/assets" element={<Assets />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

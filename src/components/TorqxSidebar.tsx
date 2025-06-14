@@ -11,7 +11,8 @@ import {
   Settings,
   ShoppingCart,
   Truck,
-  Building2
+  Building2,
+  Wrench
 } from 'lucide-react';
 import { SidebarBody, SidebarLink } from '@/components/ui/sidebar';
 
@@ -71,6 +72,11 @@ const TorqxSidebar = () => {
       label: 'Gestão de Equipe',
       href: '/team-management',
       icon: <Users className="text-torqx-primary dark:text-white w-4 h-4" />,
+    },
+    {
+      label: 'Serviços da Oficina',
+      href: '/workshop-services',
+      icon: <Wrench className="text-torqx-primary dark:text-white w-4 h-4" />,
     },
     {
       label: 'Config. da Oficina',

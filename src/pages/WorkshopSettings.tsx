@@ -13,41 +13,10 @@ import {
   Phone, 
   Mail, 
   MapPin, 
-  FileText,
-  Wrench,
-  Plus,
-  Trash2,
-  Edit
+  FileText
 } from 'lucide-react';
 
 const WorkshopSettings = () => {
-  const [services, setServices] = useState([
-    { id: 1, name: 'Troca de Óleo', category: 'Manutenção Preventiva', price: 150.00 },
-    { id: 2, name: 'Alinhamento e Balanceamento', category: 'Pneus e Rodas', price: 80.00 },
-    { id: 3, name: 'Freios', category: 'Sistema de Freios', price: 300.00 },
-  ]);
-
-  const [newService, setNewService] = useState({ name: '', category: '', price: '' });
-
-  const addService = () => {
-    if (newService.name && newService.category && newService.price) {
-      setServices([
-        ...services,
-        {
-          id: Date.now(),
-          name: newService.name,
-          category: newService.category,
-          price: parseFloat(newService.price)
-        }
-      ]);
-      setNewService({ name: '', category: '', price: '' });
-    }
-  };
-
-  const removeService = (id: number) => {
-    setServices(services.filter(service => service.id !== id));
-  };
-
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
@@ -168,76 +137,6 @@ const WorkshopSettings = () => {
                 placeholder="Rua das Flores, 123, Centro, São Paulo - SP, 01234-567"
                 rows={2}
               />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Serviços Prestados */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Wrench className="w-5 h-5 text-torqx-accent" />
-              Serviços Prestados
-            </CardTitle>
-            <CardDescription>Gerencie o catálogo de serviços da sua oficina</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Adicionar Novo Serviço */}
-            <div className="bg-gray-50 p-4 rounded-lg space-y-3">
-              <h4 className="font-semibold text-torqx-primary">Adicionar Novo Serviço</h4>
-              <div className="grid md:grid-cols-4 gap-3">
-                <Input
-                  placeholder="Nome do serviço"
-                  value={newService.name}
-                  onChange={(e) => setNewService({ ...newService, name: e.target.value })}
-                />
-                <Input
-                  placeholder="Categoria"
-                  value={newService.category}
-                  onChange={(e) => setNewService({ ...newService, category: e.target.value })}
-                />
-                <Input
-                  placeholder="Preço base"
-                  type="number"
-                  value={newService.price}
-                  onChange={(e) => setNewService({ ...newService, price: e.target.value })}
-                />
-                <Button onClick={addService} className="bg-torqx-accent hover:bg-torqx-accent-dark">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Adicionar
-                </Button>
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Lista de Serviços */}
-            <div className="space-y-3">
-              <h4 className="font-semibold text-torqx-primary">Serviços Cadastrados</h4>
-              {services.map((service) => (
-                <div key={service.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
-                  <div className="flex-1">
-                    <h5 className="font-medium">{service.name}</h5>
-                    <p className="text-sm text-gray-600">{service.category}</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="font-semibold text-torqx-primary">
-                      R$ {service.price.toFixed(2)}
-                    </span>
-                    <Button variant="ghost" size="sm">
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => removeService(service.id)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
             </div>
           </CardContent>
         </Card>

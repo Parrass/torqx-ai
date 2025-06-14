@@ -1522,6 +1522,60 @@ export type Database = {
           },
         ]
       }
+      workshop_services: {
+        Row: {
+          base_price: number | null
+          category: string | null
+          created_at: string | null
+          created_by_user_id: string
+          description: string | null
+          estimated_duration_minutes: number | null
+          id: string
+          is_active: boolean | null
+          name: string
+          notes: string | null
+          requires_parts: boolean | null
+          skill_level: string | null
+          tenant_id: string
+          updated_at: string | null
+          warranty_days: number | null
+        }
+        Insert: {
+          base_price?: number | null
+          category?: string | null
+          created_at?: string | null
+          created_by_user_id: string
+          description?: string | null
+          estimated_duration_minutes?: number | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          notes?: string | null
+          requires_parts?: boolean | null
+          skill_level?: string | null
+          tenant_id: string
+          updated_at?: string | null
+          warranty_days?: number | null
+        }
+        Update: {
+          base_price?: number | null
+          category?: string | null
+          created_at?: string | null
+          created_by_user_id?: string
+          description?: string | null
+          estimated_duration_minutes?: number | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          notes?: string | null
+          requires_parts?: boolean | null
+          skill_level?: string | null
+          tenant_id?: string
+          updated_at?: string | null
+          warranty_days?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       customer_metrics: {
