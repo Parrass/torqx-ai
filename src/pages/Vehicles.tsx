@@ -165,8 +165,8 @@ const Vehicles = () => {
               </div>
 
               <Select
-                value={filters.status || 'all'}
-                onValueChange={(value) => setFilters({ ...filters, status: value as 'all' | 'active' | 'inactive' })}
+                value={filters.status || undefined}
+                onValueChange={(value) => setFilters({ ...filters, status: value === 'all' ? undefined : value as 'active' | 'inactive' })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Status" />
@@ -179,14 +179,14 @@ const Vehicles = () => {
               </Select>
 
               <Select
-                value={filters.brand || ''}
-                onValueChange={(value) => setFilters({ ...filters, brand: value || undefined })}
+                value={filters.brand || undefined}
+                onValueChange={(value) => setFilters({ ...filters, brand: value === 'all' ? undefined : value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Marca" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas as Marcas</SelectItem>
+                  <SelectItem value="all">Todas as Marcas</SelectItem>
                   <SelectItem value="Honda">Honda</SelectItem>
                   <SelectItem value="Toyota">Toyota</SelectItem>
                   <SelectItem value="Ford">Ford</SelectItem>
@@ -199,21 +199,21 @@ const Vehicles = () => {
               </Select>
 
               <Select
-                value={filters.fuel_type || ''}
-                onValueChange={(value) => setFilters({ ...filters, fuel_type: value || undefined })}
+                value={filters.fuel_type || undefined}
+                onValueChange={(value) => setFilters({ ...filters, fuel_type: value === 'all' ? undefined : value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Combustível" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos os Combustíveis</SelectItem>
-                  <SelectItem value="Gasolina">Gasolina</SelectItem>
-                  <SelectItem value="Etanol">Etanol</SelectItem>
-                  <SelectItem value="Flex">Flex</SelectItem>
-                  <SelectItem value="Diesel">Diesel</SelectItem>
-                  <SelectItem value="GNV">GNV</SelectItem>
-                  <SelectItem value="Elétrico">Elétrico</SelectItem>
-                  <SelectItem value="Híbrido">Híbrido</SelectItem>
+                  <SelectItem value="all">Todos os Combustíveis</SelectItem>
+                  <SelectItem value="gasolina">Gasolina</SelectItem>
+                  <SelectItem value="etanol">Etanol</SelectItem>
+                  <SelectItem value="flex">Flex</SelectItem>
+                  <SelectItem value="diesel">Diesel</SelectItem>
+                  <SelectItem value="gnv">GNV</SelectItem>
+                  <SelectItem value="eletrico">Elétrico</SelectItem>
+                  <SelectItem value="hibrido">Híbrido</SelectItem>
                 </SelectContent>
               </Select>
             </div>

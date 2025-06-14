@@ -239,20 +239,20 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
             <div>
               <Label htmlFor="fuel_type">Combustível</Label>
               <Select
-                value={watch('fuel_type') || ''}
+                value={watch('fuel_type') || undefined}
                 onValueChange={(value) => setValue('fuel_type', value || null)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o combustível" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Gasolina">Gasolina</SelectItem>
-                  <SelectItem value="Etanol">Etanol</SelectItem>
-                  <SelectItem value="Flex">Flex</SelectItem>
-                  <SelectItem value="Diesel">Diesel</SelectItem>
-                  <SelectItem value="GNV">GNV</SelectItem>
-                  <SelectItem value="Elétrico">Elétrico</SelectItem>
-                  <SelectItem value="Híbrido">Híbrido</SelectItem>
+                  <SelectItem value="gasolina">Gasolina</SelectItem>
+                  <SelectItem value="etanol">Etanol</SelectItem>
+                  <SelectItem value="flex">Flex</SelectItem>
+                  <SelectItem value="diesel">Diesel</SelectItem>
+                  <SelectItem value="gnv">GNV</SelectItem>
+                  <SelectItem value="eletrico">Elétrico</SelectItem>
+                  <SelectItem value="hibrido">Híbrido</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -271,17 +271,17 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
             <div>
               <Label htmlFor="transmission">Transmissão</Label>
               <Select
-                value={watch('transmission') || ''}
+                value={watch('transmission') || undefined}
                 onValueChange={(value) => setValue('transmission', value || null)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione a transmissão" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Manual">Manual</SelectItem>
-                  <SelectItem value="Automático">Automático</SelectItem>
-                  <SelectItem value="CVT">CVT</SelectItem>
-                  <SelectItem value="Semi-automático">Semi-automático</SelectItem>
+                  <SelectItem value="manual">Manual</SelectItem>
+                  <SelectItem value="automatico">Automático</SelectItem>
+                  <SelectItem value="cvt">CVT</SelectItem>
+                  <SelectItem value="semi-automatico">Semi-automático</SelectItem>
                 </SelectContent>
               </Select>
             </div>
