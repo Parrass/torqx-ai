@@ -11,6 +11,7 @@ import {
   Settings as SettingsIcon, Zap, Target, Shield,
   Plus, Trash2, Edit, TestTube
 } from 'lucide-react';
+import AITestChat from './AITestChat';
 
 const AIConfiguration = () => {
   const [aiName, setAiName] = useState('Assistente Torqx');
@@ -29,6 +30,7 @@ Sempre seja educado, objetivo e busque resolver os problemas dos clientes de for
   const [responseTime, setResponseTime] = useState(5);
   const [businessHours, setBusinessHours] = useState(true);
   const [transferToHuman, setTransferToHuman] = useState(true);
+  const [showTestChat, setShowTestChat] = useState(false);
   
   const [quickResponses, setQuickResponses] = useState([
     { id: 1, trigger: 'horário', response: 'Nosso horário de funcionamento é de segunda a sexta, das 8h às 18h, e sábados das 8h às 12h.' },
@@ -228,7 +230,10 @@ Sempre seja educado, objetivo e busque resolver os problemas dos clientes de for
 
       {/* Ações */}
       <div className="flex justify-between items-center">
-        <Button variant="outline">
+        <Button 
+          variant="outline"
+          onClick={() => setShowTestChat(true)}
+        >
           <TestTube className="w-4 h-4 mr-2" />
           Testar IA
         </Button>
@@ -273,6 +278,14 @@ Sempre seja educado, objetivo e busque resolver os problemas dos clientes de for
           </CardContent>
         </Card>
       )}
+
+      {/* Chat de Teste */}
+      <AITestChat
+        isOpen={showTestChat}
+        onClose={() => setShowTestChat(false)}
+        aiName={aiName}
+        personality={personality}
+      />
     </div>
   );
 };
