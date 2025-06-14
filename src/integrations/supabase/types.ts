@@ -598,142 +598,6 @@ export type Database = {
           },
         ]
       }
-      purchase_items: {
-        Row: {
-          category: string | null
-          created_at: string | null
-          description: string
-          id: string
-          inventory_item_id: string | null
-          notes: string | null
-          purchase_id: string
-          quantity: number
-          total_price: number
-          unit_price: number
-        }
-        Insert: {
-          category?: string | null
-          created_at?: string | null
-          description: string
-          id?: string
-          inventory_item_id?: string | null
-          notes?: string | null
-          purchase_id: string
-          quantity: number
-          total_price: number
-          unit_price: number
-        }
-        Update: {
-          category?: string | null
-          created_at?: string | null
-          description?: string
-          id?: string
-          inventory_item_id?: string | null
-          notes?: string | null
-          purchase_id?: string
-          quantity?: number
-          total_price?: number
-          unit_price?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "purchase_items_inventory_item_id_fkey"
-            columns: ["inventory_item_id"]
-            isOneToOne: false
-            referencedRelation: "inventory_alerts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "purchase_items_inventory_item_id_fkey"
-            columns: ["inventory_item_id"]
-            isOneToOne: false
-            referencedRelation: "inventory_items"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "purchase_items_purchase_id_fkey"
-            columns: ["purchase_id"]
-            isOneToOne: false
-            referencedRelation: "purchases"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      purchases: {
-        Row: {
-          category: string | null
-          created_at: string | null
-          created_by_user_id: string
-          discount_amount: number | null
-          due_date: string | null
-          final_amount: number
-          id: string
-          invoice_date: string | null
-          invoice_number: string | null
-          notes: string | null
-          payment_date: string | null
-          payment_method: string | null
-          payment_status: string | null
-          purchase_date: string
-          purchase_number: number
-          supplier_contact: Json | null
-          supplier_document: string | null
-          supplier_name: string
-          tax_amount: number | null
-          tenant_id: string
-          total_amount: number
-          updated_at: string | null
-        }
-        Insert: {
-          category?: string | null
-          created_at?: string | null
-          created_by_user_id: string
-          discount_amount?: number | null
-          due_date?: string | null
-          final_amount?: number
-          id?: string
-          invoice_date?: string | null
-          invoice_number?: string | null
-          notes?: string | null
-          payment_date?: string | null
-          payment_method?: string | null
-          payment_status?: string | null
-          purchase_date?: string
-          purchase_number: number
-          supplier_contact?: Json | null
-          supplier_document?: string | null
-          supplier_name: string
-          tax_amount?: number | null
-          tenant_id: string
-          total_amount?: number
-          updated_at?: string | null
-        }
-        Update: {
-          category?: string | null
-          created_at?: string | null
-          created_by_user_id?: string
-          discount_amount?: number | null
-          due_date?: string | null
-          final_amount?: number
-          id?: string
-          invoice_date?: string | null
-          invoice_number?: string | null
-          notes?: string | null
-          payment_date?: string | null
-          payment_method?: string | null
-          payment_status?: string | null
-          purchase_date?: string
-          purchase_number?: number
-          supplier_contact?: Json | null
-          supplier_document?: string | null
-          supplier_name?: string
-          tax_amount?: number | null
-          tenant_id?: string
-          total_amount?: number
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       service_order_items: {
         Row: {
           actual_hours: number | null
@@ -1311,18 +1175,6 @@ export type Database = {
           },
         ]
       }
-      purchase_metrics: {
-        Row: {
-          avg_purchase_value: number | null
-          month: string | null
-          paid_amount: number | null
-          pending_amount: number | null
-          tenant_id: string | null
-          total_purchases: number | null
-          total_spent: number | null
-        }
-        Relationships: []
-      }
       technician_performance: {
         Row: {
           avg_hours_per_order: number | null
@@ -1346,10 +1198,6 @@ export type Database = {
       }
     }
     Functions: {
-      generate_purchase_number: {
-        Args: { tenant_uuid: string }
-        Returns: number
-      }
       get_current_tenant_id: {
         Args: Record<PropertyKey, never>
         Returns: string
