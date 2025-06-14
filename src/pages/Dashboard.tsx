@@ -3,8 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   BarChart3, Users, Car, Wrench, Package, Calendar, 
   Brain, FileText, Settings, Search, Bell, User,
-  TrendingUp, TrendingDown, DollarSign, Clock,
-  AlertTriangle, CheckCircle, Menu, X, Home
+  TrendingUp, TrendingDown, DollarSign,
+  AlertTriangle, Menu, X, Home
 } from 'lucide-react';
 
 const Dashboard = () => {
