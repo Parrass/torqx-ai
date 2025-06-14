@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   MessageCircle, Bot, Settings as SettingsIcon, BarChart3, 
@@ -10,13 +9,41 @@ import {
   Menu, X, Home, Car, Wrench, Package, Bell, Search, User
 } from 'lucide-react';
 
+interface Metrics {
+  total_conversations: number;
+  ai_resolution_rate: number;
+  avg_response_time: number;
+  appointments_scheduled: number;
+  customer_satisfaction: number;
+  active_conversations: number;
+}
+
+interface Conversation {
+  id: string;
+  customer_name: string;
+  phone: string;
+  last_message: string;
+  timestamp: Date;
+  status: string;
+  messages_count: number;
+  appointment_scheduled: boolean;
+  satisfaction: number | null;
+}
+
 const WhatsAppAI = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isConnected, setIsConnected] = useState(true);
   const [botStatus, setBotStatus] = useState('active'); // active, paused, training
   const [activeTab, setActiveTab] = useState('overview');
-  const [conversations, setConversations] = useState([]);
-  const [metrics, setMetrics] = useState({});
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [metrics, setMetrics] = useState<Metrics>({
+    total_conversations: 0,
+    ai_resolution_rate: 0,
+    avg_response_time: 0,
+    appointments_scheduled: 0,
+    customer_satisfaction: 0,
+    active_conversations: 0
+  });
   const [showTrainingModal, setShowTrainingModal] = useState(false);
 
   const navigation = [
@@ -34,7 +61,7 @@ const WhatsAppAI = () => {
 
   // Mock data para demonstração
   useEffect(() => {
-    const mockConversations = [
+    const mockConversations: Conversation[] = [
       {
         id: '1',
         customer_name: 'Maria Silva',
@@ -70,7 +97,7 @@ const WhatsAppAI = () => {
       }
     ];
 
-    const mockMetrics = {
+    const mockMetrics: Metrics = {
       total_conversations: 156,
       ai_resolution_rate: 78,
       avg_response_time: 12, // segundos
@@ -83,7 +110,7 @@ const WhatsAppAI = () => {
     setMetrics(mockMetrics);
   }, []);
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case 'ai_handled': return 'text-torqx-accent bg-torqx-accent/10';
       case 'pending_human': return 'text-yellow-600 bg-yellow-100';
@@ -92,7 +119,7 @@ const WhatsAppAI = () => {
     }
   };
 
-  const getStatusText = (status) => {
+  const getStatusText = (status: string) => {
     switch (status) {
       case 'ai_handled': return 'IA Resolveu';
       case 'pending_human': return 'Aguarda Humano';
