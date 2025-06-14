@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ArrowRight, ArrowLeft, Check, Building, User, Wrench } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -38,6 +37,28 @@ const Register = () => {
     { id: 2, title: 'Seu Perfil', icon: User },
     { id: 3, title: 'Confirmação', icon: Check }
   ];
+
+  // Função para aplicar máscara de CNPJ
+  const formatCNPJ = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length <= 14) {
+      return numbers.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+    }
+    return value;
+  };
+
+  // Função para aplicar máscara de telefone
+  const formatPhone = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length <= 11) {
+      if (numbers.length <= 10) {
+        return numbers.replace(/^(\d{2})(\d{4})(\d{4})$/, '($1) $2-$3');
+      } else {
+        return numbers.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
+      }
+    }
+    return value;
+  };
 
   const handleNext = () => {
     if (validateStep(currentStep)) {
@@ -83,9 +104,9 @@ const Register = () => {
       const { data: tenantData, error: tenantError } = await supabase
         .from('tenants')
         .insert({
-          company_name: formData.workshopName,
-          cnpj: formData.documentNumber,
-          phone: formData.phone,
+          name: formData.workshopName,
+          cnpj: formData.documentNumber.replace(/\D/g, ''),
+          phone: formData.phone.replace(/\D/g, ''),
           email: formData.email,
           subdomain: formData.workshopName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
         })
@@ -141,6 +162,16 @@ const Register = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatCNPJ(e.target.value);
+    setFormData({...formData, documentNumber: formatted});
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhone(e.target.value);
+    setFormData({...formData, phone: formatted});
   };
 
   return (
@@ -234,7 +265,8 @@ const Register = () => {
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-torqx-secondary focus:border-transparent transition-all"
                     placeholder="00.000.000/0000-00"
                     value={formData.documentNumber}
-                    onChange={(e) => setFormData({...formData, documentNumber: e.target.value})}
+                    onChange={handleDocumentChange}
+                    maxLength={18}
                   />
                   {errors.documentNumber && <p className="mt-1 text-sm text-red-600">{errors.documentNumber}</p>}
                 </div>
@@ -248,7 +280,8 @@ const Register = () => {
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-torqx-secondary focus:border-transparent transition-all"
                     placeholder="(11) 99999-9999"
                     value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                    onChange={handlePhoneChange}
+                    maxLength={15}
                   />
                   {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone}</p>}
                 </div>

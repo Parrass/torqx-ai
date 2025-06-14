@@ -14,11 +14,54 @@ const Forms = () => {
     tipo: 'independente'
   });
 
+  // Função para aplicar máscara de CNPJ
+  const formatCNPJ = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length <= 14) {
+      return numbers.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+    }
+    return value;
+  };
+
+  // Função para aplicar máscara de telefone
+  const formatPhone = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length <= 11) {
+      if (numbers.length <= 10) {
+        return numbers.replace(/^(\d{2})(\d{4})(\d{4})$/, '($1) $2-$3');
+      } else {
+        return numbers.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
+      }
+    }
+    return value;
+  };
+
+  // Função para aplicar máscara de CPF
+  const formatCPF = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length <= 11) {
+      return numbers.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4');
+    }
+    return value;
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
+    
+    let formattedValue = value;
+    
+    // Aplicar máscaras específicas
+    if (name === 'cnpj') {
+      formattedValue = formatCNPJ(value);
+    } else if (name === 'telefone') {
+      formattedValue = formatPhone(value);
+    } else if (name === 'cpf') {
+      formattedValue = formatCPF(value);
+    }
+    
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : formattedValue
     }));
   };
 
@@ -65,6 +108,7 @@ const Forms = () => {
                 placeholder="00.000.000/0000-00" 
                 value={formData.cnpj}
                 onChange={handleInputChange}
+                maxLength={18}
                 className="w-full px-4 py-3 border-2 border-red-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
               />
               <p className="text-red-500 text-sm mt-1">CNPJ inválido</p>
@@ -78,9 +122,23 @@ const Forms = () => {
                 placeholder="(11) 99999-9999" 
                 value={formData.telefone}
                 onChange={handleInputChange}
+                maxLength={15}
                 className="w-full px-4 py-3 border-2 border-torqx-accent rounded-xl focus:ring-2 focus:ring-torqx-accent focus:border-transparent transition-all"
               />
               <p className="text-torqx-accent text-sm mt-1">✓ Telefone válido</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">CPF</label>
+              <input 
+                type="text" 
+                name="cpf"
+                placeholder="000.000.000-00" 
+                value={formData.cpf || ''}
+                onChange={handleInputChange}
+                maxLength={14}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-torqx-secondary focus:border-transparent transition-all"
+              />
             </div>
           </div>
         </div>
@@ -190,6 +248,8 @@ const Forms = () => {
                 <input 
                   type="text" 
                   required 
+                  placeholder="00.000.000/0000-00"
+                  maxLength={18}
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-torqx-secondary focus:border-transparent transition-all"
                 />
               </div>
@@ -200,6 +260,18 @@ const Forms = () => {
               <input 
                 type="email" 
                 required 
+                placeholder="contato@oficina.com"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-torqx-secondary focus:border-transparent transition-all"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Telefone *</label>
+              <input 
+                type="text" 
+                required 
+                placeholder="(11) 99999-9999"
+                maxLength={15}
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-torqx-secondary focus:border-transparent transition-all"
               />
             </div>
