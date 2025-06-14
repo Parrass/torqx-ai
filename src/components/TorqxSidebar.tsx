@@ -73,6 +73,11 @@ const TorqxSidebar = () => {
       icon: <MessageSquare className="text-torqx-primary dark:text-white w-4 h-4" />,
     },
     {
+      label: 'Gestão de Equipe',
+      href: '/team-management',
+      icon: <Users className="text-torqx-primary dark:text-white w-4 h-4" />,
+    },
+    {
       label: 'Configurações',
       href: '/settings',
       icon: <Settings className="text-torqx-primary dark:text-white w-4 h-4" />,

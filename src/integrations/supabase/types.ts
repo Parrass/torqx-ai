@@ -105,6 +105,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "ai_interactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_permissions"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "ai_interactions_vehicle_id_fkey"
             columns: ["vehicle_id"]
             isOneToOne: false
@@ -199,6 +206,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "appointments_assigned_technician_id_fkey"
+            columns: ["assigned_technician_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_permissions"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "appointments_created_by_user_id_fkey"
             columns: ["created_by_user_id"]
             isOneToOne: false
@@ -210,6 +224,13 @@ export type Database = {
             columns: ["created_by_user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_permissions"
             referencedColumns: ["id"]
           },
           {
@@ -317,6 +338,13 @@ export type Database = {
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "audit_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_permissions"
+            referencedColumns: ["id"]
+          },
         ]
       }
       customers: {
@@ -405,6 +433,13 @@ export type Database = {
             columns: ["preferred_technician_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customers_preferred_technician_id_fkey"
+            columns: ["preferred_technician_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_permissions"
             referencedColumns: ["id"]
           },
           {
@@ -594,6 +629,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_movements_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_permissions"
             referencedColumns: ["id"]
           },
         ]
@@ -948,6 +990,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "service_orders_approved_by_user_id_fkey"
+            columns: ["approved_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_permissions"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "service_orders_assigned_technician_id_fkey"
             columns: ["assigned_technician_id"]
             isOneToOne: false
@@ -962,6 +1011,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "service_orders_assigned_technician_id_fkey"
+            columns: ["assigned_technician_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_permissions"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "service_orders_created_by_user_id_fkey"
             columns: ["created_by_user_id"]
             isOneToOne: false
@@ -973,6 +1029,13 @@ export type Database = {
             columns: ["created_by_user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_orders_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_permissions"
             referencedColumns: ["id"]
           },
           {
@@ -1083,6 +1146,39 @@ export type Database = {
         }
         Relationships: []
       }
+      system_modules: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          display_name: string
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_name: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_name?: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+        }
+        Relationships: []
+      }
       tenant_settings: {
         Row: {
           category: string
@@ -1184,13 +1280,80 @@ export type Database = {
         }
         Relationships: []
       }
+      user_module_permissions: {
+        Row: {
+          can_create: boolean | null
+          can_delete: boolean | null
+          can_read: boolean | null
+          can_update: boolean | null
+          created_at: string | null
+          id: string
+          module_name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          can_create?: boolean | null
+          can_delete?: boolean | null
+          can_read?: boolean | null
+          can_update?: boolean | null
+          created_at?: string | null
+          id?: string
+          module_name: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          can_create?: boolean | null
+          can_delete?: boolean | null
+          can_read?: boolean | null
+          can_update?: boolean | null
+          created_at?: string | null
+          id?: string
+          module_name?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_module_permissions_module_name_fkey"
+            columns: ["module_name"]
+            isOneToOne: false
+            referencedRelation: "system_modules"
+            referencedColumns: ["name"]
+          },
+          {
+            foreignKeyName: "user_module_permissions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "technician_performance"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_module_permissions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_module_permissions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_permissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           avatar_url: string | null
           created_at: string | null
+          created_by_user_id: string | null
           email: string
           full_name: string
           id: string
+          is_active: boolean | null
           last_login_at: string | null
           permissions: Json | null
           phone: string | null
@@ -1203,9 +1366,11 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string | null
+          created_by_user_id?: string | null
           email: string
           full_name: string
           id: string
+          is_active?: boolean | null
           last_login_at?: string | null
           permissions?: Json | null
           phone?: string | null
@@ -1218,9 +1383,11 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string | null
+          created_by_user_id?: string | null
           email?: string
           full_name?: string
           id?: string
+          is_active?: boolean | null
           last_login_at?: string | null
           permissions?: Json | null
           phone?: string | null
@@ -1231,6 +1398,27 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "users_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "technician_performance"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "users_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "users_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_permissions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "users_tenant_id_fkey"
             columns: ["tenant_id"]
@@ -1433,8 +1621,40 @@ export type Database = {
           },
         ]
       }
+      users_with_permissions: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string | null
+          last_login_at: string | null
+          permissions: Json | null
+          phone: string | null
+          role: string | null
+          status: string | null
+          tenant_id: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "users_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      check_user_permission: {
+        Args: {
+          _user_id: string
+          _module_name: string
+          _permission_type: string
+        }
+        Returns: boolean
+      }
       generate_purchase_number: {
         Args: { tenant_uuid: string }
         Returns: number
