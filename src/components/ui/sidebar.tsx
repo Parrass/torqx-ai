@@ -1,4 +1,3 @@
-
 "use client";
 
 import { cn } from "@/lib/utils";
@@ -87,20 +86,19 @@ export const DesktopSidebar = ({
 }: React.ComponentProps<"div">) => {
   const { open, setOpen, animate } = useSidebar();
   
-  // Separate motion-specific props from HTML div props
   const { onMouseEnter, onMouseLeave, ...restProps } = props;
   
   return (
     <motion.div
       className={cn(
-        "h-[calc(100vh-4rem)] px-4 py-4 hidden md:flex md:flex-col bg-white dark:bg-torqx-primary flex-shrink-0 fixed left-0 top-16 z-40 shadow-lg border-r border-gray-200 dark:border-torqx-primary-light",
+        "h-[calc(100vh-4rem)] px-3 py-3 hidden md:flex md:flex-col bg-white dark:bg-torqx-primary flex-shrink-0 fixed left-0 top-16 z-40 shadow-lg border-r border-gray-200 dark:border-torqx-primary-light",
         className
       )}
       animate={{
-        width: animate ? (open ? "250px" : "60px") : "250px",
+        width: animate ? (open ? "240px" : "60px") : "240px",
       }}
       style={{
-        width: animate ? (open ? "250px" : "60px") : "250px",
+        width: animate ? (open ? "240px" : "60px") : "240px",
       }}
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
@@ -173,7 +171,7 @@ export const SidebarLink = ({
     <a
       href={link.href}
       className={cn(
-        "flex items-center gap-2 group/sidebar py-2 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-torqx-primary-light transition-colors min-h-[40px]",
+        "flex items-center gap-2 group/sidebar py-1.5 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-torqx-primary-light transition-colors min-h-[36px]",
         className
       )}
       {...props}
@@ -181,18 +179,13 @@ export const SidebarLink = ({
       <div className="flex-shrink-0 w-4 h-4 flex items-center justify-center">
         {link.icon}
       </div>
-      <motion.span
-        animate={{
-          opacity: animate ? (open ? 1 : 0) : 1,
-          width: animate ? (open ? "auto" : 0) : "auto",
-        }}
-        className="text-torqx-primary dark:text-white text-sm group-hover/sidebar:translate-x-1 transition duration-150 whitespace-nowrap overflow-hidden"
-        style={{
-          display: animate ? (open ? "block" : "none") : "block",
-        }}
+      <span
+        className={`text-torqx-primary dark:text-white text-sm group-hover/sidebar:translate-x-1 transition-all duration-300 whitespace-nowrap overflow-hidden ${
+          open ? 'opacity-100 w-auto' : 'opacity-0 w-0'
+        }`}
       >
         {link.label}
-      </motion.span>
+      </span>
     </a>
   );
 };
