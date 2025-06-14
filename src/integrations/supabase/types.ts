@@ -678,6 +678,7 @@ export type Database = {
           purchase_number: number
           supplier_contact: Json | null
           supplier_document: string | null
+          supplier_id: string | null
           supplier_name: string
           tax_amount: number | null
           tenant_id: string
@@ -702,6 +703,7 @@ export type Database = {
           purchase_number: number
           supplier_contact?: Json | null
           supplier_document?: string | null
+          supplier_id?: string | null
           supplier_name: string
           tax_amount?: number | null
           tenant_id: string
@@ -726,13 +728,22 @@ export type Database = {
           purchase_number?: number
           supplier_contact?: Json | null
           supplier_document?: string | null
+          supplier_id?: string | null
           supplier_name?: string
           tax_amount?: number | null
           tenant_id?: string
           total_amount?: number
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "purchases_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       service_order_items: {
         Row: {
@@ -993,6 +1004,84 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      suppliers: {
+        Row: {
+          address: Json | null
+          bank_info: Json | null
+          business_name: string | null
+          category: string | null
+          contact_person: string | null
+          created_at: string | null
+          created_by_user_id: string
+          credit_limit: number | null
+          document_number: string | null
+          document_type: string | null
+          email: string | null
+          id: string
+          mobile: string | null
+          name: string
+          notes: string | null
+          payment_terms: number | null
+          phone: string | null
+          rating: number | null
+          status: string | null
+          tags: string[] | null
+          tenant_id: string
+          updated_at: string | null
+          website: string | null
+        }
+        Insert: {
+          address?: Json | null
+          bank_info?: Json | null
+          business_name?: string | null
+          category?: string | null
+          contact_person?: string | null
+          created_at?: string | null
+          created_by_user_id: string
+          credit_limit?: number | null
+          document_number?: string | null
+          document_type?: string | null
+          email?: string | null
+          id?: string
+          mobile?: string | null
+          name: string
+          notes?: string | null
+          payment_terms?: number | null
+          phone?: string | null
+          rating?: number | null
+          status?: string | null
+          tags?: string[] | null
+          tenant_id: string
+          updated_at?: string | null
+          website?: string | null
+        }
+        Update: {
+          address?: Json | null
+          bank_info?: Json | null
+          business_name?: string | null
+          category?: string | null
+          contact_person?: string | null
+          created_at?: string | null
+          created_by_user_id?: string
+          credit_limit?: number | null
+          document_number?: string | null
+          document_type?: string | null
+          email?: string | null
+          id?: string
+          mobile?: string | null
+          name?: string
+          notes?: string | null
+          payment_terms?: number | null
+          phone?: string | null
+          rating?: number | null
+          status?: string | null
+          tags?: string[] | null
+          tenant_id?: string
+          updated_at?: string | null
+          website?: string | null
+        }
+        Relationships: []
       }
       tenant_settings: {
         Row: {

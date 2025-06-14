@@ -20,7 +20,14 @@ export const usePurchases = () => {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    
+    // Transform the data to match our Purchase type
+    return (data || []).map(purchase => ({
+      ...purchase,
+      supplier_contact: typeof purchase.supplier_contact === 'string' 
+        ? JSON.parse(purchase.supplier_contact) 
+        : purchase.supplier_contact || {}
+    }));
   };
 
   const createPurchase = async (purchaseData: CreatePurchaseData): Promise<Purchase> => {
@@ -81,7 +88,12 @@ export const usePurchases = () => {
 
     if (itemsError) throw itemsError;
 
-    return purchase;
+    return {
+      ...purchase,
+      supplier_contact: typeof purchase.supplier_contact === 'string' 
+        ? JSON.parse(purchase.supplier_contact) 
+        : purchase.supplier_contact || {}
+    };
   };
 
   const updatePurchaseStatus = async (id: string, status: string, paymentDate?: string) => {
