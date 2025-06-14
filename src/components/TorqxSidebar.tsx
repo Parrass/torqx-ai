@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   LayoutDashboard,
@@ -29,7 +28,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useToast } from "@/hooks/use-toast"
-import { supabase } from '@/integrations/supabase/client';
 
 interface MenuItemProps {
   icon: React.ComponentType<any>;
@@ -38,13 +36,13 @@ interface MenuItemProps {
 }
 
 const TorqxSidebar = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast()
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
+      await logout();
       navigate('/login');
     } catch (error) {
       toast({
@@ -102,11 +100,11 @@ const TorqxSidebar = () => {
         <div className="px-6 py-4">
           <div className="flex items-center space-x-2">
             <Avatar>
-              <AvatarImage src="" alt={user?.email} />
-              <AvatarFallback>{user?.email?.substring(0, 2).toUpperCase()}</AvatarFallback>
+              <AvatarImage src={user?.avatar_url || "https://github.com/shadcn.png"} alt={user?.full_name} />
+              <AvatarFallback>{user?.full_name?.substring(0, 2).toUpperCase()}</AvatarFallback>
             </Avatar>
             <div className="space-y-0.5">
-              <h4 className="text-sm font-semibold">{user?.email}</h4>
+              <h4 className="text-sm font-semibold">{user?.full_name}</h4>
               <p className="text-xs text-gray-500">{user?.email}</p>
             </div>
           </div>

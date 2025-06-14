@@ -1,7 +1,7 @@
 
 import React from 'react';
-import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
-import { AppSidebar } from '@/components/AppSidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
+import TorqxSidebar from '@/components/TorqxSidebar';
 import TorqxNavbar from '@/components/TorqxNavbar';
 import TorqxFooter from '@/components/TorqxFooter';
 
@@ -11,21 +11,20 @@ interface DashboardLayoutProps {
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   return (
-    <div className="min-h-screen bg-gray-50 flex w-full">
-      <SidebarProvider>
-        <AppSidebar />
-        <div className="flex-1 flex flex-col">
-          <TorqxNavbar />
-          
-          <main className="flex-1 pt-16">
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
-              {children}
-            </div>
+    <SidebarProvider>
+      <div className="min-h-screen bg-gray-50 flex flex-col w-full">
+        <TorqxNavbar />
+        <TorqxSidebar />
+        
+        {/* Main content with padding to account for navbar and sidebar */}
+        <div className="md:pl-[60px] pt-16 flex-1 transition-all duration-300">
+          <div className="md:group-hover:pl-[190px]">
+            {children}
             <TorqxFooter />
-          </main>
+          </div>
         </div>
-      </SidebarProvider>
-    </div>
+      </div>
+    </SidebarProvider>
   );
 };
 

@@ -59,20 +59,15 @@ export const Sidebar = ({
   open,
   setOpen,
   animate,
-  className,
-  ...props
 }: {
   children: React.ReactNode;
   open?: boolean;
   setOpen?: React.Dispatch<React.SetStateAction<boolean>>;
   animate?: boolean;
-  className?: string;
-} & React.ComponentProps<"div">) => {
+}) => {
   return (
     <SidebarProvider open={open} setOpen={setOpen} animate={animate}>
-      <SidebarBody className={className} {...props}>
-        {children}
-      </SidebarBody>
+      {children}
     </SidebarProvider>
   );
 };
@@ -163,108 +158,6 @@ export const MobileSidebar = ({
     </>
   );
 };
-
-export const SidebarTrigger = ({ className, ...props }: React.ComponentProps<"button">) => {
-  const { setOpen } = useSidebar();
-  
-  return (
-    <button
-      className={cn("p-2 rounded-lg hover:bg-gray-100", className)}
-      onClick={() => setOpen(prev => !prev)}
-      {...props}
-    >
-      <Menu className="w-5 h-5" />
-    </button>
-  );
-};
-
-export const SidebarContent = ({ className, children, ...props }: React.ComponentProps<"div">) => {
-  return (
-    <div className={cn("flex-1 overflow-auto", className)} {...props}>
-      {children}
-    </div>
-  );
-};
-
-export const SidebarHeader = ({ className, children, ...props }: React.ComponentProps<"div">) => {
-  return (
-    <div className={cn("p-4 border-b border-gray-200", className)} {...props}>
-      {children}
-    </div>
-  );
-};
-
-export const SidebarFooter = ({ className, children, ...props }: React.ComponentProps<"div">) => {
-  return (
-    <div className={cn("p-4 border-t border-gray-200 mt-auto", className)} {...props}>
-      {children}
-    </div>
-  );
-};
-
-export const SidebarGroup = ({ className, children, ...props }: React.ComponentProps<"div">) => {
-  return (
-    <div className={cn("space-y-2", className)} {...props}>
-      {children}
-    </div>
-  );
-};
-
-export const SidebarGroupLabel = ({ className, children, ...props }: React.ComponentProps<"div">) => {
-  return (
-    <div className={cn("px-2 py-1 text-sm font-semibold text-gray-600", className)} {...props}>
-      {children}
-    </div>
-  );
-};
-
-export const SidebarGroupContent = ({ className, children, ...props }: React.ComponentProps<"div">) => {
-  return (
-    <div className={cn("space-y-1", className)} {...props}>
-      {children}
-    </div>
-  );
-};
-
-export const SidebarMenu = ({ className, children, ...props }: React.ComponentProps<"div">) => {
-  return (
-    <div className={cn("space-y-1", className)} {...props}>
-      {children}
-    </div>
-  );
-};
-
-export const SidebarMenuItem = ({ className, children, ...props }: React.ComponentProps<"div">) => {
-  return (
-    <div className={className} {...props}>
-      {children}
-    </div>
-  );
-};
-
-export const SidebarMenuButton = React.forwardRef<
-  HTMLButtonElement,
-  React.ComponentProps<"button"> & {
-    asChild?: boolean;
-  }
->(({ className, asChild, children, ...props }, ref) => {
-  const Component = asChild ? "div" : "button";
-  
-  return (
-    <Component
-      ref={asChild ? undefined : ref}
-      className={cn(
-        "flex items-center gap-2 w-full p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-torqx-primary-light text-left transition-colors",
-        className
-      )}
-      {...props}
-    >
-      {children}
-    </Component>
-  );
-});
-
-SidebarMenuButton.displayName = "SidebarMenuButton";
 
 export const SidebarLink = ({
   link,
