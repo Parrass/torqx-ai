@@ -2,6 +2,14 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+interface PurchaseItem {
+  description: string;
+  quantity: number;
+  unit_price: number;
+  category?: string;
+  notes?: string;
+}
+
 interface CreatePurchaseData {
   supplier_name: string;
   supplier_document?: string;
@@ -17,13 +25,7 @@ interface CreatePurchaseData {
   notes?: string;
   invoice_number?: string;
   invoice_date?: string;
-  items: Array<{
-    description: string;
-    quantity: number;
-    unit_price: number;
-    category?: string;
-    notes?: string;
-  }>;
+  items: PurchaseItem[];
 }
 
 interface UpdatePurchaseData extends CreatePurchaseData {

@@ -98,8 +98,8 @@ export const PurchaseForm = ({ isOpen, onClose, purchase }: PurchaseFormProps) =
         notes: purchase.notes || '',
         invoice_number: purchase.invoice_number || '',
         invoice_date: purchase.invoice_date || '',
-        discount_amount: parseFloat(String(purchase.discount_amount || 0)),
-        tax_amount: parseFloat(String(purchase.tax_amount || 0)),
+        discount_amount: Number(purchase.discount_amount) || 0,
+        tax_amount: Number(purchase.tax_amount) || 0,
         items: purchase.purchase_items || [{ description: '', quantity: 1, unit_price: 0, category: '', notes: '' }],
       });
     } else {
@@ -131,6 +131,23 @@ export const PurchaseForm = ({ isOpen, onClose, purchase }: PurchaseFormProps) =
 
   const onSubmit = async (data: PurchaseFormData) => {
     try {
+      // Validate that all items have required fields filled
+      const validItems = data.items.filter(item => 
+        item.description && 
+        item.description.trim() !== '' && 
+        item.quantity > 0 && 
+        item.unit_price >= 0
+      );
+
+      if (validItems.length === 0) {
+        toast({
+          title: 'Erro de validação',
+          description: 'Pelo menos um item válido é obrigatório.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       const purchaseData = {
         supplier_name: data.supplier_name,
         supplier_document: data.supplier_document,
@@ -146,7 +163,7 @@ export const PurchaseForm = ({ isOpen, onClose, purchase }: PurchaseFormProps) =
         tax_amount: data.tax_amount || 0,
         total_amount: subtotal,
         final_amount: finalAmount,
-        items: data.items,
+        items: validItems,
       };
 
       if (purchase) {
@@ -188,6 +205,7 @@ export const PurchaseForm = ({ isOpen, onClose, purchase }: PurchaseFormProps) =
                 <CardTitle className="text-lg">Informações do Fornecedor</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                
                 <div className="grid md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -270,6 +288,7 @@ export const PurchaseForm = ({ isOpen, onClose, purchase }: PurchaseFormProps) =
                 <CardTitle className="text-lg">Detalhes da Compra</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                
                 <div className="grid md:grid-cols-4 gap-4">
                   <FormField
                     control={form.control}
@@ -395,6 +414,7 @@ export const PurchaseForm = ({ isOpen, onClose, purchase }: PurchaseFormProps) =
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
+                
                 {fields.map((field, index) => (
                   <div key={field.id} className="p-4 border rounded-lg space-y-4">
                     <div className="flex items-center justify-between">
@@ -439,7 +459,7 @@ export const PurchaseForm = ({ isOpen, onClose, purchase }: PurchaseFormProps) =
                                 type="number"
                                 step="0.01"
                                 {...field}
-                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                onChange={(e) => field.onChange(Number(e.target.value) || 0)}
                               />
                             </FormControl>
                             <FormMessage />
@@ -458,7 +478,7 @@ export const PurchaseForm = ({ isOpen, onClose, purchase }: PurchaseFormProps) =
                                 type="number"
                                 step="0.01"
                                 {...field}
-                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                onChange={(e) => field.onChange(Number(e.target.value) || 0)}
                               />
                             </FormControl>
                             <FormMessage />
@@ -489,6 +509,7 @@ export const PurchaseForm = ({ isOpen, onClose, purchase }: PurchaseFormProps) =
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                
                 <div className="grid md:grid-cols-3 gap-4">
                   <div>
                     <Label>Subtotal</Label>
@@ -508,7 +529,7 @@ export const PurchaseForm = ({ isOpen, onClose, purchase }: PurchaseFormProps) =
                             type="number"
                             step="0.01"
                             {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            onChange={(e) => field.onChange(Number(e.target.value) || 0)}
                           />
                         </FormControl>
                         <FormMessage />
@@ -527,7 +548,7 @@ export const PurchaseForm = ({ isOpen, onClose, purchase }: PurchaseFormProps) =
                             type="number"
                             step="0.01"
                             {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            onChange={(e) => field.onChange(Number(e.target.value) || 0)}
                           />
                         </FormControl>
                         <FormMessage />
