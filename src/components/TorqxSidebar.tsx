@@ -10,7 +10,8 @@ import {
   MessageSquare,
   Settings,
   ShoppingCart,
-  Truck
+  Truck,
+  Building2
 } from 'lucide-react';
 import { SidebarBody, SidebarLink } from '@/components/ui/sidebar';
 
@@ -70,6 +71,11 @@ const TorqxSidebar = () => {
       label: 'Gestão de Equipe',
       href: '/team-management',
       icon: <Users className="text-torqx-primary dark:text-white w-4 h-4" />,
+    },
+    {
+      label: 'Config. da Oficina',
+      href: '/workshop-settings',
+      icon: <Building2 className="text-torqx-primary dark:text-white w-4 h-4" />,
     },
     {
       label: 'Configurações',
