@@ -110,7 +110,7 @@ export const useServiceOrders = () => {
                    typeof order.technician === 'object' && 
                    order.technician !== null && 
                    'full_name' in order.technician 
-          ? { full_name: (order.technician as any).full_name }
+          ? { full_name: order.technician.full_name }
           : null
       })) as ServiceOrder[];
 
@@ -185,14 +185,14 @@ export const useServiceOrders = () => {
 
       if (error) throw error;
 
-      // Transform the returned data
+      // Transform the returned data with proper null checking
       const transformedData = {
         ...data,
         technician: data.technician && 
                    typeof data.technician === 'object' && 
                    data.technician !== null && 
                    'full_name' in data.technician 
-          ? { full_name: (data.technician as any).full_name }
+          ? { full_name: data.technician.full_name }
           : null
       } as ServiceOrder;
 
