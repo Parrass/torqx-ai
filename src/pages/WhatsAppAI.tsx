@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   MessageCircle, Bot, Settings as SettingsIcon, BarChart3, 
   Users, Clock, CheckCircle, AlertCircle,
@@ -31,6 +32,7 @@ interface Conversation {
 }
 
 const WhatsAppAI = () => {
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isConnected, setIsConnected] = useState(true);
   const [botStatus, setBotStatus] = useState('active'); // active, paused, training
@@ -45,6 +47,8 @@ const WhatsAppAI = () => {
     active_conversations: 0
   });
   const [showTrainingModal, setShowTrainingModal] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home, current: false },
@@ -126,6 +130,21 @@ const WhatsAppAI = () => {
       case 'completed': return 'Finalizada';
       default: return 'Indefinido';
     }
+  };
+
+  const handleNavigationClick = (href: string) => {
+    navigate(href);
+    setSidebarOpen(false);
+  };
+
+  const handleNotificationClick = () => {
+    setShowNotifications(!showNotifications);
+    setShowUserMenu(false);
+  };
+
+  const handleUserMenuClick = () => {
+    setShowUserMenu(!showUserMenu);
+    setShowNotifications(false);
   };
 
   const OverviewTab = () => (
@@ -419,10 +438,10 @@ const WhatsAppAI = () => {
         <nav className="mt-6 px-3">
           <div className="space-y-1">
             {navigation.map((item) => (
-              <a
+              <button
                 key={item.name}
-                href={item.href}
-                className={`group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                onClick={() => handleNavigationClick(item.href)}
+                className={`group flex items-center w-full px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                   item.current
                     ? 'bg-torqx-secondary text-white'
                     : 'text-gray-700 hover:text-torqx-primary hover:bg-gray-50'
@@ -432,7 +451,7 @@ const WhatsAppAI = () => {
                   item.current ? 'text-white' : 'text-gray-400 group-hover:text-torqx-primary'
                 }`} />
                 {item.name}
-              </a>
+              </button>
             ))}
           </div>
         </nav>
@@ -458,6 +477,16 @@ const WhatsAppAI = () => {
               >
                 <Menu className="w-5 h-5" />
               </button>
+              
+              {/* Home Button */}
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="p-2 rounded-lg hover:bg-gray-100 mr-3 text-torqx-primary"
+                title="Ir para Dashboard"
+              >
+                <Home className="w-5 h-5" />
+              </button>
+
               <h1 className="text-xl font-semibold text-torqx-primary font-satoshi">
                 IA do WhatsApp
               </h1>
@@ -475,19 +504,107 @@ const WhatsAppAI = () => {
                 />
               </div>
 
-              <button className="p-2 rounded-lg hover:bg-gray-100 relative">
-                <Bell className="w-5 h-5 text-gray-600" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-              </button>
+              {/* Notifications */}
+              <div className="relative">
+                <button 
+                  onClick={handleNotificationClick}
+                  className="p-2 rounded-lg hover:bg-gray-100 relative"
+                >
+                  <Bell className="w-5 h-5 text-gray-600" />
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                </button>
 
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-torqx-secondary rounded-full flex items-center justify-center">
-                  <User className="w-5 h-5 text-white" />
-                </div>
-                <div className="hidden sm:block">
-                  <p className="text-sm font-medium text-gray-900">João Silva</p>
-                  <p className="text-xs text-gray-500">Auto Service Silva</p>
-                </div>
+                {/* Notifications Dropdown */}
+                {showNotifications && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 z-50">
+                    <div className="p-4 border-b border-gray-200">
+                      <h3 className="text-lg font-semibold text-torqx-primary">Notificações</h3>
+                    </div>
+                    <div className="max-h-64 overflow-y-auto">
+                      {[
+                        { id: 1, message: 'Nova conversa no WhatsApp', time: '5 min atrás', unread: true },
+                        { id: 2, message: 'IA resolveu 3 conversas automaticamente', time: '15 min atrás', unread: true },
+                        { id: 3, message: 'Agendamento confirmado via WhatsApp', time: '1h atrás', unread: false }
+                      ].map(notification => (
+                        <div key={notification.id} className={`p-4 hover:bg-gray-50 border-b border-gray-100 ${notification.unread ? 'bg-blue-50' : ''}`}>
+                          <p className="text-sm text-gray-900">{notification.message}</p>
+                          <p className="text-xs text-gray-500 mt-1">{notification.time}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="p-3 border-t border-gray-200">
+                      <button className="text-sm text-torqx-secondary hover:text-torqx-secondary/80 w-full text-center">
+                        Ver todas as notificações
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* User Menu */}
+              <div className="relative">
+                <button
+                  onClick={handleUserMenuClick}
+                  className="flex items-center space-x-3 p-1 rounded-lg hover:bg-gray-50"
+                >
+                  <div className="w-8 h-8 bg-torqx-secondary rounded-full flex items-center justify-center">
+                    <User className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="hidden sm:block text-left">
+                    <p className="text-sm font-medium text-gray-900">João Silva</p>
+                    <p className="text-xs text-gray-500">Auto Service Silva</p>
+                  </div>
+                </button>
+
+                {/* User Dropdown */}
+                {showUserMenu && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 z-50">
+                    <div className="p-4 border-b border-gray-200">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-torqx-secondary rounded-full flex items-center justify-center">
+                          <User className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">João Silva</p>
+                          <p className="text-sm text-gray-500">joao@autoservice.com</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="py-2">
+                      <button
+                        onClick={() => {
+                          navigate('/settings');
+                          setShowUserMenu(false);
+                        }}
+                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      >
+                        <SettingsIcon className="w-4 h-4 mr-3" />
+                        Configurações
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigate('/dashboard');
+                          setShowUserMenu(false);
+                        }}
+                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      >
+                        <Home className="w-4 h-4 mr-3" />
+                        Dashboard
+                      </button>
+                      <hr className="my-2" />
+                      <button
+                        onClick={() => {
+                          navigate('/login');
+                          setShowUserMenu(false);
+                        }}
+                        className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                      >
+                        <ExternalLink className="w-4 h-4 mr-3" />
+                        Sair
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
