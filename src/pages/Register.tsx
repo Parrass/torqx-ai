@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ArrowRight, ArrowLeft, Check, Building, User, Wrench } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -101,24 +100,9 @@ const Register = () => {
     setErrors({});
     
     try {
-      // Primeiro, criar o tenant (oficina) usando os nomes corretos das colunas
-      const { data: tenantData, error: tenantError } = await supabase
-        .from('tenants')
-        .insert({
-          name: formData.workshopName,
-          document_number: formData.documentNumber.replace(/\D/g, ''), // Usando document_number em vez de cnpj
-          phone: formData.phone.replace(/\D/g, ''),
-          email: formData.email,
-          business_name: formData.businessName || formData.workshopName // Usando business_name se disponível
-        })
-        .select()
-        .single();
-
-      if (tenantError) {
-        throw tenantError;
-      }
-
-      // Registrar o usuário com Supabase Auth
+      console.log('Iniciando processo de registro...');
+      
+      // Primeiro, criar a conta do usuário
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -126,26 +110,73 @@ const Register = () => {
           emailRedirectTo: `${window.location.origin}/dashboard`,
           data: {
             full_name: formData.fullName,
-            tenant_id: tenantData.id,
             role: 'owner'
           }
         }
       });
 
       if (authError) {
-        // Se houver erro no registro do usuário, deletar o tenant criado
-        await supabase.from('tenants').delete().eq('id', tenantData.id);
+        console.error('Erro ao criar usuário:', authError);
         throw authError;
       }
 
-      // Se chegou até aqui, o registro foi bem-sucedido
-      if (authData.user && !authData.session) {
-        // Usuário precisa confirmar email
-        alert('Cadastro realizado com sucesso! Por favor, verifique seu email para confirmar a conta.');
-        navigate('/login');
-      } else {
-        // Login automático
-        navigate('/dashboard');
+      console.log('Usuário criado com sucesso:', authData.user?.id);
+
+      // Se o usuário foi criado e está autenticado, criar a oficina
+      if (authData.user) {
+        console.log('Criando oficina para o usuário:', authData.user.id);
+        
+        const { data: tenantData, error: tenantError } = await supabase
+          .from('tenants')
+          .insert({
+            name: formData.workshopName,
+            document_number: formData.documentNumber.replace(/\D/g, ''),
+            phone: formData.phone.replace(/\D/g, ''),
+            email: formData.email,
+            business_name: formData.businessName || formData.workshopName
+          })
+          .select()
+          .single();
+
+        if (tenantError) {
+          console.error('Erro ao criar oficina:', tenantError);
+          // Se falhar ao criar a oficina, podemos tentar deletar o usuário
+          // Mas não é necessário pois o usuário pode tentar novamente
+          throw new Error('Erro ao criar oficina: ' + tenantError.message);
+        }
+
+        console.log('Oficina criada com sucesso:', tenantData.id);
+
+        // Agora criar o registro na tabela users
+        const { error: userError } = await supabase
+          .from('users')
+          .insert({
+            id: authData.user.id,
+            email: formData.email,
+            full_name: formData.fullName,
+            role: 'owner',
+            tenant_id: tenantData.id,
+            status: 'active'
+          });
+
+        if (userError) {
+          console.error('Erro ao criar registro de usuário:', userError);
+          // Se falhar, tentar deletar a oficina criada
+          await supabase.from('tenants').delete().eq('id', tenantData.id);
+          throw new Error('Erro ao finalizar cadastro: ' + userError.message);
+        }
+
+        console.log('Registro de usuário criado com sucesso');
+
+        // Se chegou até aqui, o registro foi bem-sucedido
+        if (!authData.session) {
+          // Usuário precisa confirmar email
+          alert('Cadastro realizado com sucesso! Por favor, verifique seu email para confirmar a conta.');
+          navigate('/login');
+        } else {
+          // Login automático
+          navigate('/dashboard');
+        }
       }
 
     } catch (error: any) {
