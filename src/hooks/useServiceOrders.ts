@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -85,7 +86,7 @@ export const useServiceOrders = () => {
       // Transform the data to match our interface
       const transformedData = (data || []).map(order => ({
         ...order,
-        technician: order.technician && typeof order.technician === 'object' && 'full_name' in order.technician 
+        technician: order.technician && typeof order.technician === 'object' && order.technician !== null && 'full_name' in order.technician 
           ? order.technician 
           : null
       })) as ServiceOrder[];
@@ -152,7 +153,7 @@ export const useServiceOrders = () => {
       // Transform the returned data
       const transformedData = {
         ...data,
-        technician: data.technician && typeof data.technician === 'object' && 'full_name' in data.technician 
+        technician: data.technician && typeof data.technician === 'object' && data.technician !== null && 'full_name' in data.technician 
           ? data.technician 
           : null
       } as ServiceOrder;
