@@ -17,9 +17,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         <TorqxSidebar />
         
         {/* Main content with padding to account for navbar and sidebar */}
-        <div className="md:pl-16 pt-16 flex-1">
-          {children}
-          <TorqxFooter />
+        <div className="md:pl-[60px] pt-16 flex-1 transition-all duration-300">
+          <div className="md:group-hover:pl-[190px]">
+            {children}
+            <TorqxFooter />
+          </div>
         </div>
       </div>
     </SidebarProvider>

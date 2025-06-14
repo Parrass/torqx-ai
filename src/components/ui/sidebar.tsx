@@ -93,16 +93,19 @@ export const DesktopSidebar = ({
   return (
     <motion.div
       className={cn(
-        "h-screen px-4 py-4 hidden md:flex md:flex-col bg-white dark:bg-torqx-primary w-[250px] flex-shrink-0 fixed left-0 top-0 z-40 shadow-lg border-r border-gray-200 dark:border-torqx-primary-light",
+        "h-[calc(100vh-4rem)] px-4 py-4 hidden md:flex md:flex-col bg-white dark:bg-torqx-primary flex-shrink-0 fixed left-0 top-16 z-40 shadow-lg border-r border-gray-200 dark:border-torqx-primary-light",
         className
       )}
       animate={{
         width: animate ? (open ? "250px" : "60px") : "250px",
       }}
+      style={{
+        width: animate ? (open ? "250px" : "60px") : "250px",
+      }}
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
     >
-      <div {...restProps}>
+      <div {...restProps} className="flex flex-col h-full">
         {children}
       </div>
     </motion.div>
@@ -128,7 +131,7 @@ export const MobileSidebar = ({
               ease: "easeInOut",
             }}
             className={cn(
-              "fixed h-screen w-80 top-0 left-0 bg-white dark:bg-torqx-primary p-6 z-50 flex flex-col shadow-xl border-r border-gray-200 dark:border-torqx-primary-light md:hidden",
+              "fixed h-[calc(100vh-4rem)] w-80 top-16 left-0 bg-white dark:bg-torqx-primary p-6 z-50 flex flex-col shadow-xl border-r border-gray-200 dark:border-torqx-primary-light md:hidden",
               className
             )}
           >
@@ -170,18 +173,23 @@ export const SidebarLink = ({
     <a
       href={link.href}
       className={cn(
-        "flex items-center justify-start gap-2 group/sidebar py-2 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-torqx-primary-light transition-colors",
+        "flex items-center gap-2 group/sidebar py-2 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-torqx-primary-light transition-colors min-h-[40px]",
         className
       )}
       {...props}
     >
-      {link.icon}
+      <div className="flex-shrink-0 w-4 h-4 flex items-center justify-center">
+        {link.icon}
+      </div>
       <motion.span
         animate={{
-          display: animate ? (open ? "inline-block" : "none") : "inline-block",
           opacity: animate ? (open ? 1 : 0) : 1,
+          width: animate ? (open ? "auto" : 0) : "auto",
         }}
-        className="text-torqx-primary dark:text-white text-sm group-hover/sidebar:translate-x-1 transition duration-150 whitespace-pre inline-block !p-0 !m-0"
+        className="text-torqx-primary dark:text-white text-sm group-hover/sidebar:translate-x-1 transition duration-150 whitespace-nowrap overflow-hidden"
+        style={{
+          display: animate ? (open ? "block" : "none") : "block",
+        }}
       >
         {link.label}
       </motion.span>
