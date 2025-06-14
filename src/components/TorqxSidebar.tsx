@@ -11,9 +11,7 @@ import {
   Settings,
   Home,
   LogOut,
-  Menu,
-  Bell,
-  Search
+  Palette
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -75,6 +73,11 @@ const TorqxSidebar = () => {
       label: 'Relatórios',
       href: '/reports',
       icon: <BarChart3 className="text-torqx-primary dark:text-white h-4 w-4 flex-shrink-0" />
+    },
+    {
+      label: 'Assets',
+      href: '/assets',
+      icon: <Palette className="text-torqx-primary dark:text-white h-4 w-4 flex-shrink-0" />
     },
     {
       label: 'Config',
