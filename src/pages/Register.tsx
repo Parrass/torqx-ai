@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ArrowRight, ArrowLeft, Check, Building, User, Wrench } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -100,15 +101,15 @@ const Register = () => {
     setErrors({});
     
     try {
-      // Primeiro, criar o tenant (oficina)
+      // Primeiro, criar o tenant (oficina) usando os nomes corretos das colunas
       const { data: tenantData, error: tenantError } = await supabase
         .from('tenants')
         .insert({
           name: formData.workshopName,
-          cnpj: formData.documentNumber.replace(/\D/g, ''),
+          document_number: formData.documentNumber.replace(/\D/g, ''), // Usando document_number em vez de cnpj
           phone: formData.phone.replace(/\D/g, ''),
           email: formData.email,
-          subdomain: formData.workshopName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+          business_name: formData.businessName || formData.workshopName // Usando business_name se disponível
         })
         .select()
         .single();

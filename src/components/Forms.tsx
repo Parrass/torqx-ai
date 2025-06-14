@@ -11,7 +11,8 @@ const Forms = () => {
     especialidade: '',
     termos: false,
     newsletter: true,
-    tipo: 'independente'
+    tipo: 'independente',
+    cpf: '' // Adicionando a propriedade cpf que estava faltando
   });
 
   // Função para aplicar máscara de CNPJ
