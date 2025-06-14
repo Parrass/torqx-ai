@@ -7,17 +7,61 @@ import {
   AlertTriangle, Menu, X, Home
 } from 'lucide-react';
 
+interface DashboardMetrics {
+  revenue: {
+    current: number;
+    previous: number;
+    growth_percentage: number;
+    trend: 'up' | 'down';
+  };
+  service_orders: {
+    total: number;
+    completed: number;
+    in_progress: number;
+    pending: number;
+    completion_rate: number;
+  };
+  customers: {
+    total: number;
+    new: number;
+    returning: number;
+    retention_rate: number;
+  };
+  avg_order_value: number;
+}
+
+interface RecentOrder {
+  id: string;
+  customer: string;
+  vehicle: string;
+  status: 'in_progress' | 'completed';
+  value: number;
+  created_at: string;
+}
+
+interface InventoryAlert {
+  item: string;
+  current_stock: number;
+  minimum_stock: number;
+  alert_level: 'critical' | 'warning';
+}
+
+interface DashboardData {
+  metrics: DashboardMetrics;
+  recent_orders: RecentOrder[];
+  inventory_alerts: InventoryAlert[];
+}
+
 const Dashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Simulação de dados (substituir por API real)
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         // Dados simulados para demonstração
-        const mockData = {
+        const mockData: DashboardData = {
           metrics: {
             revenue: {
               current: 45250.00,
@@ -56,6 +100,14 @@ const Dashboard = () => {
               status: 'completed',
               value: 280.00,
               created_at: '2025-01-15T08:15:00Z'
+            },
+            {
+              id: '1003',
+              customer: 'Ana Costa',
+              vehicle: 'Ford Ka 2018',
+              status: 'in_progress',
+              value: 320.00,
+              created_at: '2025-01-14T16:20:00Z'
             }
           ],
           inventory_alerts: [
@@ -97,7 +149,16 @@ const Dashboard = () => {
     { name: 'Configurações', href: '/settings', icon: Settings, current: false },
   ];
 
-  const MetricCard = ({ title, value, change, trend, icon: Icon, format = 'number' }: any) => {
+  interface MetricCardProps {
+    title: string;
+    value: number;
+    change?: number;
+    trend?: 'up' | 'down';
+    icon: React.ComponentType<{ className?: string }>;
+    format?: 'number' | 'currency' | 'percentage';
+  }
+
+  const MetricCard: React.FC<MetricCardProps> = ({ title, value, change, trend, icon: Icon, format = 'number' }) => {
     const formatValue = (val: number) => {
       if (format === 'currency') return `R$ ${val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
       if (format === 'percentage') return `${val}%`;
@@ -105,7 +166,7 @@ const Dashboard = () => {
     };
 
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-gray-600">{title}</p>
@@ -144,6 +205,16 @@ const Dashboard = () => {
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-torqx-secondary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600">Carregando dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!dashboardData) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600">Erro ao carregar dados do dashboard</p>
         </div>
       </div>
     );
@@ -283,7 +354,7 @@ const Dashboard = () => {
           {/* Charts and Tables */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             {/* Revenue Chart */}
-            <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
               <h3 className="text-lg font-semibold text-torqx-primary mb-4 font-satoshi">
                 Receita dos Últimos 30 Dias
               </h3>
@@ -293,7 +364,7 @@ const Dashboard = () => {
             </div>
 
             {/* Quick Stats */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
               <h3 className="text-lg font-semibold text-torqx-primary mb-4 font-satoshi">
                 Estatísticas Rápidas
               </h3>
@@ -330,7 +401,7 @@ const Dashboard = () => {
           {/* Recent Orders and Alerts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Recent Orders */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-torqx-primary font-satoshi">
                   Ordens Recentes
@@ -340,7 +411,7 @@ const Dashboard = () => {
                 </a>
               </div>
               <div className="space-y-4">
-                {dashboardData.recent_orders.map((order: any) => (
+                {dashboardData.recent_orders.map((order) => (
                   <div key={order.id} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg">
                     <div>
                       <p className="font-medium text-gray-900">{order.customer}</p>
@@ -364,7 +435,7 @@ const Dashboard = () => {
             </div>
 
             {/* Inventory Alerts */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-torqx-primary font-satoshi">
                   Alertas de Estoque
@@ -374,7 +445,7 @@ const Dashboard = () => {
                 </a>
               </div>
               <div className="space-y-4">
-                {dashboardData.inventory_alerts.map((alert: any, index: number) => (
+                {dashboardData.inventory_alerts.map((alert, index) => (
                   <div key={index} className="flex items-center space-x-3 p-3 bg-red-50 rounded-lg">
                     <AlertTriangle className="w-5 h-5 text-red-600" />
                     <div className="flex-1">
