@@ -1,24 +1,18 @@
 
 import React from 'react';
-import { Menu, Bell, Search, Wrench, User } from 'lucide-react';
-import { useSidebar } from '@/components/ui/sidebar';
+import { Bell, Search, Wrench, User } from 'lucide-react';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useAuth } from '@/contexts/AuthContext';
 
 const TorqxNavbar = () => {
-  const { setOpen } = useSidebar();
   const { user } = useAuth();
 
   return (
     <header className="bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-100 fixed top-0 left-0 right-0 z-50">
       <div className="flex items-center justify-between h-16 px-4 sm:px-6">
         <div className="flex items-center space-x-4">
-          {/* Mobile menu button */}
-          <button 
-            className="md:hidden p-2 rounded-lg hover:bg-gray-100"
-            onClick={() => setOpen(true)}
-          >
-            <Menu className="w-5 h-5 text-torqx-primary" />
-          </button>
+          {/* Sidebar trigger */}
+          <SidebarTrigger className="p-2 rounded-lg hover:bg-gray-100" />
           
           {/* Company Logo and Name */}
           <div className="flex items-center space-x-3">
