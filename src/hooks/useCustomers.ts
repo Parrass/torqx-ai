@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -81,9 +80,12 @@ export const useCustomers = (filters: CustomerFilters = {}) => {
         throw error;
       }
 
-      // Transform data to match our interface
+      // Transform data to match our interface with proper type conversion
       return data?.map(customer => ({
         ...customer,
+        customer_type: (customer.customer_type as 'individual' | 'business') || 'individual',
+        status: (customer.status as 'active' | 'inactive') || 'active',
+        preferred_contact: (customer.preferred_contact as 'phone' | 'email' | 'whatsapp') || 'phone',
         vehicles_count: customer.vehicles?.[0]?.count || 0
       })) || [];
     },
