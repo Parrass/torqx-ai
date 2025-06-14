@@ -234,6 +234,18 @@ const CustomerImport = () => {
 
     for (const customer of parsedData) {
       try {
+        // Determinar document_type baseado no document_number
+        let document_type = null;
+        if (customer.document_number) {
+          // Remove formatação para verificar o tamanho
+          const cleanDoc = customer.document_number.replace(/\D/g, '');
+          if (cleanDoc.length === 11) {
+            document_type = 'cpf';
+          } else if (cleanDoc.length === 14) {
+            document_type = 'cnpj';
+          }
+        }
+
         await createCustomer.mutateAsync({
           ...customer,
           status: 'active' as const,
@@ -242,7 +254,9 @@ const CustomerImport = () => {
           total_spent: 0,
           total_orders: 0,
           last_service_date: null,
-          preferred_technician_id: null
+          preferred_technician_id: null,
+          document_type,
+          tags: [] // Inicializar com array vazio
         });
         successCount++;
       } catch (error) {
