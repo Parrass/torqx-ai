@@ -19,7 +19,8 @@ const Header = () => {
     { id: 'cards', label: 'Cards' },
     { id: 'forms', label: 'Formulários' },
     { id: 'tables', label: 'Tabelas' },
-    { id: 'navigation', label: 'Navegação' }
+    { id: 'navigation', label: 'Navegação' },
+    { id: 'modals', label: 'Modais' }
   ];
 
   return (

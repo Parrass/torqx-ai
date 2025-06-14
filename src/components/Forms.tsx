@@ -169,6 +169,69 @@ const Forms = () => {
           </div>
         </div>
       </div>
+
+      {/* Formulário Completo */}
+      <div className="mt-8">
+        <h3 className="text-xl font-semibold mb-4 text-torqx-primary">Formulário Completo</h3>
+        <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+          <h4 className="text-lg font-semibold text-torqx-primary mb-6">Cadastrar Oficina</h4>
+          <form className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Nome da Oficina *</label>
+                <input 
+                  type="text" 
+                  required 
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-torqx-secondary focus:border-transparent transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">CNPJ *</label>
+                <input 
+                  type="text" 
+                  required 
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-torqx-secondary focus:border-transparent transition-all"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+              <input 
+                type="email" 
+                required 
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-torqx-secondary focus:border-transparent transition-all"
+              />
+            </div>
+
+            <div className="flex items-center gap-3">
+              <input 
+                type="checkbox" 
+                required 
+                className="w-5 h-5 text-torqx-secondary border-gray-300 rounded focus:ring-torqx-secondary"
+              />
+              <span className="text-gray-700">
+                Aceito os <a href="#" className="text-torqx-secondary hover:underline">termos de uso</a> e <a href="#" className="text-torqx-secondary hover:underline">política de privacidade</a>
+              </span>
+            </div>
+
+            <div className="flex gap-4">
+              <button 
+                type="submit" 
+                className="bg-gradient-to-r from-torqx-secondary to-torqx-secondary-dark text-white px-8 py-3 rounded-xl font-semibold hover:shadow-lg transition-all"
+              >
+                Cadastrar Oficina
+              </button>
+              <button 
+                type="button" 
+                className="bg-white text-torqx-primary px-8 py-3 rounded-xl font-semibold border-2 border-gray-200 hover:border-torqx-secondary transition-all"
+              >
+                Cancelar
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     </section>
   );
 };

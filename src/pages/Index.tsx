@@ -8,6 +8,7 @@ import Cards from '../components/Cards';
 import Forms from '../components/Forms';
 import Tables from '../components/Tables';
 import Navigation from '../components/Navigation';
+import Modals from '../components/Modals';
 
 const Index = () => {
   return (
@@ -36,6 +37,27 @@ const Index = () => {
         <Forms />
         <Tables />
         <Navigation />
+        <Modals />
+        
+        {/* Código de Exemplo */}
+        <section className="component-section mb-16">
+          <h2 className="text-3xl font-bold text-torqx-primary mb-8">💻 Como Usar</h2>
+          
+          <div className="bg-torqx-primary text-white p-8 rounded-2xl">
+            <h3 className="text-xl font-semibold mb-4">Instruções para IAs</h3>
+            <div className="space-y-4 text-torqx-secondary-light">
+              <p>Esta página contém todos os componentes do Design System Torqx. Use como referência para:</p>
+              <ul className="list-disc list-inside space-y-2 ml-4">
+                <li>Manter consistência visual em todas as páginas</li>
+                <li>Reutilizar componentes já testados e aprovados</li>
+                <li>Seguir as cores e tipografia definidas</li>
+                <li>Implementar estados de loading, erro e sucesso</li>
+                <li>Criar formulários e tabelas padronizadas</li>
+              </ul>
+              <p className="mt-4 font-semibold">Sempre consulte esta página antes de criar novos componentes!</p>
+            </div>
+          </div>
+        </section>
       </div>
 
       {/* Footer */}
