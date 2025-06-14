@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Package, Plus, Search, Filter, MoreVertical, 
@@ -10,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import TorqxSidebar from '@/components/TorqxSidebar';
 
 interface InventoryItem {
   id: string;
@@ -137,7 +137,7 @@ const Inventory = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'in_stock': return 'text-emerald-600 bg-emerald-100';
+      case 'in_stock': return 'text-torqx-accent bg-torqx-accent/10';
       case 'low_stock': return 'text-yellow-600 bg-yellow-100';
       case 'out_of_stock': return 'text-red-600 bg-red-100';
       default: return 'text-gray-600 bg-gray-100';
@@ -158,14 +158,14 @@ const Inventory = () => {
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full flex items-center justify-center">
+            <div className="w-12 h-12 bg-gradient-to-r from-torqx-secondary to-torqx-accent rounded-full flex items-center justify-center">
               <Package className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-slate-900">
+              <h3 className="text-lg font-semibold text-torqx-primary">
                 {item.name}
               </h3>
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-gray-600">
                 {item.brand} • SKU: {item.sku}
               </p>
             </div>
@@ -177,29 +177,29 @@ const Inventory = () => {
 
         <div className="space-y-2 mb-4">
           <div className="flex justify-between text-sm">
-            <span className="text-slate-600">Categoria:</span>
-            <span className="font-medium text-slate-900">{item.category}</span>
+            <span className="text-gray-600">Categoria:</span>
+            <span className="font-medium text-torqx-primary">{item.category}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-slate-600">Localização:</span>
-            <span className="text-slate-900">{item.location}</span>
+            <span className="text-gray-600">Localização:</span>
+            <span className="text-torqx-primary">{item.location}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-slate-600">Fornecedor:</span>
-            <span className="text-slate-900">{item.supplier}</span>
+            <span className="text-gray-600">Fornecedor:</span>
+            <span className="text-torqx-primary">{item.supplier}</span>
           </div>
         </div>
 
         <div className="bg-gray-50 rounded-lg p-3 mb-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-slate-700">Estoque Atual</span>
+            <span className="text-sm font-medium text-gray-700">Estoque Atual</span>
             <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(item.status)}`}>
               {getStatusText(item.status)}
             </span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-2xl font-bold text-slate-900">{item.current_stock}</span>
-            <div className="text-right text-xs text-slate-500">
+            <span className="text-2xl font-bold text-torqx-primary">{item.current_stock}</span>
+            <div className="text-right text-xs text-gray-500">
               <div>Mín: {item.min_stock}</div>
               <div>Máx: {item.max_stock}</div>
             </div>
@@ -208,7 +208,7 @@ const Inventory = () => {
             <div 
               className={`h-2 rounded-full ${
                 item.current_stock <= item.min_stock ? 'bg-red-500' : 
-                item.current_stock <= item.min_stock * 1.5 ? 'bg-yellow-500' : 'bg-emerald-500'
+                item.current_stock <= item.min_stock * 1.5 ? 'bg-yellow-500' : 'bg-torqx-accent'
               }`}
               style={{ width: `${Math.min((item.current_stock / item.max_stock) * 100, 100)}%` }}
             ></div>
@@ -217,16 +217,16 @@ const Inventory = () => {
 
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div className="text-center">
-            <p className="text-lg font-bold text-slate-900">
+            <p className="text-lg font-bold text-torqx-primary">
               R$ {item.unit_cost.toFixed(2)}
             </p>
-            <p className="text-xs text-slate-500">Custo</p>
+            <p className="text-xs text-gray-500">Custo</p>
           </div>
           <div className="text-center">
-            <p className="text-lg font-bold text-emerald-600">
+            <p className="text-lg font-bold text-torqx-accent">
               R$ {item.selling_price.toFixed(2)}
             </p>
-            <p className="text-xs text-slate-500">Venda</p>
+            <p className="text-xs text-gray-500">Venda</p>
           </div>
         </div>
 
@@ -317,13 +317,16 @@ const Inventory = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="p-6">
-          <div className="animate-pulse space-y-4">
-            <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3, 4, 5, 6].map(i => (
-                <div key={i} className="h-96 bg-gray-200 rounded-xl"></div>
-              ))}
+        <TorqxSidebar />
+        <div className="md:pl-16">
+          <div className="p-6 pt-20 md:pt-6">
+            <div className="animate-pulse space-y-4">
+              <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[1, 2, 3, 4, 5, 6].map(i => (
+                  <div key={i} className="h-96 bg-gray-200 rounded-xl"></div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -333,70 +336,16 @@ const Inventory = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Floating Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out rounded-r-2xl ${
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
-        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-lg flex items-center justify-center">
-              <Wrench className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold text-slate-900">Torqx</span>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <X className="w-5 h-5" />
-          </Button>
-        </div>
-        
-        <nav className="mt-5 px-2 space-y-1">
-          {navigation.map((item) => (
-            <a
-              key={item.name}
-              href={item.href}
-              className={`group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                item.current
-                  ? 'bg-blue-500 text-white'
-                  : 'text-gray-700 hover:text-slate-900 hover:bg-gray-50'
-              }`}
-            >
-              <item.icon className={`mr-3 h-5 w-5 ${
-                item.current ? 'text-white' : 'text-gray-400 group-hover:text-slate-900'
-              }`} />
-              {item.name}
-            </a>
-          ))}
-        </nav>
-      </div>
-
-      {/* Overlay para sidebar mobile */}
-      {sidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40"
-          onClick={() => setSidebarOpen(false)}
-        ></div>
-      )}
-
-      {/* Main Content - Full Width */}
-      <div className="w-full">
-        {/* Floating Header */}
+      <TorqxSidebar />
+      
+      {/* Main content with padding to account for sidebar */}
+      <div className="md:pl-16">
+        {/* Header */}
         <header className="bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-100 sticky top-0 z-30">
           <div className="flex items-center justify-between h-16 px-4 sm:px-6">
-            <div className="flex items-center">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setSidebarOpen(true)}
-                className="mr-2"
-              >
-                <Menu className="w-5 h-5" />
-              </Button>
-              <h1 className="text-xl font-bold text-slate-900">Estoque</h1>
-            </div>
+            <h1 className="text-xl font-semibold text-torqx-primary font-satoshi">
+              Estoque
+            </h1>
             
             <div className="flex items-center space-x-4">
               <Button variant="outline" size="sm">
@@ -416,17 +365,17 @@ const Inventory = () => {
           </div>
         </header>
 
-        <div className="p-6">
+        <div className="p-6 pt-20 md:pt-6">
           {/* Stats */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-600">Total de Itens</p>
-                    <p className="text-2xl font-bold text-slate-900">{inventory.length}</p>
+                    <p className="text-sm font-medium text-gray-600">Total de Itens</p>
+                    <p className="text-2xl font-bold text-torqx-primary">{inventory.length}</p>
                   </div>
-                  <Package2 className="w-8 h-8 text-blue-500" />
+                  <Package2 className="w-8 h-8 text-torqx-secondary" />
                 </div>
               </CardContent>
             </Card>
@@ -434,12 +383,12 @@ const Inventory = () => {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-600">Em Estoque</p>
-                    <p className="text-2xl font-bold text-emerald-500">
+                    <p className="text-sm font-medium text-gray-600">Em Estoque</p>
+                    <p className="text-2xl font-bold text-torqx-accent">
                       {inventory.filter(item => item.status === 'in_stock').length}
                     </p>
                   </div>
-                  <Package className="w-8 h-8 text-emerald-500" />
+                  <Package className="w-8 h-8 text-torqx-accent" />
                 </div>
               </CardContent>
             </Card>
@@ -447,7 +396,7 @@ const Inventory = () => {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-600">Estoque Baixo</p>
+                    <p className="text-sm font-medium text-gray-600">Estoque Baixo</p>
                     <p className="text-2xl font-bold text-yellow-600">
                       {inventory.filter(item => item.status === 'low_stock').length}
                     </p>
@@ -460,7 +409,7 @@ const Inventory = () => {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-600">Sem Estoque</p>
+                    <p className="text-sm font-medium text-gray-600">Sem Estoque</p>
                     <p className="text-2xl font-bold text-red-600">
                       {inventory.filter(item => item.status === 'out_of_stock').length}
                     </p>

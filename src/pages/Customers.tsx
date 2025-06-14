@@ -1,14 +1,14 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Users, Plus, Search, Filter, MoreVertical, 
   Phone, Mail, MapPin, Car, Edit, Trash2,
-  Eye, UserPlus, Download, Upload, Menu, X, Wrench, Package
+  Eye, UserPlus, Download, Upload
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import TorqxSidebar from '@/components/TorqxSidebar';
 
 interface Customer {
   id: string;
@@ -31,18 +31,6 @@ const Customers = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  // Navigation items
-  const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: Users, current: false },
-    { name: 'Clientes', href: '/customers', icon: Users, current: true },
-    { name: 'Veículos', href: '/vehicles', icon: Car, current: false },
-    { name: 'Ordens de Serviço', href: '/service-orders', icon: Wrench, current: false },
-    { name: 'Estoque', href: '/inventory', icon: Package, current: false },
-    { name: 'Agendamentos', href: '/appointments', icon: Users, current: false },
-    { name: 'Relatórios', href: '/reports', icon: Users, current: false },
-  ];
 
   // Mock data para demonstração
   useEffect(() => {
@@ -110,14 +98,14 @@ const Customers = () => {
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full flex items-center justify-center">
+            <div className="w-12 h-12 bg-gradient-to-r from-torqx-secondary to-torqx-accent rounded-full flex items-center justify-center">
               <Users className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-slate-900">
+              <h3 className="text-lg font-semibold text-torqx-primary">
                 {customer.name}
               </h3>
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-gray-600">
                 {customer.customer_type === 'business' ? 'Pessoa Jurídica' : 'Pessoa Física'}
               </p>
             </div>
@@ -128,15 +116,15 @@ const Customers = () => {
         </div>
 
         <div className="space-y-2 mb-4">
-          <div className="flex items-center text-sm text-slate-600">
+          <div className="flex items-center text-sm text-gray-600">
             <Mail className="w-4 h-4 mr-2" />
             {customer.email}
           </div>
-          <div className="flex items-center text-sm text-slate-600">
+          <div className="flex items-center text-sm text-gray-600">
             <Phone className="w-4 h-4 mr-2" />
             {customer.phone}
           </div>
-          <div className="flex items-center text-sm text-slate-600">
+          <div className="flex items-center text-sm text-gray-600">
             <Car className="w-4 h-4 mr-2" />
             {customer.vehicles_count} veículo{customer.vehicles_count !== 1 ? 's' : ''}
           </div>
@@ -144,20 +132,20 @@ const Customers = () => {
 
         <div className="grid grid-cols-3 gap-4 mb-4">
           <div className="text-center">
-            <p className="text-lg font-bold text-slate-900">
+            <p className="text-lg font-bold text-torqx-primary">
               R$ {customer.total_spent.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </p>
-            <p className="text-xs text-slate-500">Total Gasto</p>
+            <p className="text-xs text-gray-500">Total Gasto</p>
           </div>
           <div className="text-center">
-            <p className="text-lg font-bold text-slate-900">{customer.total_orders}</p>
-            <p className="text-xs text-slate-500">Serviços</p>
+            <p className="text-lg font-bold text-torqx-primary">{customer.total_orders}</p>
+            <p className="text-xs text-gray-500">Serviços</p>
           </div>
           <div className="text-center">
-            <p className="text-lg font-bold text-slate-900">
+            <p className="text-lg font-bold text-torqx-primary">
               {new Date(customer.last_service).toLocaleDateString('pt-BR')}
             </p>
-            <p className="text-xs text-slate-500">Último Serviço</p>
+            <p className="text-xs text-gray-500">Último Serviço</p>
           </div>
         </div>
 
@@ -216,13 +204,16 @@ const Customers = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="p-6">
-          <div className="animate-pulse space-y-4">
-            <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3, 4, 5, 6].map(i => (
-                <div key={i} className="h-64 bg-gray-200 rounded-xl"></div>
-              ))}
+        <TorqxSidebar />
+        <div className="md:pl-16">
+          <div className="p-6 pt-20 md:pt-6">
+            <div className="animate-pulse space-y-4">
+              <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[1, 2, 3, 4, 5, 6].map(i => (
+                  <div key={i} className="h-64 bg-gray-200 rounded-xl"></div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -232,70 +223,16 @@ const Customers = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Floating Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out rounded-r-2xl ${
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
-        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-lg flex items-center justify-center">
-              <Wrench className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold text-slate-900">Torqx</span>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <X className="w-5 h-5" />
-          </Button>
-        </div>
-        
-        <nav className="mt-5 px-2 space-y-1">
-          {navigation.map((item) => (
-            <a
-              key={item.name}
-              href={item.href}
-              className={`group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                item.current
-                  ? 'bg-blue-500 text-white'
-                  : 'text-gray-700 hover:text-slate-900 hover:bg-gray-50'
-              }`}
-            >
-              <item.icon className={`mr-3 h-5 w-5 ${
-                item.current ? 'text-white' : 'text-gray-400 group-hover:text-slate-900'
-              }`} />
-              {item.name}
-            </a>
-          ))}
-        </nav>
-      </div>
-
-      {/* Overlay para sidebar mobile */}
-      {sidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40"
-          onClick={() => setSidebarOpen(false)}
-        ></div>
-      )}
-
-      {/* Main Content - Full Width */}
-      <div className="w-full">
-        {/* Floating Header */}
+      <TorqxSidebar />
+      
+      {/* Main content with padding to account for sidebar */}
+      <div className="md:pl-16">
+        {/* Header */}
         <header className="bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-100 sticky top-0 z-30">
           <div className="flex items-center justify-between h-16 px-4 sm:px-6">
-            <div className="flex items-center">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setSidebarOpen(true)}
-                className="mr-2"
-              >
-                <Menu className="w-5 h-5" />
-              </Button>
-              <h1 className="text-xl font-bold text-slate-900">Clientes</h1>
-            </div>
+            <h1 className="text-xl font-semibold text-torqx-primary font-satoshi">
+              Clientes
+            </h1>
             
             <div className="flex items-center space-x-4">
               <Button variant="outline" size="sm">
@@ -315,17 +252,17 @@ const Customers = () => {
           </div>
         </header>
 
-        <div className="p-6">
+        <div className="p-6 pt-20 md:pt-6">
           {/* Stats */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-600">Total de Clientes</p>
-                    <p className="text-2xl font-bold text-slate-900">{customers.length}</p>
+                    <p className="text-sm font-medium text-gray-600">Total de Clientes</p>
+                    <p className="text-2xl font-bold text-torqx-primary">{customers.length}</p>
                   </div>
-                  <Users className="w-8 h-8 text-blue-500" />
+                  <Users className="w-8 h-8 text-torqx-secondary" />
                 </div>
               </CardContent>
             </Card>
@@ -333,10 +270,10 @@ const Customers = () => {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-600">Novos este Mês</p>
-                    <p className="text-2xl font-bold text-slate-900">12</p>
+                    <p className="text-sm font-medium text-gray-600">Novos este Mês</p>
+                    <p className="text-2xl font-bold text-torqx-primary">12</p>
                   </div>
-                  <UserPlus className="w-8 h-8 text-emerald-500" />
+                  <UserPlus className="w-8 h-8 text-torqx-accent" />
                 </div>
               </CardContent>
             </Card>
@@ -344,11 +281,11 @@ const Customers = () => {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-600">Receita Total</p>
-                    <p className="text-2xl font-bold text-slate-900">R$ 8.550</p>
+                    <p className="text-sm font-medium text-gray-600">Receita Total</p>
+                    <p className="text-2xl font-bold text-torqx-primary">R$ 8.550</p>
                   </div>
-                  <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
-                    <span className="text-emerald-600 font-bold">R$</span>
+                  <div className="w-8 h-8 bg-torqx-accent/10 rounded-lg flex items-center justify-center">
+                    <span className="text-torqx-accent font-bold">R$</span>
                   </div>
                 </div>
               </CardContent>
@@ -357,11 +294,11 @@ const Customers = () => {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-600">Ticket Médio</p>
-                    <p className="text-2xl font-bold text-slate-900">R$ 356</p>
+                    <p className="text-sm font-medium text-gray-600">Ticket Médio</p>
+                    <p className="text-2xl font-bold text-torqx-primary">R$ 356</p>
                   </div>
-                  <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <span className="text-blue-600 font-bold">₢</span>
+                  <div className="w-8 h-8 bg-torqx-secondary/10 rounded-lg flex items-center justify-center">
+                    <span className="text-torqx-secondary font-bold">₢</span>
                   </div>
                 </div>
               </CardContent>
