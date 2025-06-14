@@ -1,13 +1,15 @@
+
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import DashboardLayout from '@/components/DashboardLayout';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { 
   MessageCircle, Bot, Settings as SettingsIcon, BarChart3, 
   Users, Clock, CheckCircle, AlertCircle,
   Play, Pause, RefreshCw, Download,
   Phone, Calendar, Zap, Brain,
   Send, Mic, MicOff, Plus, Edit,
-  Trash2, Eye, Copy, ExternalLink,
-  Menu, X, Home, Car, Wrench, Package, Bell, Search, User
+  Trash2, Eye, Copy, ExternalLink
 } from 'lucide-react';
 
 interface Metrics {
@@ -32,8 +34,6 @@ interface Conversation {
 }
 
 const WhatsAppAI = () => {
-  const navigate = useNavigate();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isConnected, setIsConnected] = useState(true);
   const [botStatus, setBotStatus] = useState('active'); // active, paused, training
   const [activeTab, setActiveTab] = useState('overview');
@@ -47,21 +47,6 @@ const WhatsAppAI = () => {
     active_conversations: 0
   });
   const [showTrainingModal, setShowTrainingModal] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [showUserMenu, setShowUserMenu] = useState(false);
-
-  const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: Home, current: false },
-    { name: 'Clientes', href: '/customers', icon: Users, current: false },
-    { name: 'Veículos', href: '/vehicles', icon: Car, current: false },
-    { name: 'Ordens de Serviço', href: '/service-orders', icon: Wrench, current: false },
-    { name: 'Estoque', href: '/inventory', icon: Package, current: false },
-    { name: 'Agenda', href: '/appointments', icon: Calendar, current: false },
-    { name: 'IA Assistant', href: '/ai-assistant', icon: Brain, current: false },
-    { name: 'IA WhatsApp', href: '/whatsapp-ai', icon: MessageCircle, current: true },
-    { name: 'Relatórios', href: '/reports', icon: BarChart3, current: false },
-    { name: 'Configurações', href: '/settings', icon: SettingsIcon, current: false },
-  ];
 
   // Mock data para demonstração
   useEffect(() => {
@@ -132,142 +117,123 @@ const WhatsAppAI = () => {
     }
   };
 
-  const handleNavigationClick = (href: string) => {
-    navigate(href);
-    setSidebarOpen(false);
-  };
-
-  const handleNotificationClick = () => {
-    setShowNotifications(!showNotifications);
-    setShowUserMenu(false);
-  };
-
-  const handleUserMenuClick = () => {
-    setShowUserMenu(!showUserMenu);
-    setShowNotifications(false);
-  };
-
   const OverviewTab = () => (
     <div className="space-y-6">
       {/* Connection Status */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-              isConnected ? 'bg-torqx-accent/10' : 'bg-red-100'
-            }`}>
-              <MessageCircle className={`w-6 h-6 ${
-                isConnected ? 'text-torqx-accent' : 'text-red-600'
-              }`} />
-            </div>
-            <div>
-              <h3 className="text-lg font-satoshi font-semibold text-torqx-primary">
-                WhatsApp Business
-              </h3>
-              <p className={`text-sm ${
-                isConnected ? 'text-torqx-accent' : 'text-red-600'
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                isConnected ? 'bg-torqx-accent/10' : 'bg-red-100'
               }`}>
-                {isConnected ? 'Conectado • +55 11 3333-4444' : 'Desconectado'}
-              </p>
+                <MessageCircle className={`w-6 h-6 ${
+                  isConnected ? 'text-torqx-accent' : 'text-red-600'
+                }`} />
+              </div>
+              <div>
+                <CardTitle className="text-lg">WhatsApp Business</CardTitle>
+                <p className={`text-sm ${
+                  isConnected ? 'text-torqx-accent' : 'text-red-600'
+                }`}>
+                  {isConnected ? 'Conectado • +55 11 3333-4444' : 'Desconectado'}
+                </p>
+              </div>
+            </div>
+            <div className="flex space-x-2">
+              {isConnected ? (
+                <>
+                  <Button
+                    onClick={() => setBotStatus(botStatus === 'active' ? 'paused' : 'active')}
+                    variant={botStatus === 'active' ? 'secondary' : 'default'}
+                    size="sm"
+                  >
+                    {botStatus === 'active' ? (
+                      <>
+                        <Pause className="w-4 h-4 mr-2" />
+                        Pausar IA
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-4 h-4 mr-2" />
+                        Ativar IA
+                      </>
+                    )}
+                  </Button>
+                  <Button variant="outline" size="sm">
+                    <SettingsIcon className="w-4 h-4 mr-2" />
+                    Configurar
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  onClick={() => setIsConnected(true)}
+                  className="bg-gradient-to-r from-torqx-secondary to-torqx-accent text-white"
+                >
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  Conectar WhatsApp
+                </Button>
+              )}
             </div>
           </div>
-          <div className="flex space-x-2">
-            {isConnected ? (
-              <>
-                <button
-                  onClick={() => setBotStatus(botStatus === 'active' ? 'paused' : 'active')}
-                  className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    botStatus === 'active'
-                      ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
-                      : 'bg-torqx-accent/10 text-torqx-accent hover:bg-torqx-accent/20'
-                  }`}
-                >
-                  {botStatus === 'active' ? (
-                    <>
-                      <Pause className="w-4 h-4 mr-2" />
-                      Pausar IA
-                    </>
-                  ) : (
-                    <>
-                      <Play className="w-4 h-4 mr-2" />
-                      Ativar IA
-                    </>
-                  )}
-                </button>
-                <button className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
-                  <SettingsIcon className="w-4 h-4 mr-2" />
-                  Configurar
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={() => setIsConnected(true)}
-                className="flex items-center px-4 py-2 bg-gradient-to-r from-torqx-secondary to-torqx-accent text-white rounded-lg hover:from-torqx-secondary/90 hover:to-torqx-accent/90 transition-all"
-              >
-                <MessageCircle className="w-4 h-4 mr-2" />
-                Conectar WhatsApp
-              </button>
-            )}
-          </div>
-        </div>
+        </CardHeader>
 
         {isConnected && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className={`w-3 h-3 rounded-full mx-auto mb-2 ${
-                botStatus === 'active' ? 'bg-torqx-accent' : 'bg-yellow-500'
-              }`}></div>
-              <p className="text-sm font-medium text-gray-900">
-                {botStatus === 'active' ? 'IA Ativa' : 'IA Pausada'}
-              </p>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <div className={`w-3 h-3 rounded-full mx-auto mb-2 ${
+                  botStatus === 'active' ? 'bg-torqx-accent' : 'bg-yellow-500'
+                }`}></div>
+                <p className="text-sm font-medium text-gray-900">
+                  {botStatus === 'active' ? 'IA Ativa' : 'IA Pausada'}
+                </p>
+              </div>
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <p className="text-lg font-bold text-torqx-primary">{metrics.active_conversations}</p>
+                <p className="text-sm text-gray-600">Conversas Ativas</p>
+              </div>
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <p className="text-lg font-bold text-torqx-primary">{metrics.avg_response_time}s</p>
+                <p className="text-sm text-gray-600">Tempo Resposta</p>
+              </div>
             </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-lg font-bold text-torqx-primary">{metrics.active_conversations}</p>
-              <p className="text-sm text-gray-600">Conversas Ativas</p>
-            </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-lg font-bold text-torqx-primary">{metrics.avg_response_time}s</p>
-              <p className="text-sm text-gray-600">Tempo Resposta</p>
-            </div>
-          </div>
+          </CardContent>
         )}
-      </div>
+      </Card>
 
       {/* Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Conversas Hoje</p>
-              <p className="text-2xl font-bold text-torqx-primary">{metrics.total_conversations}</p>
-            </div>
-            <MessageCircle className="w-8 h-8 text-torqx-secondary" />
-          </div>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Taxa de Resolução IA</p>
-              <p className="text-2xl font-bold text-torqx-accent">{metrics.ai_resolution_rate}%</p>
-            </div>
-            <Bot className="w-8 h-8 text-torqx-accent" />
-          </div>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Agendamentos</p>
-              <p className="text-2xl font-bold text-torqx-primary">{metrics.appointments_scheduled}</p>
-            </div>
-            <Calendar className="w-8 h-8 text-torqx-secondary" />
-          </div>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Satisfação</p>
-              <p className="text-2xl font-bold text-torqx-accent">{metrics.customer_satisfaction}/5</p>
-            </div>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Conversas Hoje</CardTitle>
+            <MessageCircle className="h-4 w-4 text-torqx-secondary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-torqx-primary">{metrics.total_conversations}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Taxa de Resolução IA</CardTitle>
+            <Bot className="h-4 w-4 text-torqx-accent" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-torqx-accent">{metrics.ai_resolution_rate}%</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Agendamentos</CardTitle>
+            <Calendar className="h-4 w-4 text-torqx-secondary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-torqx-primary">{metrics.appointments_scheduled}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Satisfação</CardTitle>
             <div className="flex">
               {[1,2,3,4,5].map(star => (
                 <div key={star} className={`w-2 h-2 rounded-full mr-1 ${
@@ -275,118 +241,49 @@ const WhatsAppAI = () => {
                 }`}></div>
               ))}
             </div>
-          </div>
-        </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-torqx-accent">{metrics.customer_satisfaction}/5</div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Recent Conversations */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-satoshi font-semibold text-torqx-primary">
-            Conversas Recentes
-          </h3>
-          <button className="text-torqx-secondary hover:text-torqx-secondary/80 text-sm font-medium">
-            Ver Todas
-          </button>
-        </div>
-        <div className="space-y-4">
-          {conversations.slice(0, 3).map(conv => (
-            <div key={conv.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-torqx-secondary to-torqx-accent rounded-full flex items-center justify-center">
-                  <Users className="w-5 h-5 text-white" />
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Conversas Recentes</CardTitle>
+            <Button variant="outline" size="sm">
+              Ver Todas
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {conversations.slice(0, 3).map(conv => (
+              <div key={conv.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-gradient-to-r from-torqx-secondary to-torqx-accent rounded-full flex items-center justify-center">
+                    <Users className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-gray-900">{conv.customer_name}</h4>
+                    <p className="text-sm text-gray-600">{conv.last_message}</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-medium text-gray-900">{conv.customer_name}</h4>
-                  <p className="text-sm text-gray-600">{conv.last_message}</p>
+                <div className="text-right">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(conv.status)}`}>
+                    {getStatusText(conv.status)}
+                  </span>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {conv.timestamp.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                  </p>
                 </div>
               </div>
-              <div className="text-right">
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(conv.status)}`}>
-                  {getStatusText(conv.status)}
-                </span>
-                <p className="text-xs text-gray-500 mt-1">
-                  {conv.timestamp.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-
-  const TrainingModal = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-satoshi font-bold text-torqx-primary">
-            Nova Resposta da IA
-          </h2>
-        </div>
-        <div className="p-6">
-          <form className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Categoria
-              </label>
-              <select className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-torqx-secondary focus:border-transparent transition-all">
-                <option value="">Selecione a categoria</option>
-                <option value="agendamentos">Agendamentos</option>
-                <option value="precos">Preços e Orçamentos</option>
-                <option value="servicos">Serviços Oferecidos</option>
-                <option value="horario">Horário de Funcionamento</option>
-                <option value="localizacao">Localização</option>
-                <option value="tecnicas">Dúvidas Técnicas</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Pergunta do Cliente
-              </label>
-              <input
-                type="text"
-                placeholder="Ex: Qual o preço da troca de óleo?"
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-torqx-secondary focus:border-transparent transition-all"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Resposta da IA
-              </label>
-              <textarea
-                rows={4}
-                placeholder="Ex: A troca de óleo custa a partir de R$ 80, dependendo do tipo de óleo. Gostaria de agendar um horário?"
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-torqx-secondary focus:border-transparent transition-all"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Palavras-chave (opcional)
-              </label>
-              <input
-                type="text"
-                placeholder="óleo, troca, manutenção, preço"
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-torqx-secondary focus:border-transparent transition-all"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Separe as palavras-chave com vírgulas
-              </p>
-            </div>
-          </form>
-        </div>
-        <div className="p-6 border-t border-gray-200 flex justify-end space-x-3">
-          <button
-            onClick={() => setShowTrainingModal(false)}
-            className="px-6 py-3 text-gray-700 hover:text-torqx-primary transition-colors"
-          >
-            Cancelar
-          </button>
-          <button className="px-6 py-3 bg-gradient-to-r from-torqx-secondary to-torqx-accent text-white rounded-xl hover:from-torqx-secondary/90 hover:to-torqx-accent/90 transition-all">
-            Salvar Resposta
-          </button>
-        </div>
-      </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 
@@ -415,252 +312,57 @@ const WhatsAppAI = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Floating Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out rounded-r-2xl ${
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
-        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-torqx-secondary to-torqx-accent rounded-lg flex items-center justify-center">
-              <Wrench className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold text-torqx-primary font-satoshi">Torqx</span>
+    <DashboardLayout>
+      <div className="p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-torqx-primary flex items-center gap-2">
+              <MessageCircle className="w-8 h-8 text-torqx-secondary" />
+              IA do WhatsApp
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Gerencie seu assistente virtual inteligente
+            </p>
           </div>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="p-2 rounded-lg hover:bg-gray-100"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex space-x-3 mt-4 sm:mt-0">
+            <Button variant="outline">
+              <Download className="w-4 h-4 mr-2" />
+              Relatório
+            </Button>
+            <Button className="bg-gradient-to-r from-torqx-secondary to-torqx-accent text-white">
+              <ExternalLink className="w-4 h-4 mr-2" />
+              Abrir WhatsApp
+            </Button>
+          </div>
         </div>
 
-        <nav className="mt-6 px-3">
-          <div className="space-y-1">
-            {navigation.map((item) => (
-              <button
-                key={item.name}
-                onClick={() => handleNavigationClick(item.href)}
-                className={`group flex items-center w-full px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  item.current
-                    ? 'bg-torqx-secondary text-white'
-                    : 'text-gray-700 hover:text-torqx-primary hover:bg-gray-50'
-                }`}
-              >
-                <item.icon className={`mr-3 h-5 w-5 ${
-                  item.current ? 'text-white' : 'text-gray-400 group-hover:text-torqx-primary'
-                }`} />
-                {item.name}
-              </button>
-            ))}
-          </div>
-        </nav>
-      </div>
-
-      {/* Overlay */}
-      {sidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40"
-          onClick={() => setSidebarOpen(false)}
-        ></div>
-      )}
-
-      {/* Main Content */}
-      <div className="w-full">
-        {/* Header */}
-        <header className="bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-100 sticky top-0 z-30">
-          <div className="flex items-center justify-between h-16 px-4 sm:px-6">
-            <div className="flex items-center">
-              <button
-                onClick={() => setSidebarOpen(true)}
-                className="p-2 rounded-lg hover:bg-gray-100 mr-2"
-              >
-                <Menu className="w-5 h-5" />
-              </button>
-              
-              {/* Home Button */}
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="p-2 rounded-lg hover:bg-gray-100 mr-3 text-torqx-primary"
-                title="Ir para Dashboard"
-              >
-                <Home className="w-5 h-5" />
-              </button>
-
-              <h1 className="text-xl font-semibold text-torqx-primary font-satoshi">
-                IA do WhatsApp
-              </h1>
-            </div>
-
-            <div className="flex items-center space-x-4">
-              <div className="relative hidden sm:block">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  className="block w-64 pl-10 pr-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-torqx-secondary focus:border-transparent"
-                  placeholder="Buscar conversas..."
-                />
-              </div>
-
-              {/* Notifications */}
-              <div className="relative">
-                <button 
-                  onClick={handleNotificationClick}
-                  className="p-2 rounded-lg hover:bg-gray-100 relative"
-                >
-                  <Bell className="w-5 h-5 text-gray-600" />
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                </button>
-
-                {/* Notifications Dropdown */}
-                {showNotifications && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 z-50">
-                    <div className="p-4 border-b border-gray-200">
-                      <h3 className="text-lg font-semibold text-torqx-primary">Notificações</h3>
-                    </div>
-                    <div className="max-h-64 overflow-y-auto">
-                      {[
-                        { id: 1, message: 'Nova conversa no WhatsApp', time: '5 min atrás', unread: true },
-                        { id: 2, message: 'IA resolveu 3 conversas automaticamente', time: '15 min atrás', unread: true },
-                        { id: 3, message: 'Agendamento confirmado via WhatsApp', time: '1h atrás', unread: false }
-                      ].map(notification => (
-                        <div key={notification.id} className={`p-4 hover:bg-gray-50 border-b border-gray-100 ${notification.unread ? 'bg-blue-50' : ''}`}>
-                          <p className="text-sm text-gray-900">{notification.message}</p>
-                          <p className="text-xs text-gray-500 mt-1">{notification.time}</p>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="p-3 border-t border-gray-200">
-                      <button className="text-sm text-torqx-secondary hover:text-torqx-secondary/80 w-full text-center">
-                        Ver todas as notificações
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* User Menu */}
-              <div className="relative">
+        {/* Tabs */}
+        <div className="mb-6">
+          <nav className="flex space-x-1 bg-gray-100 p-1 rounded-xl">
+            {tabs.map(tab => {
+              const Icon = tab.icon;
+              return (
                 <button
-                  onClick={handleUserMenuClick}
-                  className="flex items-center space-x-3 p-1 rounded-lg hover:bg-gray-50"
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    activeTab === tab.id
+                      ? 'bg-white text-torqx-primary shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
                 >
-                  <div className="w-8 h-8 bg-torqx-secondary rounded-full flex items-center justify-center">
-                    <User className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="hidden sm:block text-left">
-                    <p className="text-sm font-medium text-gray-900">João Silva</p>
-                    <p className="text-xs text-gray-500">Auto Service Silva</p>
-                  </div>
+                  <Icon className="w-4 h-4 mr-2" />
+                  {tab.label}
                 </button>
+              );
+            })}
+          </nav>
+        </div>
 
-                {/* User Dropdown */}
-                {showUserMenu && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 z-50">
-                    <div className="p-4 border-b border-gray-200">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-torqx-secondary rounded-full flex items-center justify-center">
-                          <User className="w-6 h-6 text-white" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900">João Silva</p>
-                          <p className="text-sm text-gray-500">joao@autoservice.com</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="py-2">
-                      <button
-                        onClick={() => {
-                          navigate('/settings');
-                          setShowUserMenu(false);
-                        }}
-                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                      >
-                        <SettingsIcon className="w-4 h-4 mr-3" />
-                        Configurações
-                      </button>
-                      <button
-                        onClick={() => {
-                          navigate('/dashboard');
-                          setShowUserMenu(false);
-                        }}
-                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                      >
-                        <Home className="w-4 h-4 mr-3" />
-                        Dashboard
-                      </button>
-                      <hr className="my-2" />
-                      <button
-                        onClick={() => {
-                          navigate('/login');
-                          setShowUserMenu(false);
-                        }}
-                        className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                      >
-                        <ExternalLink className="w-4 h-4 mr-3" />
-                        Sair
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* Page Content */}
-        <main className="p-4 sm:p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
-            <div>
-              <p className="text-gray-600 mt-1">
-                Gerencie seu assistente virtual inteligente
-              </p>
-            </div>
-            <div className="flex space-x-3 mt-4 sm:mt-0">
-              <button className="flex items-center px-4 py-2 text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
-                <Download className="w-4 h-4 mr-2" />
-                Relatório
-              </button>
-              <button className="flex items-center px-4 py-2 bg-gradient-to-r from-torqx-secondary to-torqx-accent text-white rounded-xl hover:from-torqx-secondary/90 hover:to-torqx-accent/90 transition-all">
-                <ExternalLink className="w-4 h-4 mr-2" />
-                Abrir WhatsApp
-              </button>
-            </div>
-          </div>
-
-          {/* Tabs */}
-          <div className="mb-6">
-            <nav className="flex space-x-1 bg-gray-100 p-1 rounded-xl">
-              {tabs.map(tab => {
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      activeTab === tab.id
-                        ? 'bg-white text-torqx-primary shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4 mr-2" />
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </nav>
-          </div>
-
-          {/* Tab Content */}
-          {renderTabContent()}
-
-          {/* Training Modal */}
-          {showTrainingModal && <TrainingModal />}
-        </main>
+        {/* Tab Content */}
+        {renderTabContent()}
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 

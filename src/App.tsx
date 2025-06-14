@@ -19,6 +19,8 @@ import WhatsAppAI from "./pages/WhatsAppAI";
 import Settings from "./pages/Settings";
 import ForgotPassword from "./pages/ForgotPassword";
 import NotFound from "./pages/NotFound";
+import Appointments from "./pages/Appointments";
+import Reports from "./pages/Reports";
 
 const queryClient = new QueryClient();
 
@@ -40,8 +42,10 @@ const App = () => (
             <Route path="/vehicles" element={<Vehicles />} />
             <Route path="/service-orders" element={<ServiceOrders />} />
             <Route path="/inventory" element={<Inventory />} />
+            <Route path="/appointments" element={<Appointments />} />
             <Route path="/ai-assistant" element={<AIAssistant />} />
             <Route path="/whatsapp-ai" element={<WhatsAppAI />} />
+            <Route path="/reports" element={<Reports />} />
             <Route path="/settings" element={<Settings />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

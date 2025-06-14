@@ -71,6 +71,11 @@ const TorqxSidebar = () => {
       icon: <Brain className="text-torqx-primary dark:text-white h-4 w-4 flex-shrink-0" />
     },
     {
+      label: 'WhatsApp IA',
+      href: '/whatsapp-ai',
+      icon: <Brain className="text-torqx-primary dark:text-white h-4 w-4 flex-shrink-0" />
+    },
+    {
       label: 'Relatórios',
       href: '/reports',
       icon: <BarChart3 className="text-torqx-primary dark:text-white h-4 w-4 flex-shrink-0" />

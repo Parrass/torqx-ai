@@ -67,7 +67,25 @@ export const useInventory = () => {
 
       console.log('Raw inventory data:', data);
 
-      const inventoryData = data || [];
+      // Transform data to match our interface, ensuring status is properly typed
+      const inventoryData: InventoryItem[] = (data || []).map(item => ({
+        id: item.id,
+        name: item.name || '',
+        category: item.category || '',
+        brand: item.brand || '',
+        sku: item.sku || '',
+        current_stock: item.current_stock || 0,
+        minimum_stock: item.minimum_stock || 0,
+        maximum_stock: item.maximum_stock || 0,
+        cost_price: item.cost_price || 0,
+        sale_price: item.sale_price || 0,
+        supplier_name: item.supplier_name || '',
+        location: item.location || '',
+        status: (item.status === 'inactive' ? 'inactive' : 'active') as 'active' | 'inactive',
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+      }));
+
       setInventory(inventoryData);
 
       // Calculate stats
@@ -106,24 +124,57 @@ export const useInventory = () => {
     if (!user?.user_metadata?.tenant_id) return;
     
     try {
+      // Transform data to match database schema
+      const dbData = {
+        name: itemData.name,
+        category: itemData.category,
+        brand: itemData.brand,
+        sku: itemData.sku,
+        current_stock: itemData.current_stock,
+        minimum_stock: itemData.minimum_stock,
+        maximum_stock: itemData.maximum_stock,
+        cost_price: itemData.cost_price,
+        sale_price: itemData.sale_price,
+        supplier_name: itemData.supplier_name,
+        location: itemData.location,
+        status: itemData.status,
+        tenant_id: user.user_metadata.tenant_id,
+      };
+
       const { data, error } = await supabase
         .from('inventory_items')
-        .insert({
-          ...itemData,
-          tenant_id: user.user_metadata.tenant_id,
-        })
+        .insert(dbData)
         .select()
         .single();
 
       if (error) throw error;
 
-      setInventory(prev => [data, ...prev]);
+      // Transform response to match our interface
+      const newItem: InventoryItem = {
+        id: data.id,
+        name: data.name || '',
+        category: data.category || '',
+        brand: data.brand || '',
+        sku: data.sku || '',
+        current_stock: data.current_stock || 0,
+        minimum_stock: data.minimum_stock || 0,
+        maximum_stock: data.maximum_stock || 0,
+        cost_price: data.cost_price || 0,
+        sale_price: data.sale_price || 0,
+        supplier_name: data.supplier_name || '',
+        location: data.location || '',
+        status: (data.status === 'inactive' ? 'inactive' : 'active') as 'active' | 'inactive',
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+      };
+
+      setInventory(prev => [newItem, ...prev]);
       toast({
         title: 'Sucesso',
         description: 'Item adicionado ao estoque com sucesso',
       });
       
-      return data;
+      return newItem;
     } catch (error) {
       console.error('Error creating inventory item:', error);
       toast({

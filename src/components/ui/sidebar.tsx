@@ -1,9 +1,11 @@
+
 "use client";
 
 import { cn } from "@/lib/utils";
 import React, { useState, createContext, useContext } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
 
 interface Links {
   label: string;
@@ -167,11 +169,21 @@ export const SidebarLink = ({
   props?: any;
 }) => {
   const { open, animate } = useSidebar();
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  const isActive = location.pathname === link.href;
+  
+  const handleClick = () => {
+    navigate(link.href);
+  };
+  
   return (
-    <a
-      href={link.href}
+    <button
+      onClick={handleClick}
       className={cn(
-        "flex items-center gap-2 group/sidebar py-1.5 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-torqx-primary-light transition-colors min-h-[36px]",
+        "flex items-center gap-2 group/sidebar py-1.5 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-torqx-primary-light transition-colors min-h-[36px] w-full text-left",
+        isActive && "bg-torqx-secondary/10 text-torqx-secondary",
         className
       )}
       {...props}
@@ -182,10 +194,10 @@ export const SidebarLink = ({
       <span
         className={`text-torqx-primary dark:text-white text-sm group-hover/sidebar:translate-x-1 transition-all duration-300 whitespace-nowrap overflow-hidden ${
           open ? 'opacity-100 w-auto' : 'opacity-0 w-0'
-        }`}
+        } ${isActive ? 'text-torqx-secondary font-medium' : ''}`}
       >
         {link.label}
       </span>
-    </a>
+    </button>
   );
 };
