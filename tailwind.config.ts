@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,7 +62,15 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+				'torqx-primary': '#0F172A',
+				'torqx-primary-light': '#1E293B',
+				'torqx-secondary': '#0EA5E9',
+				'torqx-secondary-light': '#38BDF8',
+				'torqx-secondary-dark': '#0284C7',
+				'torqx-accent': '#10B981',
+				'torqx-accent-light': '#34D399',
+				'torqx-accent-dark': '#059669'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -84,11 +93,18 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				spin: {
+					to: { transform: 'rotate(360deg)' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				spin: 'spin 1s linear infinite'
+			},
+			fontFamily: {
+				sans: ['Inter', 'system-ui', 'sans-serif']
 			}
 		}
 	},
