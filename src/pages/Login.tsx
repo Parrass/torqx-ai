@@ -2,6 +2,12 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, Wrench } from 'lucide-react';
 
+interface FormErrors {
+  email?: string;
+  password?: string;
+  general?: string;
+}
+
 const Login = () => {
   const [formData, setFormData] = useState({
     email: '',
@@ -9,14 +15,14 @@ const Login = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<FormErrors>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
     // Validação básica
-    const newErrors: any = {};
+    const newErrors: FormErrors = {};
     if (!formData.email) newErrors.email = 'Email é obrigatório';
     if (!formData.password) newErrors.password = 'Senha é obrigatória';
     
@@ -91,7 +97,7 @@ const Login = () => {
                     value={formData.email}
                     onChange={(e) => {
                       setFormData({...formData, email: e.target.value});
-                      if (errors.email) setErrors({...errors, email: ''});
+                      if (errors.email) setErrors({...errors, email: undefined});
                     }}
                   />
                 </div>
@@ -122,7 +128,7 @@ const Login = () => {
                     value={formData.password}
                     onChange={(e) => {
                       setFormData({...formData, password: e.target.value});
-                      if (errors.password) setErrors({...errors, password: ''});
+                      if (errors.password) setErrors({...errors, password: undefined});
                     }}
                   />
                   <button
