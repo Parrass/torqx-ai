@@ -1,10 +1,12 @@
 
 import React from 'react';
-import { Menu, Bell, Search, Wrench } from 'lucide-react';
+import { Menu, Bell, Search, Wrench, User } from 'lucide-react';
 import { useSidebar } from '@/components/ui/sidebar';
+import { useAuth } from '@/contexts/AuthContext';
 
 const TorqxNavbar = () => {
   const { setOpen } = useSidebar();
+  const { user } = useAuth();
 
   return (
     <header className="bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-100 fixed top-0 left-0 right-0 z-50">
@@ -18,12 +20,15 @@ const TorqxNavbar = () => {
             <Menu className="w-5 h-5 text-torqx-primary" />
           </button>
           
-          {/* Logo */}
-          <div className="flex items-center space-x-2">
+          {/* Company Logo and Name */}
+          <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-gradient-to-r from-torqx-secondary to-torqx-accent rounded-lg flex items-center justify-center">
               <Wrench className="w-4 h-4 text-white" />
             </div>
-            <span className="text-xl font-bold text-torqx-primary font-satoshi">Torqx</span>
+            <div className="flex flex-col">
+              <span className="text-xl font-bold text-torqx-primary font-satoshi">Torqx</span>
+              <span className="text-xs text-gray-500 hidden sm:block">Oficina Digital</span>
+            </div>
           </div>
         </div>
 
@@ -45,6 +50,27 @@ const TorqxNavbar = () => {
             <Bell className="w-5 h-5 text-gray-600" />
             <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
           </button>
+
+          {/* User Info */}
+          <div className="flex items-center space-x-2 pl-2 border-l border-gray-200">
+            <div className="w-8 h-8 bg-torqx-secondary rounded-full flex items-center justify-center">
+              {user?.email ? (
+                <span className="text-white text-sm font-semibold">
+                  {user.email.charAt(0).toUpperCase()}
+                </span>
+              ) : (
+                <User className="w-4 h-4 text-white" />
+              )}
+            </div>
+            <div className="hidden md:block">
+              <p className="text-sm font-medium text-torqx-primary">
+                {user?.user_metadata?.full_name || 'Usuário'}
+              </p>
+              <p className="text-xs text-gray-500">
+                {user?.email || 'user@example.com'}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </header>
