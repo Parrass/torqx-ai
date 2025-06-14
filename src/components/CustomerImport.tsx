@@ -15,14 +15,14 @@ import { toast } from 'sonner';
 
 interface ImportCustomer {
   name: string;
-  email?: string;
-  phone: string;
-  document_number?: string;
+  email: string | null;
+  phone: string | null;
+  document_number: string | null;
   customer_type: 'individual' | 'business';
-  secondary_phone?: string;
+  secondary_phone: string | null;
   preferred_contact: 'phone' | 'email' | 'whatsapp';
-  notes?: string;
-  address?: {
+  notes: string | null;
+  address: {
     street?: string;
     number?: string;
     complement?: string;
@@ -30,7 +30,8 @@ interface ImportCustomer {
     city?: string;
     state?: string;
     zipCode?: string;
-  };
+  } | null;
+  // Campo temporário para dados extras do Excel
   additionalComments?: string;
 }
 
@@ -122,7 +123,17 @@ const CustomerImport = () => {
 
       for (let i = 1; i < lines.length; i++) {
         const values = lines[i].split('\t').map(v => v.trim());
-        const customer: any = {};
+        const customer: ImportCustomer = {
+          name: '',
+          email: null,
+          phone: null,
+          document_number: null,
+          customer_type: 'individual',
+          secondary_phone: null,
+          preferred_contact: 'phone',
+          notes: null,
+          address: null
+        };
         let additionalInfo = '';
 
         // Mapear campos obrigatórios
@@ -134,50 +145,50 @@ const CustomerImport = () => {
               customer.name = value;
               break;
             case 'telefone':
-              customer.phone = value;
+              customer.phone = value || null;
               break;
             case 'e-mail':
-              customer.email = value;
+              customer.email = value || null;
               break;
             case 'cpf/cnpj':
-              customer.document_number = value;
+              customer.document_number = value || null;
               break;
             case 'tipo (individual/business)':
               customer.customer_type = value.toLowerCase() === 'business' ? 'business' : 'individual';
               break;
             case 'telefone secundário':
-              customer.secondary_phone = value;
+              customer.secondary_phone = value || null;
               break;
             case 'contato preferido (phone/email/whatsapp)':
               const contact = value.toLowerCase();
-              customer.preferred_contact = ['phone', 'email', 'whatsapp'].includes(contact) ? contact : 'phone';
+              customer.preferred_contact = ['phone', 'email', 'whatsapp'].includes(contact) ? contact as any : 'phone';
               break;
             case 'endereço - rua':
               if (!customer.address) customer.address = {};
-              customer.address.street = value;
+              customer.address.street = value || undefined;
               break;
             case 'endereço - número':
               if (!customer.address) customer.address = {};
-              customer.address.number = value;
+              customer.address.number = value || undefined;
               break;
             case 'endereço - bairro':
               if (!customer.address) customer.address = {};
-              customer.address.neighborhood = value;
+              customer.address.neighborhood = value || undefined;
               break;
             case 'endereço - cidade':
               if (!customer.address) customer.address = {};
-              customer.address.city = value;
+              customer.address.city = value || undefined;
               break;
             case 'endereço - estado':
               if (!customer.address) customer.address = {};
-              customer.address.state = value;
+              customer.address.state = value || undefined;
               break;
             case 'endereço - cep':
               if (!customer.address) customer.address = {};
-              customer.address.zipCode = value;
+              customer.address.zipCode = value || undefined;
               break;
             case 'observações':
-              customer.notes = value;
+              customer.notes = value || null;
               break;
             default:
               if (value) {
@@ -186,10 +197,18 @@ const CustomerImport = () => {
           }
         });
 
+        // Se não há dados de endereço, manter como null
+        if (customer.address && Object.keys(customer.address).length === 0) {
+          customer.address = null;
+        }
+
         // Adicionar informações extras como comentários
         if (additionalInfo) {
           customer.additionalComments = additionalInfo.trim();
-          customer.notes = customer.notes ? `${customer.notes}\n\nInformações adicionais:\n${additionalInfo}` : `Informações adicionais:\n${additionalInfo}`;
+          const existingNotes = customer.notes || '';
+          customer.notes = existingNotes 
+            ? `${existingNotes}\n\nInformações adicionais:\n${additionalInfo}` 
+            : `Informações adicionais:\n${additionalInfo}`;
         }
 
         // Validações
@@ -235,9 +254,8 @@ const CustomerImport = () => {
     for (const customer of parsedData) {
       try {
         // Determinar document_type baseado no document_number
-        let document_type = null;
+        let document_type: string | null = null;
         if (customer.document_number) {
-          // Remove formatação para verificar o tamanho
           const cleanDoc = customer.document_number.replace(/\D/g, '');
           if (cleanDoc.length === 11) {
             document_type = 'cpf';
@@ -246,18 +264,29 @@ const CustomerImport = () => {
           }
         }
 
-        await createCustomer.mutateAsync({
-          ...customer,
+        // Construir objeto explicitamente para garantir compatibilidade de tipos
+        const customerData = {
+          name: customer.name,
+          email: customer.email,
+          phone: customer.phone,
+          document_number: customer.document_number,
+          document_type,
+          customer_type: customer.customer_type,
+          secondary_phone: customer.secondary_phone,
+          preferred_contact: customer.preferred_contact,
+          notes: customer.notes,
+          address: customer.address,
+          tags: [] as string[],
           status: 'active' as const,
           credit_limit: 0,
           payment_terms: 0,
           total_spent: 0,
           total_orders: 0,
           last_service_date: null,
-          preferred_technician_id: null,
-          document_type,
-          tags: [] // Inicializar com array vazio
-        });
+          preferred_technician_id: null
+        };
+
+        await createCustomer.mutateAsync(customerData);
         successCount++;
       } catch (error) {
         errorCount++;
@@ -388,7 +417,7 @@ const CustomerImport = () => {
                       {parsedData.map((customer, index) => (
                         <TableRow key={index}>
                           <TableCell>{customer.name}</TableCell>
-                          <TableCell>{customer.phone}</TableCell>
+                          <TableCell>{customer.phone || '-'}</TableCell>
                           <TableCell>{customer.email || '-'}</TableCell>
                           <TableCell>
                             <Badge variant={customer.customer_type === 'business' ? 'default' : 'secondary'}>
