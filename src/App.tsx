@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Index from '@/pages/Index';
@@ -11,7 +12,6 @@ import ServiceOrders from '@/pages/ServiceOrders';
 import Inventory from '@/pages/Inventory';
 import Purchases from '@/pages/Purchases';
 import Suppliers from '@/pages/Suppliers';
-import Appointments from '@/pages/Appointments';
 import Reports from '@/pages/Reports';
 import AIAssistant from '@/pages/AIAssistant';
 import WhatsAppAI from '@/pages/WhatsAppAI';
@@ -35,7 +35,6 @@ function App() {
         <Route path="/inventory" element={<Inventory />} />
         <Route path="/purchases" element={<Purchases />} />
         <Route path="/suppliers" element={<Suppliers />} />
-        <Route path="/appointments" element={<Appointments />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/ai-assistant" element={<AIAssistant />} />
         <Route path="/whatsapp-ai" element={<WhatsAppAI />} />

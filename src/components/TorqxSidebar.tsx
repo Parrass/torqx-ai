@@ -5,7 +5,6 @@ import {
   Car, 
   FileText, 
   Package, 
-  Calendar,
   BarChart3,
   Bot,
   MessageSquare,
@@ -36,11 +35,6 @@ const TorqxSidebar = () => {
       label: 'Ordens de Serviço',
       href: '/service-orders',
       icon: <FileText className="text-torqx-primary dark:text-white w-4 h-4" />,
-    },
-    {
-      label: 'Agendamentos',
-      href: '/appointments',
-      icon: <Calendar className="text-torqx-primary dark:text-white w-4 h-4" />,
     },
     {
       label: 'Estoque',

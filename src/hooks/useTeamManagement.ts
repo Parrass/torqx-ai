@@ -112,10 +112,28 @@ export const useTeamManagement = () => {
         throw new Error('Tenant não encontrado');
       }
 
-      // Create the user with proper field mapping
+      // First create user in auth.users via auth.signUp
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: userData.email,
+        password: 'temporaryPassword123!', // This should be changed on first login
+        options: {
+          data: {
+            full_name: userData.full_name
+          }
+        }
+      });
+
+      if (authError) throw authError;
+
+      if (!authData.user) {
+        throw new Error('Erro ao criar usuário na autenticação');
+      }
+
+      // Then create the user record in our users table
       const { data: newUser, error: userError } = await supabase
         .from('users')
         .insert({
+          id: authData.user.id,
           email: userData.email,
           full_name: userData.full_name,
           phone: userData.phone || null,
