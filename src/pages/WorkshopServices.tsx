@@ -16,62 +16,14 @@ import {
   Search,
   Filter,
   Clock,
-  DollarSign
+  DollarSign,
+  Loader2
 } from 'lucide-react';
-
-interface WorkshopService {
-  id: string;
-  name: string;
-  description?: string;
-  category: string;
-  base_price: number;
-  estimated_duration_minutes?: number;
-  is_active: boolean;
-  requires_parts: boolean;
-  skill_level: string;
-  warranty_days: number;
-}
+import { useWorkshopServices, WorkshopService } from '@/hooks/useWorkshopServices';
 
 const WorkshopServices = () => {
-  const [services, setServices] = useState<WorkshopService[]>([
-    {
-      id: '1',
-      name: 'Troca de Óleo',
-      description: 'Troca completa do óleo do motor e filtro',
-      category: 'Manutenção Preventiva',
-      base_price: 150.00,
-      estimated_duration_minutes: 60,
-      is_active: true,
-      requires_parts: true,
-      skill_level: 'basic',
-      warranty_days: 30
-    },
-    {
-      id: '2',
-      name: 'Alinhamento e Balanceamento',
-      description: 'Alinhamento de direção e balanceamento das rodas',
-      category: 'Pneus e Rodas',
-      base_price: 80.00,
-      estimated_duration_minutes: 90,
-      is_active: true,
-      requires_parts: false,
-      skill_level: 'intermediate',
-      warranty_days: 15
-    },
-    {
-      id: '3',
-      name: 'Reparo do Sistema de Freios',
-      description: 'Inspeção e reparo completo do sistema de freios',
-      category: 'Sistema de Freios',
-      base_price: 300.00,
-      estimated_duration_minutes: 180,
-      is_active: true,
-      requires_parts: true,
-      skill_level: 'advanced',
-      warranty_days: 90
-    }
-  ]);
-
+  const { services, loading, createService, updateService, deleteService, toggleServiceStatus } = useWorkshopServices();
+  
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingService, setEditingService] = useState<WorkshopService | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -85,7 +37,8 @@ const WorkshopServices = () => {
     estimated_duration_minutes: '',
     requires_parts: false,
     skill_level: 'basic',
-    warranty_days: '0'
+    warranty_days: '0',
+    notes: ''
   });
 
   const categories = [
@@ -109,38 +62,46 @@ const WorkshopServices = () => {
 
   const filteredServices = services.filter(service => {
     const matchesSearch = service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         service.category.toLowerCase().includes(searchTerm.toLowerCase());
+                         (service.category?.toLowerCase().includes(searchTerm.toLowerCase()) || false);
     const matchesCategory = categoryFilter === 'all' || service.category === categoryFilter;
     return matchesSearch && matchesCategory;
   });
 
-  const handleAddService = () => {
+  const resetForm = () => {
+    setNewService({
+      name: '',
+      description: '',
+      category: '',
+      base_price: '',
+      estimated_duration_minutes: '',
+      requires_parts: false,
+      skill_level: 'basic',
+      warranty_days: '0',
+      notes: ''
+    });
+    setEditingService(null);
+    setShowAddForm(false);
+  };
+
+  const handleAddService = async () => {
     if (newService.name && newService.category) {
-      const service: WorkshopService = {
-        id: Date.now().toString(),
-        name: newService.name,
-        description: newService.description,
-        category: newService.category,
-        base_price: parseFloat(newService.base_price) || 0,
-        estimated_duration_minutes: parseInt(newService.estimated_duration_minutes) || undefined,
-        is_active: true,
-        requires_parts: newService.requires_parts,
-        skill_level: newService.skill_level,
-        warranty_days: parseInt(newService.warranty_days) || 0
-      };
-      
-      setServices([...services, service]);
-      setNewService({
-        name: '',
-        description: '',
-        category: '',
-        base_price: '',
-        estimated_duration_minutes: '',
-        requires_parts: false,
-        skill_level: 'basic',
-        warranty_days: '0'
-      });
-      setShowAddForm(false);
+      try {
+        await createService({
+          name: newService.name,
+          description: newService.description || undefined,
+          category: newService.category,
+          base_price: parseFloat(newService.base_price) || 0,
+          estimated_duration_minutes: parseInt(newService.estimated_duration_minutes) || undefined,
+          is_active: true,
+          requires_parts: newService.requires_parts,
+          skill_level: newService.skill_level,
+          warranty_days: parseInt(newService.warranty_days) || 0,
+          notes: newService.notes || undefined
+        });
+        resetForm();
+      } catch (error) {
+        console.error('Erro ao adicionar serviço:', error);
+      }
     }
   };
 
@@ -149,54 +110,46 @@ const WorkshopServices = () => {
     setNewService({
       name: service.name,
       description: service.description || '',
-      category: service.category,
+      category: service.category || '',
       base_price: service.base_price.toString(),
       estimated_duration_minutes: service.estimated_duration_minutes?.toString() || '',
       requires_parts: service.requires_parts,
       skill_level: service.skill_level,
-      warranty_days: service.warranty_days.toString()
+      warranty_days: service.warranty_days.toString(),
+      notes: service.notes || ''
     });
     setShowAddForm(true);
   };
 
-  const handleUpdateService = () => {
+  const handleUpdateService = async () => {
     if (editingService && newService.name && newService.category) {
-      const updatedService: WorkshopService = {
-        ...editingService,
-        name: newService.name,
-        description: newService.description,
-        category: newService.category,
-        base_price: parseFloat(newService.base_price) || 0,
-        estimated_duration_minutes: parseInt(newService.estimated_duration_minutes) || undefined,
-        requires_parts: newService.requires_parts,
-        skill_level: newService.skill_level,
-        warranty_days: parseInt(newService.warranty_days) || 0
-      };
-      
-      setServices(services.map(s => s.id === editingService.id ? updatedService : s));
-      setEditingService(null);
-      setNewService({
-        name: '',
-        description: '',
-        category: '',
-        base_price: '',
-        estimated_duration_minutes: '',
-        requires_parts: false,
-        skill_level: 'basic',
-        warranty_days: '0'
-      });
-      setShowAddForm(false);
+      try {
+        await updateService(editingService.id, {
+          name: newService.name,
+          description: newService.description || undefined,
+          category: newService.category,
+          base_price: parseFloat(newService.base_price) || 0,
+          estimated_duration_minutes: parseInt(newService.estimated_duration_minutes) || undefined,
+          requires_parts: newService.requires_parts,
+          skill_level: newService.skill_level,
+          warranty_days: parseInt(newService.warranty_days) || 0,
+          notes: newService.notes || undefined
+        });
+        resetForm();
+      } catch (error) {
+        console.error('Erro ao atualizar serviço:', error);
+      }
     }
   };
 
-  const handleDeleteService = (id: string) => {
-    setServices(services.filter(s => s.id !== id));
-  };
-
-  const toggleServiceStatus = (id: string) => {
-    setServices(services.map(s => 
-      s.id === id ? { ...s, is_active: !s.is_active } : s
-    ));
+  const handleDeleteService = async (id: string) => {
+    if (window.confirm('Tem certeza que deseja excluir este serviço?')) {
+      try {
+        await deleteService(id);
+      } catch (error) {
+        console.error('Erro ao deletar serviço:', error);
+      }
+    }
   };
 
   const formatDuration = (minutes?: number) => {
@@ -205,6 +158,17 @@ const WorkshopServices = () => {
     const mins = minutes % 60;
     return hours > 0 ? `${hours}h ${mins}min` : `${mins}min`;
   };
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="p-6 flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin" />
+          <span className="ml-2">Carregando serviços...</span>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -219,7 +183,7 @@ const WorkshopServices = () => {
           </div>
           <Button 
             onClick={() => {
-              setEditingService(null);
+              resetForm();
               setShowAddForm(true);
             }}
             className="bg-torqx-secondary hover:bg-torqx-secondary-dark"
@@ -376,6 +340,17 @@ const WorkshopServices = () => {
                 </div>
               </div>
 
+              <div>
+                <Label htmlFor="service-notes">Observações</Label>
+                <Textarea
+                  id="service-notes"
+                  value={newService.notes}
+                  onChange={(e) => setNewService({ ...newService, notes: e.target.value })}
+                  placeholder="Observações internas sobre o serviço..."
+                  rows={2}
+                />
+              </div>
+
               <div className="flex gap-3">
                 <Button 
                   onClick={editingService ? handleUpdateService : handleAddService}
@@ -385,20 +360,7 @@ const WorkshopServices = () => {
                 </Button>
                 <Button 
                   variant="outline" 
-                  onClick={() => {
-                    setShowAddForm(false);
-                    setEditingService(null);
-                    setNewService({
-                      name: '',
-                      description: '',
-                      category: '',
-                      base_price: '',
-                      estimated_duration_minutes: '',
-                      requires_parts: false,
-                      skill_level: 'basic',
-                      warranty_days: '0'
-                    });
-                  }}
+                  onClick={resetForm}
                 >
                   Cancelar
                 </Button>
@@ -434,9 +396,11 @@ const WorkshopServices = () => {
                         <Badge variant={service.is_active ? "default" : "secondary"}>
                           {service.is_active ? 'Ativo' : 'Inativo'}
                         </Badge>
-                        <Badge variant="outline">
-                          {service.category}
-                        </Badge>
+                        {service.category && (
+                          <Badge variant="outline">
+                            {service.category}
+                          </Badge>
+                        )}
                       </div>
                       
                       {service.description && (
