@@ -40,6 +40,26 @@ export interface ServiceOrder {
   } | null;
 }
 
+// Interface for creating/updating service orders (without nested objects)
+interface ServiceOrderInput {
+  customer_id: string;
+  vehicle_id: string;
+  assigned_technician_id?: string;
+  status?: string;
+  priority?: string;
+  problem_description: string;
+  customer_complaint?: string;
+  internal_notes?: string;
+  estimated_cost?: number;
+  final_cost?: number;
+  estimated_hours?: number;
+  final_hours?: number;
+  vehicle_mileage?: number;
+  scheduled_start_date?: string;
+  estimated_completion_date?: string;
+  actual_completion_date?: string;
+}
+
 export interface ServiceOrderStats {
   total: number;
   draft: number;
@@ -86,8 +106,11 @@ export const useServiceOrders = () => {
       // Transform the data to match our interface
       const transformedData = (data || []).map(order => ({
         ...order,
-        technician: order.technician && typeof order.technician === 'object' && order.technician !== null && 'full_name' in order.technician 
-          ? order.technician 
+        technician: order.technician && 
+                   typeof order.technician === 'object' && 
+                   order.technician !== null && 
+                   'full_name' in order.technician 
+          ? { full_name: (order.technician as any).full_name }
           : null
       })) as ServiceOrder[];
 
@@ -130,16 +153,28 @@ export const useServiceOrders = () => {
     if (!user?.user_metadata?.tenant_id) return;
 
     try {
-      // Remove nested objects and only keep the fields that exist in the database
-      const { customers, vehicles, technician, ...cleanOrderData } = orderData;
+      // Create input object with only database fields
+      const inputData: ServiceOrderInput & { tenant_id: string; created_by_user_id: string } = {
+        customer_id: orderData.customer_id!,
+        vehicle_id: orderData.vehicle_id!,
+        problem_description: orderData.problem_description!,
+        assigned_technician_id: orderData.assigned_technician_id,
+        status: orderData.status || 'draft',
+        priority: orderData.priority || 'normal',
+        customer_complaint: orderData.customer_complaint,
+        internal_notes: orderData.internal_notes,
+        estimated_cost: orderData.estimated_cost,
+        estimated_hours: orderData.estimated_hours,
+        vehicle_mileage: orderData.vehicle_mileage,
+        scheduled_start_date: orderData.scheduled_start_date,
+        estimated_completion_date: orderData.estimated_completion_date,
+        tenant_id: user.user_metadata.tenant_id,
+        created_by_user_id: user.id,
+      };
       
       const { data, error } = await supabase
         .from('service_orders')
-        .insert({
-          ...cleanOrderData,
-          tenant_id: user.user_metadata.tenant_id,
-          created_by_user_id: user.id,
-        })
+        .insert(inputData)
         .select(`
           *,
           customers!inner(name, phone),
@@ -153,8 +188,11 @@ export const useServiceOrders = () => {
       // Transform the returned data
       const transformedData = {
         ...data,
-        technician: data.technician && typeof data.technician === 'object' && data.technician !== null && 'full_name' in data.technician 
-          ? data.technician 
+        technician: data.technician && 
+                   typeof data.technician === 'object' && 
+                   data.technician !== null && 
+                   'full_name' in data.technician 
+          ? { full_name: (data.technician as any).full_name }
           : null
       } as ServiceOrder;
 
@@ -178,18 +216,42 @@ export const useServiceOrders = () => {
 
   const updateServiceOrder = async (id: string, updates: Partial<ServiceOrder>) => {
     try {
-      // Remove nested objects and only keep the fields that exist in the database
-      const { customers, vehicles, technician, ...cleanUpdates } = updates;
+      // Create input object with only database fields
+      const updateData: Partial<ServiceOrderInput> = {
+        customer_id: updates.customer_id,
+        vehicle_id: updates.vehicle_id,
+        assigned_technician_id: updates.assigned_technician_id,
+        status: updates.status,
+        priority: updates.priority,
+        problem_description: updates.problem_description,
+        customer_complaint: updates.customer_complaint,
+        internal_notes: updates.internal_notes,
+        estimated_cost: updates.estimated_cost,
+        final_cost: updates.final_cost,
+        estimated_hours: updates.estimated_hours,
+        final_hours: updates.final_hours,
+        vehicle_mileage: updates.vehicle_mileage,
+        scheduled_start_date: updates.scheduled_start_date,
+        estimated_completion_date: updates.estimated_completion_date,
+        actual_completion_date: updates.actual_completion_date,
+      };
+
+      // Remove undefined values
+      Object.keys(updateData).forEach(key => {
+        if (updateData[key as keyof ServiceOrderInput] === undefined) {
+          delete updateData[key as keyof ServiceOrderInput];
+        }
+      });
       
       const { error } = await supabase
         .from('service_orders')
-        .update(cleanUpdates)
+        .update(updateData)
         .eq('id', id);
 
       if (error) throw error;
 
       setServiceOrders(prev => 
-        prev.map(so => so.id === id ? { ...so, ...cleanUpdates } : so)
+        prev.map(so => so.id === id ? { ...so, ...updates } : so)
       );
 
       toast({
