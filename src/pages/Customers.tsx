@@ -1,97 +1,58 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { 
-  Users, Plus, Search, Filter, MoreVertical, 
-  Phone, Mail, MapPin, Car, Edit, Trash2,
-  Eye, UserPlus, Download, Upload
+  Users, Plus, Search, MoreVertical, 
+  Phone, Mail, Car, Edit, Trash2,
+  Eye, UserPlus, Download, AlertCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
 import DashboardLayout from '@/components/DashboardLayout';
-
-interface Customer {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  document: string;
-  customer_type: 'individual' | 'business';
-  total_spent: number;
-  total_orders: number;
-  last_service: string;
-  status: 'active' | 'inactive';
-  vehicles_count: number;
-  created_at: string;
-}
+import CustomerForm from '@/components/CustomerForm';
+import { useCustomers, useCustomerStats, useCreateCustomer, useUpdateCustomer, useDeleteCustomer, Customer } from '@/hooks/useCustomers';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Customers = () => {
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
+  const [filterType, setFilterType] = useState<'all' | 'individual' | 'business'>('all');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
 
-  // Mock data para demonstração
-  useEffect(() => {
-    const mockCustomers: Customer[] = [
-      {
-        id: '1',
-        name: 'Maria Silva',
-        email: 'maria@email.com',
-        phone: '(11) 99999-9999',
-        document: '123.456.789-00',
-        customer_type: 'individual',
-        total_spent: 2500.00,
-        total_orders: 8,
-        last_service: '2025-01-10',
-        status: 'active',
-        vehicles_count: 2,
-        created_at: '2024-06-15'
-      },
-      {
-        id: '2',
-        name: 'João Santos',
-        email: 'joao@empresa.com',
-        phone: '(11) 88888-8888',
-        document: '12.345.678/0001-90',
-        customer_type: 'business',
-        total_spent: 5200.00,
-        total_orders: 15,
-        last_service: '2025-01-08',
-        status: 'active',
-        vehicles_count: 5,
-        created_at: '2024-03-20'
-      },
-      {
-        id: '3',
-        name: 'Ana Costa',
-        email: 'ana@email.com',
-        phone: '(11) 77777-7777',
-        document: '987.654.321-00',
-        customer_type: 'individual',
-        total_spent: 850.00,
-        total_orders: 3,
-        last_service: '2024-12-20',
-        status: 'active',
-        vehicles_count: 1,
-        created_at: '2024-08-10'
-      }
-    ];
-    
-    setTimeout(() => {
-      setCustomers(mockCustomers);
-      setLoading(false);
-    }, 1000);
-  }, []);
-
-  const filteredCustomers = customers.filter(customer => {
-    const matchesSearch = customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         customer.phone.includes(searchTerm);
-    const matchesFilter = filterStatus === 'all' || customer.status === filterStatus;
-    return matchesSearch && matchesFilter;
+  // Hooks
+  const { data: customers = [], isLoading, error } = useCustomers({
+    search: searchTerm,
+    status: filterStatus,
+    customer_type: filterType,
   });
+  
+  const { data: stats } = useCustomerStats();
+  const createCustomer = useCreateCustomer();
+  const updateCustomer = useUpdateCustomer();
+  const deleteCustomer = useDeleteCustomer();
+
+  // Event handlers
+  const handleCreateCustomer = async (data: any) => {
+    await createCustomer.mutateAsync(data);
+    setShowAddModal(false);
+  };
+
+  const handleUpdateCustomer = async (data: any) => {
+    if (editingCustomer) {
+      await updateCustomer.mutateAsync({ id: editingCustomer.id, ...data });
+      setEditingCustomer(null);
+    }
+  };
+
+  const handleDeleteCustomer = async (id: string) => {
+    await deleteCustomer.mutateAsync(id);
+  };
 
   const CustomerCard = ({ customer }: { customer: Customer }) => (
     <Card className="hover:shadow-lg transition-shadow">
@@ -105,56 +66,104 @@ const Customers = () => {
               <h3 className="text-lg font-semibold text-torqx-primary">
                 {customer.name}
               </h3>
-              <p className="text-sm text-gray-600">
-                {customer.customer_type === 'business' ? 'Pessoa Jurídica' : 'Pessoa Física'}
-              </p>
+              <div className="flex items-center space-x-2">
+                <Badge variant={customer.customer_type === 'business' ? 'default' : 'secondary'}>
+                  {customer.customer_type === 'business' ? 'Pessoa Jurídica' : 'Pessoa Física'}
+                </Badge>
+                <Badge variant={customer.status === 'active' ? 'default' : 'destructive'}>
+                  {customer.status === 'active' ? 'Ativo' : 'Inativo'}
+                </Badge>
+              </div>
             </div>
           </div>
-          <Button variant="ghost" size="icon">
-            <MoreVertical className="w-4 h-4" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <MoreVertical className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => {}}>
+                <Eye className="w-4 h-4 mr-2" />
+                Ver Detalhes
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setEditingCustomer(customer)}>
+                <Edit className="w-4 h-4 mr-2" />
+                Editar
+              </DropdownMenuItem>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Excluir
+                  </DropdownMenuItem>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Tem certeza que deseja excluir o cliente "{customer.name}"? Esta ação não pode ser desfeita.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => handleDeleteCustomer(customer.id)}>
+                      Excluir
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <div className="space-y-2 mb-4">
-          <div className="flex items-center text-sm text-gray-600">
-            <Mail className="w-4 h-4 mr-2" />
-            {customer.email}
-          </div>
-          <div className="flex items-center text-sm text-gray-600">
-            <Phone className="w-4 h-4 mr-2" />
-            {customer.phone}
-          </div>
+          {customer.email && (
+            <div className="flex items-center text-sm text-gray-600">
+              <Mail className="w-4 h-4 mr-2" />
+              {customer.email}
+            </div>
+          )}
+          {customer.phone && (
+            <div className="flex items-center text-sm text-gray-600">
+              <Phone className="w-4 h-4 mr-2" />
+              {customer.phone}
+            </div>
+          )}
           <div className="flex items-center text-sm text-gray-600">
             <Car className="w-4 h-4 mr-2" />
-            {customer.vehicles_count} veículo{customer.vehicles_count !== 1 ? 's' : ''}
+            {(customer as any).vehicles_count || 0} veículo{((customer as any).vehicles_count || 0) !== 1 ? 's' : ''}
           </div>
         </div>
 
         <div className="grid grid-cols-3 gap-4 mb-4">
           <div className="text-center">
             <p className="text-lg font-bold text-torqx-primary">
-              R$ {customer.total_spent.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              R$ {(customer.total_spent || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </p>
             <p className="text-xs text-gray-500">Total Gasto</p>
           </div>
           <div className="text-center">
-            <p className="text-lg font-bold text-torqx-primary">{customer.total_orders}</p>
+            <p className="text-lg font-bold text-torqx-primary">{customer.total_orders || 0}</p>
             <p className="text-xs text-gray-500">Serviços</p>
           </div>
           <div className="text-center">
             <p className="text-lg font-bold text-torqx-primary">
-              {new Date(customer.last_service).toLocaleDateString('pt-BR')}
+              {customer.last_service_date 
+                ? new Date(customer.last_service_date).toLocaleDateString('pt-BR')
+                : '-'
+              }
             </p>
             <p className="text-xs text-gray-500">Último Serviço</p>
           </div>
         </div>
 
         <div className="flex space-x-2">
-          <Button variant="outline" className="flex-1">
+          <Button variant="outline" className="flex-1" onClick={() => {}}>
             <Eye className="w-4 h-4 mr-1" />
             Ver Detalhes
           </Button>
-          <Button variant="outline" className="flex-1">
+          <Button variant="outline" className="flex-1" onClick={() => setEditingCustomer(customer)}>
             <Edit className="w-4 h-4 mr-1" />
             Editar
           </Button>
@@ -163,52 +172,60 @@ const Customers = () => {
     </Card>
   );
 
-  const AddCustomerModal = () => (
-    <DialogContent className="max-w-2xl">
-      <DialogHeader>
-        <DialogTitle>Novo Cliente</DialogTitle>
-      </DialogHeader>
-      <div className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Nome Completo *</label>
-            <Input placeholder="Nome do cliente" />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Email</label>
-            <Input type="email" placeholder="email@exemplo.com" />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Telefone *</label>
-            <Input placeholder="(11) 99999-9999" />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">CPF/CNPJ *</label>
-            <Input placeholder="000.000.000-00" />
-          </div>
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Endereço</label>
-          <Input placeholder="Rua, número, bairro, cidade" />
-        </div>
-        <div className="flex justify-end space-x-3 pt-4">
-          <Button variant="outline" onClick={() => setShowAddModal(false)}>
-            Cancelar
-          </Button>
-          <Button>Salvar Cliente</Button>
-        </div>
-      </div>
-    </DialogContent>
-  );
-
-  if (loading) {
+  if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-torqx-secondary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando clientes...</p>
+      <DashboardLayout>
+        <div className="p-6 text-center">
+          <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            Acesso Negado
+          </h3>
+          <p className="text-gray-500">
+            Você precisa estar logado para acessar esta página.
+          </p>
         </div>
-      </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <DashboardLayout>
+        <div className="p-6 text-center">
+          <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            Erro ao Carregar Clientes
+          </h3>
+          <p className="text-gray-500 mb-4">
+            Ocorreu um erro ao carregar os dados dos clientes.
+          </p>
+          <Button onClick={() => window.location.reload()}>
+            Tentar Novamente
+          </Button>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="p-6">
+          <div className="animate-pulse space-y-6">
+            <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-24 bg-gray-200 rounded"></div>
+              ))}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="h-64 bg-gray-200 rounded"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
     );
   }
 
@@ -227,15 +244,10 @@ const Customers = () => {
                 <Download className="w-4 h-4 mr-2" />
                 Exportar
               </Button>
-              <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Novo Cliente
-                  </Button>
-                </DialogTrigger>
-                <AddCustomerModal />
-              </Dialog>
+              <Button onClick={() => setShowAddModal(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Novo Cliente
+              </Button>
             </div>
           </div>
         </div>
@@ -247,7 +259,7 @@ const Customers = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Total de Clientes</p>
-                  <p className="text-2xl font-bold text-torqx-primary">{customers.length}</p>
+                  <p className="text-2xl font-bold text-torqx-primary">{stats?.totalCustomers || 0}</p>
                 </div>
                 <Users className="w-8 h-8 text-torqx-secondary" />
               </div>
@@ -258,7 +270,7 @@ const Customers = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Novos este Mês</p>
-                  <p className="text-2xl font-bold text-torqx-primary">12</p>
+                  <p className="text-2xl font-bold text-torqx-primary">{stats?.newThisMonth || 0}</p>
                 </div>
                 <UserPlus className="w-8 h-8 text-torqx-accent" />
               </div>
@@ -269,7 +281,9 @@ const Customers = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Receita Total</p>
-                  <p className="text-2xl font-bold text-torqx-primary">R$ 8.550</p>
+                  <p className="text-2xl font-bold text-torqx-primary">
+                    R$ {(stats?.totalRevenue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </p>
                 </div>
                 <div className="w-8 h-8 bg-torqx-accent/10 rounded-lg flex items-center justify-center">
                   <span className="text-torqx-accent font-bold">R$</span>
@@ -282,7 +296,9 @@ const Customers = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Ticket Médio</p>
-                  <p className="text-2xl font-bold text-torqx-primary">R$ 356</p>
+                  <p className="text-2xl font-bold text-torqx-primary">
+                    R$ {(stats?.averageTicket || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </p>
                 </div>
                 <div className="w-8 h-8 bg-torqx-secondary/10 rounded-lg flex items-center justify-center">
                   <span className="text-torqx-secondary font-bold">₢</span>
@@ -308,11 +324,20 @@ const Customers = () => {
               <select
                 className="px-4 py-2 border border-input rounded-md focus:ring-2 focus:ring-ring"
                 value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
+                onChange={(e) => setFilterStatus(e.target.value as any)}
               >
                 <option value="all">Todos os Status</option>
                 <option value="active">Ativos</option>
                 <option value="inactive">Inativos</option>
+              </select>
+              <select
+                className="px-4 py-2 border border-input rounded-md focus:ring-2 focus:ring-ring"
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value as any)}
+              >
+                <option value="all">Todos os Tipos</option>
+                <option value="individual">Pessoa Física</option>
+                <option value="business">Pessoa Jurídica</option>
               </select>
             </div>
           </CardContent>
@@ -320,13 +345,13 @@ const Customers = () => {
 
         {/* Customers Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCustomers.map(customer => (
+          {customers.map(customer => (
             <CustomerCard key={customer.id} customer={customer} />
           ))}
         </div>
 
         {/* Empty state */}
-        {filteredCustomers.length === 0 && (
+        {customers.length === 0 && !isLoading && (
           <div className="text-center py-12">
             <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -341,6 +366,37 @@ const Customers = () => {
             </Button>
           </div>
         )}
+
+        {/* Create Customer Modal */}
+        <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Novo Cliente</DialogTitle>
+            </DialogHeader>
+            <CustomerForm
+              onSubmit={handleCreateCustomer}
+              onCancel={() => setShowAddModal(false)}
+              isLoading={createCustomer.isPending}
+            />
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Customer Modal */}
+        <Dialog open={!!editingCustomer} onOpenChange={() => setEditingCustomer(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Editar Cliente</DialogTitle>
+            </DialogHeader>
+            {editingCustomer && (
+              <CustomerForm
+                customer={editingCustomer}
+                onSubmit={handleUpdateCustomer}
+                onCancel={() => setEditingCustomer(null)}
+                isLoading={updateCustomer.isPending}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
