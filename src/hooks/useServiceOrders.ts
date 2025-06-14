@@ -103,17 +103,24 @@ export const useServiceOrders = () => {
 
       if (error) throw error;
 
-      // Transform the data to match our interface
-      const transformedData = (data || []).map(order => ({
-        ...order,
-        technician: order.technician && 
-                   typeof order.technician === 'object' && 
-                   order.technician !== null && 
-                   'full_name' in order.technician 
-          ? { full_name: order.technician.full_name }
-          : null
-      })) as ServiceOrder[];
+      console.log('Raw service orders data:', data);
 
+      // Transform the data to match our interface
+      const transformedData = (data || []).map(order => {
+        const hasTechnician = order.technician && 
+                             typeof order.technician === 'object' && 
+                             order.technician !== null && 
+                             'full_name' in order.technician;
+        
+        return {
+          ...order,
+          technician: hasTechnician 
+            ? { full_name: (order.technician as { full_name: string }).full_name }
+            : null
+        };
+      }) as ServiceOrder[];
+
+      console.log('Transformed service orders:', transformedData);
       setServiceOrders(transformedData);
       
       // Calculate stats
@@ -153,6 +160,8 @@ export const useServiceOrders = () => {
     if (!user?.user_metadata?.tenant_id) return;
 
     try {
+      console.log('Creating service order with data:', orderData);
+      
       // Create input object with only database fields
       const inputData: ServiceOrderInput & { tenant_id: string; created_by_user_id: string } = {
         customer_id: orderData.customer_id!,
@@ -185,14 +194,18 @@ export const useServiceOrders = () => {
 
       if (error) throw error;
 
+      console.log('Created service order response:', data);
+
       // Transform the returned data with proper null checking
+      const hasTechnician = data.technician && 
+                           typeof data.technician === 'object' && 
+                           data.technician !== null && 
+                           'full_name' in data.technician;
+      
       const transformedData = {
         ...data,
-        technician: data.technician && 
-                   typeof data.technician === 'object' && 
-                   data.technician !== null && 
-                   'full_name' in data.technician 
-          ? { full_name: data.technician.full_name }
+        technician: hasTechnician 
+          ? { full_name: (data.technician as { full_name: string }).full_name }
           : null
       } as ServiceOrder;
 
@@ -216,6 +229,8 @@ export const useServiceOrders = () => {
 
   const updateServiceOrder = async (id: string, updates: Partial<ServiceOrder>) => {
     try {
+      console.log('Updating service order:', id, updates);
+      
       // Create input object with only database fields
       const updateData: Partial<ServiceOrderInput> = {
         customer_id: updates.customer_id,
@@ -271,6 +286,8 @@ export const useServiceOrders = () => {
 
   const deleteServiceOrder = async (id: string) => {
     try {
+      console.log('Deleting service order:', id);
+      
       const { error } = await supabase
         .from('service_orders')
         .delete()
