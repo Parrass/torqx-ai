@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -99,9 +98,9 @@ export const PurchaseForm = ({ isOpen, onClose, purchase }: PurchaseFormProps) =
         notes: purchase.notes || '',
         invoice_number: purchase.invoice_number || '',
         invoice_date: purchase.invoice_date || '',
-        discount_amount: parseFloat(purchase.discount_amount || 0),
-        tax_amount: parseFloat(purchase.tax_amount || 0),
-        items: purchase.items || [{ description: '', quantity: 1, unit_price: 0, category: '', notes: '' }],
+        discount_amount: parseFloat(String(purchase.discount_amount || 0)),
+        tax_amount: parseFloat(String(purchase.tax_amount || 0)),
+        items: purchase.purchase_items || [{ description: '', quantity: 1, unit_price: 0, category: '', notes: '' }],
       });
     } else {
       form.reset({
@@ -133,10 +132,21 @@ export const PurchaseForm = ({ isOpen, onClose, purchase }: PurchaseFormProps) =
   const onSubmit = async (data: PurchaseFormData) => {
     try {
       const purchaseData = {
-        ...data,
+        supplier_name: data.supplier_name,
+        supplier_document: data.supplier_document,
+        supplier_contact: JSON.stringify(data.supplier_contact || {}),
+        purchase_date: data.purchase_date,
+        due_date: data.due_date,
+        category: data.category || 'general',
+        payment_method: data.payment_method,
+        notes: data.notes,
+        invoice_number: data.invoice_number,
+        invoice_date: data.invoice_date,
+        discount_amount: data.discount_amount || 0,
+        tax_amount: data.tax_amount || 0,
         total_amount: subtotal,
         final_amount: finalAmount,
-        supplier_contact: JSON.stringify(data.supplier_contact || {}),
+        items: data.items,
       };
 
       if (purchase) {

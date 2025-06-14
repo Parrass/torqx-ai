@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { DashboardLayout } from '@/components/DashboardLayout';
+import DashboardLayout from '@/components/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -37,7 +37,7 @@ const Purchases = () => {
   const totalPurchases = purchases.length;
   const pendingAmount = purchases
     .filter(p => p.payment_status === 'pending')
-    .reduce((sum, p) => sum + parseFloat(p.final_amount || 0), 0);
+    .reduce((sum, p) => sum + parseFloat(String(p.final_amount || 0)), 0);
   const monthlyTotal = purchases
     .filter(p => {
       const purchaseDate = new Date(p.purchase_date);
@@ -45,7 +45,7 @@ const Purchases = () => {
       return purchaseDate.getMonth() === currentMonth.getMonth() && 
              purchaseDate.getFullYear() === currentMonth.getFullYear();
     })
-    .reduce((sum, p) => sum + parseFloat(p.final_amount || 0), 0);
+    .reduce((sum, p) => sum + parseFloat(String(p.final_amount || 0)), 0);
 
   return (
     <DashboardLayout>

@@ -28,7 +28,7 @@ export const PurchaseMetrics = () => {
 
       months.push({
         month: format(date, 'MMM', { locale: ptBR }),
-        total: monthPurchases.reduce((sum, p) => sum + parseFloat(p.final_amount || 0), 0),
+        total: monthPurchases.reduce((sum, p) => sum + parseFloat(String(p.final_amount || 0)), 0),
         count: monthPurchases.length,
         paid: monthPurchases.filter(p => p.payment_status === 'paid').length,
         pending: monthPurchases.filter(p => p.payment_status === 'pending').length,
@@ -44,7 +44,7 @@ export const PurchaseMetrics = () => {
       if (!acc[category]) {
         acc[category] = { name: category, value: 0, count: 0 };
       }
-      acc[category].value += parseFloat(purchase.final_amount || 0);
+      acc[category].value += parseFloat(String(purchase.final_amount || 0));
       acc[category].count += 1;
       return acc;
     }, {} as Record<string, { name: string; value: number; count: number }>);
@@ -52,7 +52,7 @@ export const PurchaseMetrics = () => {
     return Object.values(categories).map((cat, index) => ({
       ...cat,
       color: COLORS[index % COLORS.length],
-      percentage: ((cat.value / purchases.reduce((sum, p) => sum + parseFloat(p.final_amount || 0), 0)) * 100).toFixed(1)
+      percentage: ((cat.value / purchases.reduce((sum, p) => sum + parseFloat(String(p.final_amount || 0)), 0)) * 100).toFixed(1)
     }));
   }, [purchases]);
 
@@ -76,8 +76,8 @@ export const PurchaseMetrics = () => {
       return purchaseDate >= prevMonthStart && purchaseDate <= prevMonthEnd;
     });
 
-    const currentTotal = currentMonthPurchases.reduce((sum, p) => sum + parseFloat(p.final_amount || 0), 0);
-    const previousTotal = previousMonthPurchases.reduce((sum, p) => sum + parseFloat(p.final_amount || 0), 0);
+    const currentTotal = currentMonthPurchases.reduce((sum, p) => sum + parseFloat(String(p.final_amount || 0)), 0);
+    const previousTotal = previousMonthPurchases.reduce((sum, p) => sum + parseFloat(String(p.final_amount || 0)), 0);
     
     const growth = previousTotal > 0 ? ((currentTotal - previousTotal) / previousTotal) * 100 : 0;
 
@@ -88,7 +88,7 @@ export const PurchaseMetrics = () => {
       pending: currentMonthPurchases.filter(p => p.payment_status === 'pending').length,
       overdue: currentMonthPurchases.filter(p => {
         if (!p.due_date) return false;
-        return parseISO(p.due_date) < now && p.payment_status === 'pending';
+        return parseISO(String(p.due_date)) < now && p.payment_status === 'pending';
       }).length,
     };
   }, [purchases]);
@@ -100,7 +100,7 @@ export const PurchaseMetrics = () => {
       if (!acc[supplier]) {
         acc[supplier] = { name: supplier, value: 0, count: 0 };
       }
-      acc[supplier].value += parseFloat(purchase.final_amount || 0);
+      acc[supplier].value += parseFloat(String(purchase.final_amount || 0));
       acc[supplier].count += 1;
       return acc;
     }, {} as Record<string, { name: string; value: number; count: number }>);
