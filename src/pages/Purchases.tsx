@@ -1,18 +1,18 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import DashboardLayout from '@/components/DashboardLayout';
 import PurchaseForm from '@/components/PurchaseForm';
 import PurchaseList from '@/components/PurchaseList';
 import PurchaseMetrics from '@/components/PurchaseMetrics';
 
 const Purchases = () => {
-  const [activeTab, setActiveTab] = useState('list');
+  const [isFormOpen, setIsFormOpen] = useState(false);
 
   const handlePurchaseSuccess = () => {
-    setActiveTab('list');
+    setIsFormOpen(false);
   };
 
   return (
@@ -24,7 +24,7 @@ const Purchases = () => {
             <p className="text-gray-600">Gerencie suas compras e controle seus gastos</p>
           </div>
           <Button 
-            onClick={() => setActiveTab('new')}
+            onClick={() => setIsFormOpen(true)}
             className="bg-torqx-secondary hover:bg-torqx-secondary-dark"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -33,23 +33,16 @@ const Purchases = () => {
         </div>
 
         <PurchaseMetrics />
+        <PurchaseList />
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="list">Lista de Compras</TabsTrigger>
-            <TabsTrigger value="new">Nova Compra</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="list" className="mt-6">
-            <PurchaseList />
-          </TabsContent>
-          
-          <TabsContent value="new" className="mt-6">
-            <div className="max-w-4xl mx-auto">
-              <PurchaseForm onSuccess={handlePurchaseSuccess} />
-            </div>
-          </TabsContent>
-        </Tabs>
+        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Nova Compra</DialogTitle>
+            </DialogHeader>
+            <PurchaseForm onSuccess={handlePurchaseSuccess} />
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

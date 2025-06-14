@@ -1,17 +1,17 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import DashboardLayout from '@/components/DashboardLayout';
 import SupplierForm from '@/components/SupplierForm';
 import SupplierList from '@/components/SupplierList';
 
 const Suppliers = () => {
-  const [activeTab, setActiveTab] = useState('list');
+  const [isFormOpen, setIsFormOpen] = useState(false);
 
   const handleSupplierSuccess = () => {
-    setActiveTab('list');
+    setIsFormOpen(false);
   };
 
   return (
@@ -23,7 +23,7 @@ const Suppliers = () => {
             <p className="text-gray-600">Gerencie seus fornecedores e parceiros comerciais</p>
           </div>
           <Button 
-            onClick={() => setActiveTab('new')}
+            onClick={() => setIsFormOpen(true)}
             className="bg-torqx-secondary hover:bg-torqx-secondary-dark"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -31,22 +31,16 @@ const Suppliers = () => {
           </Button>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="list">Lista de Fornecedores</TabsTrigger>
-            <TabsTrigger value="new">Novo Fornecedor</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="list" className="mt-6">
-            <SupplierList />
-          </TabsContent>
-          
-          <TabsContent value="new" className="mt-6">
-            <div className="max-w-4xl mx-auto">
-              <SupplierForm onSuccess={handleSupplierSuccess} />
-            </div>
-          </TabsContent>
-        </Tabs>
+        <SupplierList />
+
+        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Novo Fornecedor</DialogTitle>
+            </DialogHeader>
+            <SupplierForm onSuccess={handleSupplierSuccess} />
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

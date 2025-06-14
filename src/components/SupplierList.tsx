@@ -48,7 +48,7 @@ const SupplierList = () => {
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      'active': { label: 'Ativo', variant: 'success' as const },
+      'active': { label: 'Ativo', variant: 'default' as const },
       'inactive': { label: 'Inativo', variant: 'secondary' as const },
       'suspended': { label: 'Suspenso', variant: 'destructive' as const }
     };

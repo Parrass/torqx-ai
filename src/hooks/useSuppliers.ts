@@ -17,7 +17,12 @@ export const useSuppliers = () => {
       .order('name');
 
     if (error) throw error;
-    return data || [];
+    
+    return (data || []).map(supplier => ({
+      ...supplier,
+      document_type: (supplier.document_type || 'cnpj') as 'cnpj' | 'cpf',
+      status: supplier.status as 'active' | 'inactive' | 'suspended'
+    }));
   };
 
   const createSupplier = async (supplierData: CreateSupplierData): Promise<Supplier> => {
@@ -34,7 +39,12 @@ export const useSuppliers = () => {
       .single();
 
     if (error) throw error;
-    return data;
+    
+    return {
+      ...data,
+      document_type: (data.document_type || 'cnpj') as 'cnpj' | 'cpf',
+      status: data.status as 'active' | 'inactive' | 'suspended'
+    };
   };
 
   const updateSupplier = async ({ id, ...data }: Partial<Supplier> & { id: string }): Promise<Supplier> => {
@@ -48,7 +58,12 @@ export const useSuppliers = () => {
       .single();
 
     if (error) throw error;
-    return updatedData;
+    
+    return {
+      ...updatedData,
+      document_type: (updatedData.document_type || 'cnpj') as 'cnpj' | 'cpf',
+      status: updatedData.status as 'active' | 'inactive' | 'suspended'
+    };
   };
 
   const deleteSupplier = async (id: string) => {

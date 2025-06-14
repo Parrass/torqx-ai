@@ -24,6 +24,7 @@ export const usePurchases = () => {
     // Transform the data to match our Purchase type
     return (data || []).map(purchase => ({
       ...purchase,
+      payment_status: (purchase.payment_status || 'pending') as 'pending' | 'paid' | 'overdue' | 'cancelled',
       supplier_contact: typeof purchase.supplier_contact === 'string' 
         ? JSON.parse(purchase.supplier_contact) 
         : purchase.supplier_contact || {}
@@ -90,6 +91,7 @@ export const usePurchases = () => {
 
     return {
       ...purchase,
+      payment_status: (purchase.payment_status || 'pending') as 'pending' | 'paid' | 'overdue' | 'cancelled',
       supplier_contact: typeof purchase.supplier_contact === 'string' 
         ? JSON.parse(purchase.supplier_contact) 
         : purchase.supplier_contact || {}
