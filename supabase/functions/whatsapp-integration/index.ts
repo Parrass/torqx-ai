@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
@@ -57,12 +58,10 @@ serve(async (req) => {
     // Verificar credenciais da Evolution API
     const rawEvolutionApiUrl = Deno.env.get('EVOLUTION_API_URL');
     const evolutionApiKey = Deno.env.get('EVOLUTION_API_KEY');
-    const n8nWebhookUrl = Deno.env.get('N8N_WEBHOOK_URL');
 
     console.log('Verificando credenciais Evolution API:', {
       url: rawEvolutionApiUrl ? 'OK' : 'FALTANDO',
       key: evolutionApiKey ? 'OK' : 'FALTANDO',
-      webhook: n8nWebhookUrl ? 'OK' : 'FALTANDO'
     });
 
     if (!rawEvolutionApiUrl || !evolutionApiKey) {
@@ -121,6 +120,7 @@ serve(async (req) => {
             base64: true,
             events: [
               'APPLICATION_STARTUP',
+              'MESSAGES_UPSERT',
               'MESSAGE_RECEIVED', 
               'MESSAGE_SENT',
               'CONNECTION_UPDATE',
@@ -418,17 +418,20 @@ serve(async (req) => {
               events: webhookConfig.events
             };
           } else {
-            // Usar webhook padrão do N8N
-            if (!n8nWebhookUrl) {
-              throw new Error('N8N_WEBHOOK_URL não configurada nos secrets do Supabase');
-            }
-            
+            // Usar webhook padrão do Supabase que faz proxy para N8N
             webhookPayload = {
               enabled: true,
-              url: n8nWebhookUrl,
+              url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/whatsapp-webhook`,
               webhookByEvents: true,
               webhookBase64: true,
-              events: ['MESSAGES_UPSERT']
+              events: [
+                'APPLICATION_STARTUP',
+                'MESSAGES_UPSERT',
+                'MESSAGE_RECEIVED',
+                'MESSAGE_SENT', 
+                'CONNECTION_UPDATE',
+                'QRCODE_UPDATED'
+              ]
             };
           }
 
