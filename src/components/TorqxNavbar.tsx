@@ -1,72 +1,55 @@
 
 import React from 'react';
-import { Menu, Bell, Search, Wrench } from 'lucide-react';
+import { Bell, Search, Menu } from 'lucide-react';
 import { useSidebar } from '@/components/ui/sidebar';
-import UserDropdown from '@/components/UserDropdown';
 import CompanyLogo from '@/components/CompanyLogo';
+import UserDropdown from '@/components/UserDropdown';
 
 const TorqxNavbar = () => {
   const { setOpen } = useSidebar();
 
   return (
-    <header className="bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-100 fixed top-0 left-0 right-0 z-50">
-      <div className="flex items-center justify-between h-16 px-4 sm:px-6">
-        <div className="flex items-center space-x-4">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 dark:bg-torqx-primary dark:border-torqx-primary-light">
+      <div className="flex items-center justify-between h-16 px-4">
+        {/* Left section */}
+        <div className="flex items-center space-x-3">
           {/* Mobile menu button */}
-          <button 
-            className="md:hidden p-2 rounded-lg hover:bg-gray-100"
+          <button
             onClick={() => setOpen(true)}
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-torqx-primary-light transition-colors md:hidden"
           >
-            <Menu className="w-5 h-5 text-torqx-primary" />
+            <Menu className="w-5 h-5 text-torqx-primary dark:text-white" />
           </button>
+
+          {/* Company Logo */}
+          <CompanyLogo />
           
-          {/* Company Logo and Torqx Brand */}
-          <div className="flex items-center space-x-3">
-            {/* Logo da empresa */}
-            <CompanyLogo />
-            
-            {/* Separador visual */}
-            <div className="w-px h-6 bg-gray-300 hidden sm:block"></div>
-            
-            {/* Logo Torqx */}
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-torqx-secondary to-torqx-accent rounded-lg flex items-center justify-center">
-                <Wrench className="w-4 h-4 text-white" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xl font-bold text-torqx-primary font-satoshi">Torqx</span>
-                <span className="text-xs text-gray-500 hidden sm:block">Oficina Digital</span>
-              </div>
-            </div>
+          {/* Company Name */}
+          <div className="hidden sm:block">
+            <h1 className="text-xl font-bold text-torqx-primary dark:text-white font-satoshi">
+              Torqx
+            </h1>
           </div>
         </div>
 
-        <div className="flex items-center space-x-4">
+        {/* Right section */}
+        <div className="flex items-center space-x-2">
           {/* Search */}
-          <div className="relative hidden sm:block">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-gray-400" />
-            </div>
-            <input
-              type="text"
-              className="block w-64 pl-10 pr-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-torqx-secondary focus:border-transparent"
-              placeholder="Buscar clientes, OS..."
-            />
-          </div>
+          <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-torqx-primary-light transition-colors">
+            <Search className="w-5 h-5 text-gray-600 dark:text-white" />
+          </button>
 
           {/* Notifications */}
-          <button className="p-2 rounded-lg hover:bg-gray-100 relative">
-            <Bell className="w-5 h-5 text-gray-600" />
+          <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-torqx-primary-light transition-colors relative">
+            <Bell className="w-5 h-5 text-gray-600 dark:text-white" />
             <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
           </button>
 
           {/* User Dropdown */}
-          <div className="pl-2 border-l border-gray-200">
-            <UserDropdown />
-          </div>
+          <UserDropdown />
         </div>
       </div>
-    </header>
+    </nav>
   );
 };
 

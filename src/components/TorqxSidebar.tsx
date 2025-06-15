@@ -19,14 +19,12 @@ import {
   Zap
 } from 'lucide-react';
 import { SidebarBody, SidebarLink } from '@/components/ui/sidebar';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import SidebarCategoryItem from '@/components/SidebarCategoryItem';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
 
 const TorqxSidebar = () => {
   const { permissions, loading } = useUserPermissions();
-
-  console.log('TorqxSidebar - Permissões do usuário:', permissions);
-  console.log('TorqxSidebar - Loading:', loading);
 
   // Links principais (sempre visíveis)
   const mainLinks = [
@@ -164,23 +162,23 @@ const TorqxSidebar = () => {
   if (loading) {
     return (
       <SidebarBody>
-        <div className="flex flex-col flex-1 overflow-y-auto">
-          <div className="mt-4 flex flex-col gap-2">
-            <div className="animate-pulse h-8 bg-gray-200 rounded"></div>
-            <div className="animate-pulse h-8 bg-gray-200 rounded"></div>
-            <div className="animate-pulse h-8 bg-gray-200 rounded"></div>
+        <ScrollArea className="flex-1">
+          <div className="p-3">
+            <div className="animate-pulse space-y-2">
+              <div className="h-8 bg-gray-200 rounded"></div>
+              <div className="h-8 bg-gray-200 rounded"></div>
+              <div className="h-8 bg-gray-200 rounded"></div>
+            </div>
           </div>
-        </div>
+        </ScrollArea>
       </SidebarBody>
     );
   }
 
-  console.log('TorqxSidebar - Renderizando categorias. Total de permissões:', permissions.length);
-
   return (
     <SidebarBody>
-      <div className="flex flex-col flex-1 overflow-y-auto">
-        <div className="mt-4 flex flex-col gap-1">
+      <ScrollArea className="flex-1">
+        <div className="p-3 space-y-1">
           {/* Links principais */}
           {mainLinks.map((link, idx) => (
             <SidebarLink key={idx} link={link} />
@@ -188,13 +186,6 @@ const TorqxSidebar = () => {
           
           {/* Separador */}
           <div className="border-t border-gray-200 dark:border-torqx-primary-light my-3"></div>
-          
-          {/* Debug info - remover em produção */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="text-xs text-gray-500 p-2">
-              Permissões: {permissions.length > 0 ? permissions.join(', ') : 'Nenhuma'}
-            </div>
-          )}
           
           {/* Categorias */}
           {categories.map((category, idx) => (
@@ -205,7 +196,7 @@ const TorqxSidebar = () => {
             />
           ))}
         </div>
-      </div>
+      </ScrollArea>
     </SidebarBody>
   );
 };
