@@ -23,21 +23,21 @@ export const useServiceOrders = () => {
     total_revenue: 0,
   });
   const [loading, setLoading] = useState(true);
-  const { user, userProfile } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
 
   const operations = new ServiceOrderOperations(supabase, toast);
 
   const fetchServiceOrders = async () => {
-    if (!user || !userProfile?.tenant_id) {
-      console.log('No user or tenant_id found');
+    if (!user?.user_metadata?.tenant_id) {
+      console.log('No tenant_id found in user metadata');
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
-      console.log('Fetching service orders for tenant:', userProfile.tenant_id);
+      console.log('Fetching service orders for tenant:', user.user_metadata.tenant_id);
       
       const { data, error } = await supabase
         .from('service_orders')
@@ -46,7 +46,7 @@ export const useServiceOrders = () => {
           customers!inner(name, phone),
           vehicles!inner(brand, model, license_plate, year)
         `)
-        .eq('tenant_id', userProfile.tenant_id)
+        .eq('tenant_id', user.user_metadata.tenant_id)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -65,7 +65,7 @@ export const useServiceOrders = () => {
                 .from('users')
                 .select('full_name')
                 .eq('id', order.assigned_technician_id)
-                .eq('tenant_id', userProfile.tenant_id)
+                .eq('tenant_id', user.user_metadata.tenant_id)
                 .single();
               
               return {
@@ -113,16 +113,10 @@ export const useServiceOrders = () => {
   };
 
   const createServiceOrder = async (orderData: Partial<ServiceOrder>) => {
-    if (!user || !userProfile?.tenant_id) return;
+    if (!user?.user_metadata?.tenant_id) return;
     
     try {
-      // Ensure tenant_id is included
-      const orderWithTenant = {
-        ...orderData,
-        tenant_id: userProfile.tenant_id
-      };
-      
-      const result = await operations.create(orderWithTenant, user);
+      const result = await operations.create(orderData, user);
       if (result) {
         setServiceOrders(prev => [result, ...prev]);
         toast({
@@ -183,10 +177,8 @@ export const useServiceOrders = () => {
   };
 
   useEffect(() => {
-    if (userProfile?.tenant_id) {
-      fetchServiceOrders();
-    }
-  }, [userProfile?.tenant_id]);
+    fetchServiceOrders();
+  }, [user]);
 
   return {
     serviceOrders,

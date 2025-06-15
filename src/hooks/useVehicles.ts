@@ -43,14 +43,12 @@ export interface VehicleFilters {
 }
 
 export const useVehicles = (filters: VehicleFilters = {}) => {
-  const { user, userProfile } = useAuth();
+  const { user } = useAuth();
 
   return useQuery({
     queryKey: ['vehicles', filters],
     queryFn: async () => {
-      if (!user || !userProfile?.tenant_id) {
-        throw new Error('User not authenticated or tenant not found');
-      }
+      if (!user) throw new Error('User not authenticated');
 
       let query = supabase
         .from('vehicles')
@@ -58,7 +56,6 @@ export const useVehicles = (filters: VehicleFilters = {}) => {
           *,
           customer:customers(name, phone)
         `)
-        .eq('tenant_id', userProfile.tenant_id)
         .order('created_at', { ascending: false });
 
       // Apply filters
@@ -97,6 +94,7 @@ export const useVehicles = (filters: VehicleFilters = {}) => {
         throw error;
       }
 
+      // Transform data to match our interface with proper type conversion
       return data?.map(vehicle => ({
         ...vehicle,
         status: (vehicle.status as 'active' | 'inactive') || 'active',
@@ -106,38 +104,33 @@ export const useVehicles = (filters: VehicleFilters = {}) => {
         } : undefined
       })) || [];
     },
-    enabled: !!user && !!userProfile?.tenant_id,
+    enabled: !!user,
   });
 };
 
 export const useVehicleStats = () => {
-  const { user, userProfile } = useAuth();
+  const { user } = useAuth();
 
   return useQuery({
     queryKey: ['vehicle-stats'],
     queryFn: async () => {
-      if (!user || !userProfile?.tenant_id) {
-        throw new Error('User not authenticated or tenant not found');
-      }
+      if (!user) throw new Error('User not authenticated');
 
       // Get total vehicles
       const { count: totalVehicles } = await supabase
         .from('vehicles')
-        .select('*', { count: 'exact', head: true })
-        .eq('tenant_id', userProfile.tenant_id);
+        .select('*', { count: 'exact', head: true });
 
       // Get active vehicles
       const { count: activeVehicles } = await supabase
         .from('vehicles')
         .select('*', { count: 'exact', head: true })
-        .eq('tenant_id', userProfile.tenant_id)
         .eq('status', 'active');
 
       // Get vehicles by fuel type
       const { data: fuelTypes } = await supabase
         .from('vehicles')
         .select('fuel_type')
-        .eq('tenant_id', userProfile.tenant_id)
         .not('fuel_type', 'is', null);
 
       const fuelTypeCount = fuelTypes?.reduce((acc, vehicle) => {
@@ -150,11 +143,10 @@ export const useVehicleStats = () => {
       const { data: mileageData } = await supabase
         .from('vehicles')
         .select('current_mileage')
-        .eq('tenant_id', userProfile.tenant_id)
         .not('current_mileage', 'is', null);
 
-      const totalMileage = mileageData?.reduce((sum, vehicle) => sum + (vehicle.current_mileage || 0), 0) || 0;
-      const averageMileage = mileageData?.length ? totalMileage / mileageData.length : 0;
+      const averageMileage = mileageData?.length ? 
+        mileageData.reduce((sum, v) => sum + (v.current_mileage || 0), 0) / mileageData.length : 0;
 
       return {
         totalVehicles: totalVehicles || 0,
@@ -164,23 +156,32 @@ export const useVehicleStats = () => {
         averageMileage: Math.round(averageMileage)
       };
     },
-    enabled: !!user && !!userProfile?.tenant_id,
+    enabled: !!user,
   });
 };
 
 export const useCreateVehicle = () => {
   const queryClient = useQueryClient();
-  const { user, userProfile } = useAuth();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (vehicleData: Omit<Vehicle, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>) => {
-      if (!user || !userProfile?.tenant_id) {
-        throw new Error('User not authenticated or tenant not found');
+      if (!user) throw new Error('User not authenticated');
+
+      // Get user's tenant_id
+      const { data: userData } = await supabase
+        .from('users')
+        .select('tenant_id')
+        .eq('id', user.id)
+        .single();
+
+      if (!userData?.tenant_id) {
+        throw new Error('User tenant not found');
       }
 
       const { data, error } = await supabase
         .from('vehicles')
-        .insert([{ ...vehicleData, tenant_id: userProfile.tenant_id }])
+        .insert([{ ...vehicleData, tenant_id: userData.tenant_id }])
         .select()
         .single();
 
