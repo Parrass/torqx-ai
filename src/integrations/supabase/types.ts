@@ -1576,6 +1576,69 @@ export type Database = {
         }
         Relationships: []
       }
+      workshop_settings: {
+        Row: {
+          address: string | null
+          business_name: string | null
+          cnpj: string | null
+          created_at: string | null
+          created_by_user_id: string
+          description: string | null
+          email: string | null
+          id: string
+          logo_url: string | null
+          mobile: string | null
+          phone: string | null
+          state_registration: string | null
+          tenant_id: string
+          updated_at: string | null
+          website: string | null
+          working_hours: Json | null
+          workshop_name: string
+          workshop_photo_url: string | null
+        }
+        Insert: {
+          address?: string | null
+          business_name?: string | null
+          cnpj?: string | null
+          created_at?: string | null
+          created_by_user_id: string
+          description?: string | null
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          mobile?: string | null
+          phone?: string | null
+          state_registration?: string | null
+          tenant_id: string
+          updated_at?: string | null
+          website?: string | null
+          working_hours?: Json | null
+          workshop_name: string
+          workshop_photo_url?: string | null
+        }
+        Update: {
+          address?: string | null
+          business_name?: string | null
+          cnpj?: string | null
+          created_at?: string | null
+          created_by_user_id?: string
+          description?: string | null
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          mobile?: string | null
+          phone?: string | null
+          state_registration?: string | null
+          tenant_id?: string
+          updated_at?: string | null
+          website?: string | null
+          working_hours?: Json | null
+          workshop_name?: string
+          workshop_photo_url?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       customer_metrics: {
