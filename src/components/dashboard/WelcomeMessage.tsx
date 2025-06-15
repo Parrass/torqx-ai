@@ -19,12 +19,18 @@ const WelcomeMessage: React.FC<WelcomeMessageProps> = ({ onStartTour }) => {
   const [bannerDismissed, setBannerDismissed] = useState(false);
 
   useEffect(() => {
-    console.log('WelcomeMessage: Progresso do onboarding:', progress);
-    console.log('WelcomeMessage: Carregando:', isLoading);
+    console.log('WelcomeMessage: Onboarding state update:', {
+      progress,
+      isLoading,
+      isCompleted: progress?.isCompleted,
+      currentStep: progress?.currentStep,
+      progressPercentage: progress?.progress
+    });
   }, [progress, isLoading]);
 
-  // Enquanto estiver carregando, mostrar um skeleton ou nada
+  // Enquanto estiver carregando, mostrar um skeleton
   if (isLoading) {
+    console.log('WelcomeMessage: Showing loading state');
     return (
       <Card className="bg-gray-100 animate-pulse mb-6">
         <CardContent className="p-6">
@@ -42,6 +48,7 @@ const WelcomeMessage: React.FC<WelcomeMessageProps> = ({ onStartTour }) => {
 
   // Se o onboarding foi completado, mostrar mensagem de parabéns
   if (progress && progress.isCompleted) {
+    console.log('WelcomeMessage: Showing completion state');
     return (
       <Card className="bg-gradient-to-r from-torqx-secondary to-torqx-accent text-white border-0 shadow-lg mb-6">
         <CardContent className="p-6">
@@ -98,6 +105,7 @@ const WelcomeMessage: React.FC<WelcomeMessageProps> = ({ onStartTour }) => {
 
   // Se há progresso em andamento e não foi dispensado, mostrar banner
   if (progress && !progress.isCompleted && !bannerDismissed) {
+    console.log('WelcomeMessage: Showing progress banner');
     return (
       <>
         <OnboardingBanner 
@@ -113,6 +121,7 @@ const WelcomeMessage: React.FC<WelcomeMessageProps> = ({ onStartTour }) => {
   }
 
   // Se não há progresso ou foi dispensado, mostrar convite para iniciar
+  console.log('WelcomeMessage: Showing initial setup invitation');
   return (
     <Card className="bg-gradient-to-r from-torqx-primary to-torqx-primary-light text-white border-0 shadow-lg mb-6">
       <CardContent className="p-6">

@@ -12,23 +12,44 @@ export const useOnboarding = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const [tenantId, setTenantId] = useState<string | null>(null);
 
-  // Get current user and tenant
+  // Get current user and ensure tenant exists
   useEffect(() => {
     const getCurrentUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
         setUserId(user.id);
+        console.log('useOnboarding: User ID obtained:', user.id);
         
-        // Get tenant_id from users table
+        // First try to get tenant_id from users table
         const { data: userData } = await supabase
           .from('users')
           .select('tenant_id')
           .eq('id', user.id)
-          .single();
+          .maybeSingle();
         
         if (userData?.tenant_id) {
+          console.log('useOnboarding: Tenant ID found in users table:', userData.tenant_id);
           setTenantId(userData.tenant_id);
+          return;
         }
+
+        // If no tenant_id, call the function to get or create tenant
+        console.log('useOnboarding: No tenant_id found, creating tenant...');
+        const { data: newTenantId, error } = await supabase.rpc('get_or_create_tenant_for_user');
+        
+        if (error) {
+          console.error('useOnboarding: Error creating tenant:', error);
+          return;
+        }
+
+        if (newTenantId) {
+          console.log('useOnboarding: New tenant created:', newTenantId);
+          setTenantId(newTenantId);
+        }
+      } catch (error) {
+        console.error('useOnboarding: Error in getCurrentUser:', error);
       }
     };
 
@@ -42,10 +63,19 @@ export const useOnboarding = () => {
       if (!userId) return null;
       
       try {
+        console.log('useOnboarding: Loading progress for user:', userId);
         const data = await OnboardingApiService.loadProgress(userId);
-        return data ? mapProgressFromDatabase(data) : null;
+        
+        if (data) {
+          const mappedProgress = mapProgressFromDatabase(data);
+          console.log('useOnboarding: Progress loaded:', mappedProgress);
+          return mappedProgress;
+        }
+        
+        console.log('useOnboarding: No progress found');
+        return null;
       } catch (error) {
-        console.error('Error loading onboarding progress:', error);
+        console.error('useOnboarding: Error loading progress:', error);
         return null;
       }
     },
@@ -59,10 +89,13 @@ export const useOnboarding = () => {
       if (!userId) return [];
       
       try {
+        console.log('useOnboarding: Loading tasks for user:', userId);
         const data = await OnboardingApiService.loadTasks(userId);
-        return mapTasksFromDatabase(data || []);
+        const mappedTasks = mapTasksFromDatabase(data || []);
+        console.log('useOnboarding: Tasks loaded:', mappedTasks);
+        return mappedTasks;
       } catch (error) {
-        console.error('Error loading onboarding tasks:', error);
+        console.error('useOnboarding: Error loading tasks:', error);
         return [];
       }
     },
@@ -76,7 +109,7 @@ export const useOnboarding = () => {
         throw new Error('User ID or Tenant ID not available');
       }
 
-      console.log('Initializing onboarding for user:', userId, 'tenant:', tenantId);
+      console.log('useOnboarding: Initializing onboarding for user:', userId, 'tenant:', tenantId);
 
       // Create initial progress and tasks
       const [progressData] = await Promise.all([
@@ -84,6 +117,7 @@ export const useOnboarding = () => {
         OnboardingApiService.createInitialTasks(userId, tenantId)
       ]);
 
+      console.log('useOnboarding: Onboarding initialized successfully');
       return mapProgressFromDatabase(progressData);
     },
     onSuccess: () => {
@@ -92,14 +126,14 @@ export const useOnboarding = () => {
       queryClient.invalidateQueries({ queryKey: ['onboarding-tasks', userId] });
     },
     onError: (error) => {
-      console.error('Error initializing onboarding:', error);
+      console.error('useOnboarding: Error initializing onboarding:', error);
     }
   });
 
   // Auto-initialize if no progress exists and we have user/tenant data
   useEffect(() => {
     if (userId && tenantId && !progressLoading && !progress && !initializeMutation.isPending) {
-      console.log('Auto-initializing onboarding data...');
+      console.log('useOnboarding: Auto-initializing onboarding data...');
       initializeMutation.mutate();
     }
   }, [userId, tenantId, progress, progressLoading, initializeMutation]);
