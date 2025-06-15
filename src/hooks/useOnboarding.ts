@@ -17,6 +17,7 @@ export const useOnboarding = () => {
   useEffect(() => {
     const initializeUser = async () => {
       try {
+        console.log('useOnboarding: Initializing user...');
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
           console.log('useOnboarding: No user found');
@@ -28,6 +29,7 @@ export const useOnboarding = () => {
         setUserId(user.id);
         
         // Call the improved function to get or create tenant
+        console.log('useOnboarding: Getting/creating tenant...');
         const { data: tenantId, error } = await supabase.rpc('get_or_create_tenant_for_user');
         
         if (error) {
@@ -39,6 +41,8 @@ export const useOnboarding = () => {
         if (tenantId) {
           console.log('useOnboarding: Tenant ID obtained:', tenantId);
           setTenantId(tenantId);
+        } else {
+          console.warn('useOnboarding: No tenant ID returned from function');
         }
         
         setIsInitialized(true);
@@ -56,12 +60,12 @@ export const useOnboarding = () => {
     queryKey: ['onboarding-progress', userId, tenantId],
     queryFn: async () => {
       if (!userId || !tenantId) {
-        console.log('useOnboarding: Missing userId or tenantId for progress');
+        console.log('useOnboarding: Missing userId or tenantId for progress', { userId, tenantId });
         return null;
       }
       
       try {
-        console.log('useOnboarding: Loading progress for user:', userId);
+        console.log('useOnboarding: Loading progress for user:', userId, 'tenant:', tenantId);
         const data = await OnboardingApiService.loadProgress(userId);
         
         if (data) {
@@ -70,14 +74,15 @@ export const useOnboarding = () => {
           return mappedProgress;
         }
         
-        console.log('useOnboarding: No progress found');
+        console.log('useOnboarding: No progress found, will initialize');
         return null;
       } catch (error) {
         console.error('useOnboarding: Error loading progress:', error);
         return null;
       }
     },
-    enabled: !!userId && !!tenantId && isInitialized
+    enabled: !!userId && !!tenantId && isInitialized,
+    retry: 1
   });
 
   // Load onboarding tasks
@@ -85,22 +90,23 @@ export const useOnboarding = () => {
     queryKey: ['onboarding-tasks', userId, tenantId],
     queryFn: async () => {
       if (!userId || !tenantId) {
-        console.log('useOnboarding: Missing userId or tenantId for tasks');
+        console.log('useOnboarding: Missing userId or tenantId for tasks', { userId, tenantId });
         return [];
       }
       
       try {
-        console.log('useOnboarding: Loading tasks for user:', userId);
+        console.log('useOnboarding: Loading tasks for user:', userId, 'tenant:', tenantId);
         const data = await OnboardingApiService.loadTasks(userId);
         const mappedTasks = mapTasksFromDatabase(data || []);
-        console.log('useOnboarding: Tasks loaded:', mappedTasks);
+        console.log('useOnboarding: Tasks loaded:', mappedTasks.length, 'tasks');
         return mappedTasks;
       } catch (error) {
         console.error('useOnboarding: Error loading tasks:', error);
         return [];
       }
     },
-    enabled: !!userId && !!tenantId && isInitialized
+    enabled: !!userId && !!tenantId && isInitialized,
+    retry: 1
   });
 
   // Initialize onboarding data if it doesn't exist
@@ -262,9 +268,12 @@ export const useOnboarding = () => {
     isInitialized,
     progressLoading,
     tasksLoading,
-    progress: progress?.progress,
+    hasProgress: !!progress,
+    progressValue: progress?.progress,
     isCompleted: progress?.isCompleted,
-    isLoading
+    isLoading,
+    initializationPending: initializeMutation.isPending,
+    currentStepId: progress?.currentStep
   });
 
   return {

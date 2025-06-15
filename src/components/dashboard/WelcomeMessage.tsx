@@ -29,7 +29,7 @@ const WelcomeMessage: React.FC<WelcomeMessageProps> = ({ onStartTour }) => {
     });
   }, [progress, isLoading]);
 
-  // Mostrar loading
+  // Mostrar loading enquanto carrega
   if (isLoading) {
     console.log('WelcomeMessage: Mostrando estado de loading');
     return (
@@ -37,7 +37,7 @@ const WelcomeMessage: React.FC<WelcomeMessageProps> = ({ onStartTour }) => {
         <CardContent className="p-6">
           <div className="flex items-center space-x-4">
             <div className="w-16 h-16 bg-gray-300 rounded-full flex items-center justify-center">
-              <RefreshCw className="w-8 h-8 animate-spin" />
+              <RefreshCw className="w-8 h-8 animate-spin text-gray-400" />
             </div>
             <div className="flex-1 space-y-2">
               <div className="h-6 bg-gray-300 rounded w-3/4"></div>
@@ -52,13 +52,18 @@ const WelcomeMessage: React.FC<WelcomeMessageProps> = ({ onStartTour }) => {
     );
   }
 
+  // Sempre mostrar componentes de onboarding quando há dados
+  const shouldShowOnboarding = progress !== null && progress !== undefined;
+  
+  console.log('WelcomeMessage: shouldShowOnboarding:', shouldShowOnboarding, 'progress:', progress);
+
   return (
     <>
-      {/* Sempre mostrar a barra de progresso do onboarding */}
-      <OnboardingProgressBar />
+      {/* Sempre mostrar a barra de progresso quando há progress */}
+      {shouldShowOnboarding && <OnboardingProgressBar />}
       
       {/* Banner de onboarding se não foi dispensado e não está completo */}
-      {!bannerDismissed && progress && !progress.isCompleted && (
+      {shouldShowOnboarding && !bannerDismissed && progress && !progress.isCompleted && (
         <OnboardingBanner 
           onOpenWizard={() => setShowWizard(true)}
           onDismiss={() => setBannerDismissed(true)}
@@ -66,7 +71,7 @@ const WelcomeMessage: React.FC<WelcomeMessageProps> = ({ onStartTour }) => {
       )}
 
       {/* Se o onboarding foi completado */}
-      {progress && progress.isCompleted && (
+      {shouldShowOnboarding && progress && progress.isCompleted && (
         <Card className="bg-gradient-to-r from-torqx-secondary to-torqx-accent text-white border-0 shadow-lg mb-6">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -129,14 +134,55 @@ const WelcomeMessage: React.FC<WelcomeMessageProps> = ({ onStartTour }) => {
         </Card>
       )}
 
-      {/* Se não há progresso ou está iniciando, mostrar convite para iniciar */}
-      {(!progress || !progress.isCompleted) && (
+      {/* Se o onboarding existe mas não está completo, mostrar progresso */}
+      {shouldShowOnboarding && progress && !progress.isCompleted && (
         <Card className="bg-gradient-to-r from-torqx-primary to-torqx-primary-light text-white border-0 shadow-lg mb-6">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
                   <Settings className="w-8 h-8" />
+                </div>
+                
+                <div>
+                  <h2 className="text-2xl font-bold mb-2 font-satoshi">
+                    Continue configurando sua oficina! 💪
+                  </h2>
+                  <p className="text-sm opacity-90 mb-4">
+                    Você já está {progress.progress}% no caminho! Vamos finalizar a configuração.
+                  </p>
+                  
+                  <div className="flex items-center space-x-2 text-sm bg-white/20 rounded-lg px-3 py-2">
+                    <TrendingUp className="w-4 h-4" />
+                    <span>Progresso: {progress.progress}% concluído</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowWizard(true)}
+                  className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                >
+                  <Settings className="w-4 h-4 mr-2" />
+                  Continuar Setup
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Se não há progresso ainda (primeira vez), mostrar convite inicial */}
+      {!shouldShowOnboarding && (
+        <Card className="bg-gradient-to-r from-torqx-primary to-torqx-primary-light text-white border-0 shadow-lg mb-6">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
+                  <Rocket className="w-8 h-8" />
                 </div>
                 
                 <div>
