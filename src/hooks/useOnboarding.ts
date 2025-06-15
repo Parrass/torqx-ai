@@ -11,59 +11,102 @@ export const useOnboarding = () => {
   const queryClient = useQueryClient();
   const [userId, setUserId] = useState<string | null>(null);
   const [tenantId, setTenantId] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  // Get current user and ensure tenant exists
+  // Get current user and setup tenant
   useEffect(() => {
-    const getCurrentUser = async () => {
+    const initializeUser = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+        if (!user) {
+          console.log('useOnboarding: No user found');
+          return;
+        }
 
+        console.log('useOnboarding: User found:', user.id);
         setUserId(user.id);
-        console.log('useOnboarding: User ID obtained:', user.id);
         
-        // First try to get tenant_id from users table
-        const { data: userData } = await supabase
+        // Try to get existing tenant from users table
+        const { data: userData, error: userError } = await supabase
           .from('users')
           .select('tenant_id')
           .eq('id', user.id)
           .maybeSingle();
         
-        if (userData?.tenant_id) {
-          console.log('useOnboarding: Tenant ID found in users table:', userData.tenant_id);
-          setTenantId(userData.tenant_id);
-          return;
+        if (userError) {
+          console.error('useOnboarding: Error fetching user data:', userError);
         }
 
-        // If no tenant_id, call the function to get or create tenant
-        console.log('useOnboarding: No tenant_id found, creating tenant...');
-        const { data: newTenantId, error } = await supabase.rpc('get_or_create_tenant_for_user');
+        let currentTenantId = userData?.tenant_id;
+
+        // If no tenant, create one
+        if (!currentTenantId) {
+          console.log('useOnboarding: Creating new tenant...');
+          try {
+            const { data: newTenantId, error: tenantError } = await supabase.rpc('get_or_create_tenant_for_user');
+            
+            if (tenantError) {
+              console.error('useOnboarding: Error creating tenant:', tenantError);
+              // Try direct creation as fallback
+              const { data: directTenant, error: directError } = await supabase
+                .from('tenants')
+                .insert({
+                  name: user.email?.split('@')[0] || 'Oficina',
+                  business_name: user.email?.split('@')[0] || 'Oficina',
+                  email: user.email || '',
+                  document_number: '00000000000',
+                  status: 'active'
+                })
+                .select()
+                .single();
+
+              if (directError) {
+                console.error('useOnboarding: Direct tenant creation failed:', directError);
+                return;
+              }
+
+              currentTenantId = directTenant.id;
+              
+              // Update user with tenant_id
+              await supabase
+                .from('users')
+                .update({ tenant_id: currentTenantId })
+                .eq('id', user.id);
+            } else {
+              currentTenantId = newTenantId;
+            }
+          } catch (error) {
+            console.error('useOnboarding: Exception creating tenant:', error);
+            return;
+          }
+        }
+
+        if (currentTenantId) {
+          console.log('useOnboarding: Tenant ID obtained:', currentTenantId);
+          setTenantId(currentTenantId);
+        }
         
-        if (error) {
-          console.error('useOnboarding: Error creating tenant:', error);
-          return;
-        }
-
-        if (newTenantId) {
-          console.log('useOnboarding: New tenant created:', newTenantId);
-          setTenantId(newTenantId);
-        }
+        setIsInitialized(true);
       } catch (error) {
-        console.error('useOnboarding: Error in getCurrentUser:', error);
+        console.error('useOnboarding: Error in initializeUser:', error);
+        setIsInitialized(true);
       }
     };
 
-    getCurrentUser();
+    initializeUser();
   }, []);
 
   // Load onboarding progress
-  const { data: progress, isLoading: progressLoading } = useQuery({
-    queryKey: ['onboarding-progress', userId],
+  const { data: progress, isLoading: progressLoading, refetch: refetchProgress } = useQuery({
+    queryKey: ['onboarding-progress', userId, tenantId],
     queryFn: async () => {
-      if (!userId) return null;
+      if (!userId || !tenantId) {
+        console.log('useOnboarding: Missing userId or tenantId for progress');
+        return null;
+      }
       
       try {
-        console.log('useOnboarding: Loading progress for user:', userId);
+        console.log('useOnboarding: Loading progress for user:', userId, 'tenant:', tenantId);
         const data = await OnboardingApiService.loadProgress(userId);
         
         if (data) {
@@ -72,21 +115,24 @@ export const useOnboarding = () => {
           return mappedProgress;
         }
         
-        console.log('useOnboarding: No progress found');
+        console.log('useOnboarding: No progress found, will initialize');
         return null;
       } catch (error) {
         console.error('useOnboarding: Error loading progress:', error);
         return null;
       }
     },
-    enabled: !!userId
+    enabled: !!userId && !!tenantId && isInitialized
   });
 
   // Load onboarding tasks
   const { data: tasks, isLoading: tasksLoading } = useQuery({
-    queryKey: ['onboarding-tasks', userId],
+    queryKey: ['onboarding-tasks', userId, tenantId],
     queryFn: async () => {
-      if (!userId) return [];
+      if (!userId || !tenantId) {
+        console.log('useOnboarding: Missing userId or tenantId for tasks');
+        return [];
+      }
       
       try {
         console.log('useOnboarding: Loading tasks for user:', userId);
@@ -99,7 +145,7 @@ export const useOnboarding = () => {
         return [];
       }
     },
-    enabled: !!userId
+    enabled: !!userId && !!tenantId && isInitialized
   });
 
   // Initialize onboarding data if it doesn't exist
@@ -111,32 +157,46 @@ export const useOnboarding = () => {
 
       console.log('useOnboarding: Initializing onboarding for user:', userId, 'tenant:', tenantId);
 
-      // Create initial progress and tasks
-      const [progressData] = await Promise.all([
-        OnboardingApiService.createInitialProgress(userId, tenantId),
-        OnboardingApiService.createInitialTasks(userId, tenantId)
-      ]);
+      try {
+        // Create initial progress and tasks
+        const [progressData] = await Promise.all([
+          OnboardingApiService.createInitialProgress(userId, tenantId),
+          OnboardingApiService.createInitialTasks(userId, tenantId)
+        ]);
 
-      console.log('useOnboarding: Onboarding initialized successfully');
-      return mapProgressFromDatabase(progressData);
+        console.log('useOnboarding: Onboarding initialized successfully');
+        return mapProgressFromDatabase(progressData);
+      } catch (error) {
+        console.error('useOnboarding: Error in initialization:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
-      // Invalidate queries to refetch data
-      queryClient.invalidateQueries({ queryKey: ['onboarding-progress', userId] });
-      queryClient.invalidateQueries({ queryKey: ['onboarding-tasks', userId] });
+      console.log('useOnboarding: Initialization successful, refetching data');
+      queryClient.invalidateQueries({ queryKey: ['onboarding-progress'] });
+      queryClient.invalidateQueries({ queryKey: ['onboarding-tasks'] });
+      refetchProgress();
     },
     onError: (error) => {
       console.error('useOnboarding: Error initializing onboarding:', error);
     }
   });
 
-  // Auto-initialize if no progress exists and we have user/tenant data
+  // Auto-initialize if conditions are met
   useEffect(() => {
-    if (userId && tenantId && !progressLoading && !progress && !initializeMutation.isPending) {
+    const shouldInitialize = userId && 
+                           tenantId && 
+                           isInitialized && 
+                           !progressLoading && 
+                           !progress && 
+                           !initializeMutation.isPending &&
+                           !initializeMutation.isSuccess;
+
+    if (shouldInitialize) {
       console.log('useOnboarding: Auto-initializing onboarding data...');
       initializeMutation.mutate();
     }
-  }, [userId, tenantId, progress, progressLoading, initializeMutation]);
+  }, [userId, tenantId, isInitialized, progress, progressLoading, initializeMutation]);
 
   // Complete step mutation
   const completeStepMutation = useMutation({
@@ -164,7 +224,7 @@ export const useOnboarding = () => {
       await OnboardingApiService.updateProgress(userId, updates);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['onboarding-progress', userId] });
+      queryClient.invalidateQueries({ queryKey: ['onboarding-progress'] });
     }
   });
 
@@ -184,7 +244,7 @@ export const useOnboarding = () => {
       await OnboardingApiService.updateProgress(userId, updates);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['onboarding-progress', userId] });
+      queryClient.invalidateQueries({ queryKey: ['onboarding-progress'] });
     }
   });
 
@@ -201,7 +261,7 @@ export const useOnboarding = () => {
       await OnboardingApiService.updateProgress(userId, updates);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['onboarding-progress', userId] });
+      queryClient.invalidateQueries({ queryKey: ['onboarding-progress'] });
     }
   });
 
@@ -212,7 +272,7 @@ export const useOnboarding = () => {
       await OnboardingApiService.completeTask(userId, taskId);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['onboarding-tasks', userId] });
+      queryClient.invalidateQueries({ queryKey: ['onboarding-tasks'] });
     }
   });
 
@@ -223,8 +283,8 @@ export const useOnboarding = () => {
       await OnboardingApiService.deleteAllProgress(userId);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['onboarding-progress', userId] });
-      queryClient.invalidateQueries({ queryKey: ['onboarding-tasks', userId] });
+      queryClient.invalidateQueries({ queryKey: ['onboarding-progress'] });
+      queryClient.invalidateQueries({ queryKey: ['onboarding-tasks'] });
     }
   });
 
@@ -239,6 +299,19 @@ export const useOnboarding = () => {
     isCompleted: progress?.completedSteps.includes(step.id) || false
   }));
 
+  const isLoading = !isInitialized || progressLoading || tasksLoading || initializeMutation.isPending;
+
+  console.log('useOnboarding: Current state:', {
+    userId,
+    tenantId,
+    isInitialized,
+    progressLoading,
+    tasksLoading,
+    progress: progress?.progress,
+    isCompleted: progress?.isCompleted,
+    isLoading
+  });
+
   return {
     // Data
     progress,
@@ -247,7 +320,7 @@ export const useOnboarding = () => {
     currentStep,
     
     // Loading states
-    isLoading: progressLoading || tasksLoading || initializeMutation.isPending,
+    isLoading,
     
     // Actions
     completeStep: completeStepMutation.mutate,
