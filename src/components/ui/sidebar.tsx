@@ -93,7 +93,7 @@ export const DesktopSidebar = ({
   return (
     <motion.div
       className={cn(
-        "h-[calc(100vh-4rem)] px-3 py-3 hidden md:flex md:flex-col bg-white dark:bg-torqx-primary flex-shrink-0 fixed left-0 top-16 z-40 shadow-lg border-r border-gray-200 dark:border-torqx-primary-light overflow-hidden",
+        "h-[calc(100vh-4rem)] px-3 py-3 hidden md:flex md:flex-col bg-white dark:bg-torqx-primary flex-shrink-0 fixed left-0 top-16 z-40 shadow-lg border-r border-gray-200 dark:border-torqx-primary-light",
         className
       )}
       animate={{
@@ -105,7 +105,7 @@ export const DesktopSidebar = ({
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
     >
-      <div {...restProps} className="flex flex-col h-full overflow-hidden">
+      <div {...restProps} className="flex flex-col h-full">
         {children}
       </div>
     </motion.div>
@@ -181,7 +181,7 @@ export const SidebarLink = ({
     <button
       onClick={handleClick}
       className={cn(
-        "flex items-center gap-2 group/sidebar py-1.5 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-torqx-primary-light transition-colors min-h-[36px] w-full text-left overflow-hidden",
+        "flex items-center group/sidebar py-2 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-torqx-primary-light transition-colors min-h-[40px] w-full text-left",
         isActive && "bg-torqx-secondary/10 text-torqx-secondary",
         className
       )}
@@ -190,17 +190,17 @@ export const SidebarLink = ({
       <div className="flex-shrink-0 w-4 h-4 flex items-center justify-center">
         {link.icon}
       </div>
+      
       <motion.span
-        className={`text-torqx-primary dark:text-white text-sm group-hover/sidebar:translate-x-1 transition-all duration-300 whitespace-nowrap ${
-          isActive ? 'text-torqx-secondary font-medium' : ''
-        }`}
+        className={cn(
+          "text-torqx-primary dark:text-white text-sm group-hover/sidebar:translate-x-1 transition-all duration-300 whitespace-nowrap ml-3",
+          isActive ? 'text-torqx-secondary font-medium' : '',
+          !open && "opacity-0 w-0 ml-0 overflow-hidden"
+        )}
         animate={{
           opacity: open ? 1 : 0,
           width: open ? "auto" : 0,
-        }}
-        style={{
-          opacity: open ? 1 : 0,
-          width: open ? "auto" : 0,
+          marginLeft: open ? 12 : 0,
         }}
       >
         {link.label}

@@ -36,26 +36,26 @@ const SidebarCategoryItem = ({ category, userPermissions }: SidebarCategoryItemP
     <div className="mb-1">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center gap-2 w-full py-2 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-torqx-primary-light transition-colors text-left overflow-hidden"
+        className="flex items-center w-full py-2 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-torqx-primary-light transition-colors text-left min-h-[40px]"
       >
         <div className="flex-shrink-0 w-4 h-4 flex items-center justify-center">
           {category.icon}
         </div>
+        
         <motion.span 
-          className="text-torqx-primary dark:text-white text-sm font-medium flex-1 whitespace-nowrap"
+          className={`text-torqx-primary dark:text-white text-sm font-medium whitespace-nowrap ml-3 ${!open && "opacity-0 w-0 ml-0 overflow-hidden"}`}
           animate={{
             opacity: open ? 1 : 0,
             width: open ? "auto" : 0,
-          }}
-          style={{
-            opacity: open ? 1 : 0,
-            width: open ? "auto" : 0,
+            marginLeft: open ? 12 : 0,
           }}
         >
           {category.label}
         </motion.span>
+        
         {open && (
           <motion.div
+            className="ml-auto"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -74,7 +74,7 @@ const SidebarCategoryItem = ({ category, userPermissions }: SidebarCategoryItemP
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: "auto" }}
           exit={{ opacity: 0, height: 0 }}
-          className="ml-4 mt-1 space-y-1 overflow-hidden"
+          className="ml-6 mt-1 space-y-1"
         >
           {allowedItems.map((item, idx) => (
             <SidebarLink key={idx} link={item} />
