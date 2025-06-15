@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, Wrench } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -79,12 +78,15 @@ const Login = () => {
           {/* Header */}
           <div className="text-center">
             <div className="flex items-center justify-center mb-6">
-              <div className="flex items-center space-x-2">
+              <button 
+                onClick={() => navigate('/')}
+                className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
+              >
                 <div className="w-10 h-10 bg-gradient-to-r from-torqx-secondary to-torqx-accent rounded-xl flex items-center justify-center">
                   <Wrench className="w-6 h-6 text-white" />
                 </div>
                 <span className="text-2xl font-bold text-torqx-primary font-satoshi">Torqx</span>
-              </div>
+              </button>
             </div>
             <h2 className="text-3xl font-bold text-torqx-primary font-satoshi">
               Bem-vindo de volta
