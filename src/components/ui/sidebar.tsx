@@ -93,7 +93,7 @@ export const DesktopSidebar = ({
   return (
     <motion.div
       className={cn(
-        "h-[calc(100vh-4rem)] px-3 py-3 hidden md:flex md:flex-col bg-white dark:bg-torqx-primary flex-shrink-0 fixed left-0 top-16 z-40 shadow-lg border-r border-gray-200 dark:border-torqx-primary-light",
+        "h-[calc(100vh-4rem)] px-3 py-3 hidden md:flex md:flex-col bg-white dark:bg-torqx-primary flex-shrink-0 fixed left-0 top-16 z-40 shadow-lg border-r border-gray-200 dark:border-torqx-primary-light overflow-hidden",
         className
       )}
       animate={{
@@ -105,7 +105,7 @@ export const DesktopSidebar = ({
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
     >
-      <div {...restProps} className="flex flex-col h-full">
+      <div {...restProps} className="flex flex-col h-full overflow-hidden">
         {children}
       </div>
     </motion.div>
@@ -131,7 +131,7 @@ export const MobileSidebar = ({
               ease: "easeInOut",
             }}
             className={cn(
-              "fixed h-[calc(100vh-4rem)] w-80 top-16 left-0 bg-white dark:bg-torqx-primary p-6 z-50 flex flex-col shadow-xl border-r border-gray-200 dark:border-torqx-primary-light md:hidden",
+              "fixed h-[calc(100vh-4rem)] w-80 top-16 left-0 bg-white dark:bg-torqx-primary p-6 z-50 flex flex-col shadow-xl border-r border-gray-200 dark:border-torqx-primary-light md:hidden overflow-y-auto",
               className
             )}
           >
@@ -148,7 +148,6 @@ export const MobileSidebar = ({
         )}
       </AnimatePresence>
       
-      {/* Mobile overlay */}
       {open && (
         <div 
           className="fixed inset-0 bg-black/50 z-40 md:hidden"
@@ -182,7 +181,7 @@ export const SidebarLink = ({
     <button
       onClick={handleClick}
       className={cn(
-        "flex items-center gap-2 group/sidebar py-1.5 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-torqx-primary-light transition-colors min-h-[36px] w-full text-left",
+        "flex items-center gap-2 group/sidebar py-1.5 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-torqx-primary-light transition-colors min-h-[36px] w-full text-left overflow-hidden",
         isActive && "bg-torqx-secondary/10 text-torqx-secondary",
         className
       )}
@@ -191,13 +190,21 @@ export const SidebarLink = ({
       <div className="flex-shrink-0 w-4 h-4 flex items-center justify-center">
         {link.icon}
       </div>
-      <span
-        className={`text-torqx-primary dark:text-white text-sm group-hover/sidebar:translate-x-1 transition-all duration-300 whitespace-nowrap overflow-hidden ${
-          open ? 'opacity-100 w-auto' : 'opacity-0 w-0'
-        } ${isActive ? 'text-torqx-secondary font-medium' : ''}`}
+      <motion.span
+        className={`text-torqx-primary dark:text-white text-sm group-hover/sidebar:translate-x-1 transition-all duration-300 whitespace-nowrap ${
+          isActive ? 'text-torqx-secondary font-medium' : ''
+        }`}
+        animate={{
+          opacity: open ? 1 : 0,
+          width: open ? "auto" : 0,
+        }}
+        style={{
+          opacity: open ? 1 : 0,
+          width: open ? "auto" : 0,
+        }}
       >
         {link.label}
-      </span>
+      </motion.span>
     </button>
   );
 };

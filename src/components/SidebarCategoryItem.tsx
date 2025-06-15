@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import { SidebarLink } from '@/components/ui/sidebar';
+import { SidebarLink, useSidebar } from '@/components/ui/sidebar';
+import { motion } from 'framer-motion';
 
 interface SidebarItem {
   label: string;
@@ -21,13 +22,12 @@ interface SidebarCategoryItemProps {
 
 const SidebarCategoryItem = ({ category, userPermissions }: SidebarCategoryItemProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const { open } = useSidebar();
 
-  // Filtrar itens com base nas permissões do usuário
   const allowedItems = category.items.filter(item => 
     !item.permission || userPermissions.includes(item.permission)
   );
 
-  // Se não há itens permitidos, não renderizar a categoria
   if (allowedItems.length === 0) {
     return null;
   }
@@ -36,27 +36,50 @@ const SidebarCategoryItem = ({ category, userPermissions }: SidebarCategoryItemP
     <div className="mb-1">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center gap-2 w-full py-2 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-torqx-primary-light transition-colors text-left"
+        className="flex items-center gap-2 w-full py-2 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-torqx-primary-light transition-colors text-left overflow-hidden"
       >
         <div className="flex-shrink-0 w-4 h-4 flex items-center justify-center">
           {category.icon}
         </div>
-        <span className="text-torqx-primary dark:text-white text-sm font-medium flex-1">
+        <motion.span 
+          className="text-torqx-primary dark:text-white text-sm font-medium flex-1 whitespace-nowrap"
+          animate={{
+            opacity: open ? 1 : 0,
+            width: open ? "auto" : 0,
+          }}
+          style={{
+            opacity: open ? 1 : 0,
+            width: open ? "auto" : 0,
+          }}
+        >
           {category.label}
-        </span>
-        {isExpanded ? (
-          <ChevronDown className="w-3 h-3 text-torqx-primary dark:text-white" />
-        ) : (
-          <ChevronRight className="w-3 h-3 text-torqx-primary dark:text-white" />
+        </motion.span>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            {isExpanded ? (
+              <ChevronDown className="w-3 h-3 text-torqx-primary dark:text-white" />
+            ) : (
+              <ChevronRight className="w-3 h-3 text-torqx-primary dark:text-white" />
+            )}
+          </motion.div>
         )}
       </button>
       
-      {isExpanded && (
-        <div className="ml-4 mt-1 space-y-1">
+      {isExpanded && open && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          exit={{ opacity: 0, height: 0 }}
+          className="ml-4 mt-1 space-y-1 overflow-hidden"
+        >
           {allowedItems.map((item, idx) => (
             <SidebarLink key={idx} link={item} />
           ))}
-        </div>
+        </motion.div>
       )}
     </div>
   );
