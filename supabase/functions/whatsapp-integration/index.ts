@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
@@ -57,10 +58,12 @@ serve(async (req) => {
     // Verificar credenciais da Evolution API
     const rawEvolutionApiUrl = Deno.env.get('EVOLUTION_API_URL');
     const evolutionApiKey = Deno.env.get('EVOLUTION_API_KEY');
+    const n8nWebhookUrl = Deno.env.get('N8N_WEBHOOK_URL');
 
-    console.log('Verificando credenciais Evolution API:', {
-      url: rawEvolutionApiUrl ? 'OK' : 'FALTANDO',
-      key: evolutionApiKey ? 'OK' : 'FALTANDO',
+    console.log('Verificando credenciais:', {
+      evolutionUrl: rawEvolutionApiUrl ? 'OK' : 'FALTANDO',
+      evolutionKey: evolutionApiKey ? 'OK' : 'FALTANDO',
+      n8nUrl: n8nWebhookUrl ? 'OK' : 'FALTANDO',
     });
 
     if (!rawEvolutionApiUrl || !evolutionApiKey) {
@@ -82,8 +85,6 @@ serve(async (req) => {
     const { action, tenantId, instanceName, settings, webhookConfig, ...data } = requestBody;
 
     console.log(`=== AÇÃO: ${action} ===`, { tenantId, instanceName, settings, webhookConfig, data });
-    console.log('Tipo da action:', typeof action);
-    console.log('Action exata recebida:', JSON.stringify(action));
 
     let response;
     const headers = {
@@ -102,7 +103,12 @@ serve(async (req) => {
         // Gerar nome da instância se não fornecido
         const finalInstanceName = instanceName || `torqx_${tenantId.substring(0, 8)}`;
         
-        // Payload seguindo exatamente a API da Evolution com eventos válidos
+        // Determinar URL do webhook - se vier N8N_WEBHOOK_DIRECT, usar o N8N diretamente
+        const webhookUrl = data.webhook?.url === 'N8N_WEBHOOK_DIRECT' && n8nWebhookUrl
+          ? n8nWebhookUrl
+          : data.webhook?.url || `${Deno.env.get('SUPABASE_URL')}/functions/v1/whatsapp-webhook`;
+        
+        // Payload seguindo exatamente a API da Evolution com webhook para N8N
         const instancePayload = {
           instanceName: finalInstanceName,
           token: data.token || `torqx_${Date.now()}`,
@@ -116,7 +122,7 @@ serve(async (req) => {
           readStatus: true,
           syncFullHistory: false,
           webhook: {
-            url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/whatsapp-webhook`,
+            url: webhookUrl,
             byEvents: false, // IMPORTANTE: false para receber tudo numa URL só
             base64: true,
             events: [
@@ -126,7 +132,7 @@ serve(async (req) => {
           }
         };
 
-        console.log('Payload Evolution:', JSON.stringify(instancePayload, null, 2));
+        console.log('Payload Evolution (webhook para N8N):', JSON.stringify(instancePayload, null, 2));
         console.log('URL de criação:', `${evolutionApiUrl}/instance/create`);
         
         try {
@@ -396,7 +402,7 @@ serve(async (req) => {
         }
 
       case 'set_webhook':
-        console.log(`=== CONFIGURAR WEBHOOK da ${instanceName} ===`);
+        console.log(`=== CONFIGURAR WEBHOOK da ${instanceName} para N8N ===`);
         
         if (!instanceName) {
           throw new Error('instanceName é obrigatório para configurar webhook');
@@ -406,22 +412,24 @@ serve(async (req) => {
           // Determinar se webhook deve estar habilitado
           const isWebhookEnabled = webhookConfig?.enabled !== false; // true por padrão
           
-          // Eventos válidos da Evolution API
-          const validEvents = [
-            'APPLICATION_STARTUP',
-            'MESSAGES_UPSERT'
-          ];
-
-          // Estrutura correta do payload para Evolution API (SEM webhookByEvents para evitar rotas separadas)
+          // Determinar URL do webhook - se vier N8N_WEBHOOK_DIRECT, usar o N8N diretamente
+          const targetWebhookUrl = webhookConfig?.url === 'N8N_WEBHOOK_DIRECT' && n8nWebhookUrl
+            ? n8nWebhookUrl
+            : webhookConfig?.url || n8nWebhookUrl || `${Deno.env.get('SUPABASE_URL')}/functions/v1/whatsapp-webhook`;
+          
+          // Estrutura correta do payload para Evolution API direcionando para N8N
           const webhookPayload = {
             enabled: isWebhookEnabled,
-            url: webhookConfig?.url || `${Deno.env.get('SUPABASE_URL')}/functions/v1/whatsapp-webhook`,
+            url: targetWebhookUrl,
             webhookByEvents: false, // IMPORTANTE: false para receber tudo numa URL só
             webhookBase64: true,
-            events: isWebhookEnabled ? validEvents : [] // Se desabilitado, array vazio
+            events: isWebhookEnabled ? [
+              'APPLICATION_STARTUP',
+              'MESSAGES_UPSERT'
+            ] : [] // Se desabilitado, array vazio
           };
 
-          console.log('Configurando webhook (SEM byEvents):', JSON.stringify(webhookPayload, null, 2));
+          console.log('Configurando webhook para N8N:', JSON.stringify(webhookPayload, null, 2));
 
           response = await fetch(`${evolutionApiUrl}/webhook/set/${instanceName}`, {
             method: 'POST',
@@ -441,7 +449,7 @@ serve(async (req) => {
           }
 
           if (response.ok) {
-            console.log('Webhook configurado com sucesso:', webhookResult);
+            console.log('Webhook configurado com sucesso para N8N:', webhookResult);
             
             // Atualizar instância no banco com URL do webhook
             await supabaseClient
@@ -454,7 +462,8 @@ serve(async (req) => {
             
             return new Response(JSON.stringify({
               success: true,
-              data: webhookResult
+              data: webhookResult,
+              webhookUrl: webhookPayload.url
             }), {
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });
@@ -606,18 +615,6 @@ serve(async (req) => {
 
       default:
         console.error(`AÇÃO NÃO RECONHECIDA: "${action}"`);
-        console.error('Todas as ações disponíveis:', [
-          'create_instance',
-          'get_qr_code', 
-          'get_instance_status',
-          'fetch_instance',
-          'set_instance_settings',
-          'get_instance_settings', 
-          'set_webhook',
-          'delete_instance',
-          'logout_instance',
-          'get_instance_by_tenant'
-        ]);
         throw new Error(`Ação desconhecida: ${action}`);
     }
 

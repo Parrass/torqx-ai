@@ -1,3 +1,4 @@
+
 interface WhatsAppApiResponse<T = any> {
   success: boolean;
   data?: T;
@@ -127,7 +128,7 @@ class WhatsAppApi {
       readStatus: true,
       syncFullHistory: false,
       webhook: {
-        url: `${this.baseUrl}/whatsapp-webhook`,
+        url: 'N8N_WEBHOOK_DIRECT', // Placeholder que será substituído no backend pelo N8N URL
         byEvents: false, // IMPORTANTE: false para receber tudo numa URL só
         base64: true,
         events: [
@@ -187,7 +188,7 @@ class WhatsAppApi {
     });
   }
 
-  // Configurar webhook
+  // Configurar webhook para N8N diretamente
   async setWebhook(instanceName: string, webhookConfig?: {
     enabled: boolean;
     url: string;
@@ -200,7 +201,7 @@ class WhatsAppApi {
       instanceName,
       webhookConfig: {
         enabled: true,
-        url: `${this.baseUrl}/whatsapp-webhook`,
+        url: 'N8N_WEBHOOK_DIRECT', // Placeholder que será substituído pelo N8N URL
         webhookByEvents: false, // IMPORTANTE: false para receber tudo numa URL só
         webhookBase64: true,
         events: [

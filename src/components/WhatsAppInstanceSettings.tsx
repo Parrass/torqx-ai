@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -85,22 +86,19 @@ const WhatsAppInstanceSettings = ({ instanceName, isConnected }: WhatsAppInstanc
     }
   };
 
-  // Configurar webhook
+  // Configurar webhook para N8N diretamente
   const configureWebhook = async () => {
     if (!instanceName) return;
 
     setIsLoading(true);
     try {
-      // Determinar se webhook deve estar habilitado
-      const isWebhookEnabled = webhookEnabled; // true por padrão
-      
-      // Estrutura correta do payload para Evolution API com eventos válidos
+      // Estrutura correta do payload para Evolution API apontando para N8N
       const webhookConfig = {
-        enabled: isWebhookEnabled,
-        url: webhookUrl || `${import.meta.env.VITE_SUPABASE_URL || 'https://bszcwxrjhvbvixrdnzvf.supabase.co'}/functions/v1/whatsapp-webhook`,
+        enabled: webhookEnabled,
+        url: webhookUrl || 'N8N_WEBHOOK_DIRECT', // O backend irá substituir pelo N8N URL
         webhookByEvents: false, // IMPORTANTE: false para receber tudo numa URL só
         webhookBase64: true,
-        events: isWebhookEnabled ? [
+        events: webhookEnabled ? [
           'APPLICATION_STARTUP',
           'MESSAGES_UPSERT'
         ] : [] // Se desabilitado, array vazio
@@ -111,7 +109,7 @@ const WhatsAppInstanceSettings = ({ instanceName, isConnected }: WhatsAppInstanc
       if (response.success) {
         toast({
           title: 'Webhook configurado',
-          description: webhookUrl ? 'Webhook configurado com sucesso.' : 'Webhook configurado automaticamente.',
+          description: 'Webhook configurado para N8N com sucesso.',
         });
       } else {
         throw new Error(response.error || 'Erro ao configurar webhook');
@@ -323,15 +321,15 @@ const WhatsAppInstanceSettings = ({ instanceName, isConnected }: WhatsAppInstanc
         </CardContent>
       </Card>
 
-      {/* Configuração de Webhook */}
+      {/* Configuração de Webhook para N8N */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Globe className="w-5 h-5" />
-            <span>Configuração de Webhook</span>
+            <span>Configuração de Webhook N8N</span>
           </CardTitle>
           <CardDescription>
-            Configure webhook (recebe todos os eventos numa URL única)
+            Configure webhook direto para o N8N (todos os eventos numa URL única)
           </CardDescription>
         </CardHeader>
 
@@ -339,7 +337,7 @@ const WhatsAppInstanceSettings = ({ instanceName, isConnected }: WhatsAppInstanc
           <div className="flex items-center justify-between">
             <div>
               <Label className="text-base font-medium">Webhook Ativo</Label>
-              <p className="text-sm text-gray-600">Ativar webhook para receber eventos</p>
+              <p className="text-sm text-gray-600">Ativar webhook para receber eventos no N8N</p>
             </div>
             <Switch
               checked={webhookEnabled}
@@ -349,17 +347,17 @@ const WhatsAppInstanceSettings = ({ instanceName, isConnected }: WhatsAppInstanc
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="webhookUrl">URL do Webhook (opcional)</Label>
+            <Label htmlFor="webhookUrl">URL do N8N (opcional)</Label>
             <Input
               id="webhookUrl"
               type="url"
               value={webhookUrl}
               onChange={(e) => setWebhookUrl(e.target.value)}
-              placeholder="https://seu-webhook.com/endpoint"
+              placeholder="https://seu-n8n.com/webhook/endpoint"
               disabled={!isConnected}
             />
             <p className="text-xs text-gray-500">
-              Deixe vazio para usar o webhook padrão do Supabase
+              Deixe vazio para usar o N8N configurado no servidor
             </p>
           </div>
 
@@ -368,7 +366,7 @@ const WhatsAppInstanceSettings = ({ instanceName, isConnected }: WhatsAppInstanc
               <strong>Configuração:</strong> webhookByEvents = false (todos os eventos numa URL única)
             </p>
             <p className="text-xs text-blue-600 mt-1">
-              Eventos: APPLICATION_STARTUP, MESSAGES_UPSERT
+              Eventos: APPLICATION_STARTUP, MESSAGES_UPSERT → N8N Direto
             </p>
           </div>
 
@@ -385,7 +383,7 @@ const WhatsAppInstanceSettings = ({ instanceName, isConnected }: WhatsAppInstanc
             ) : (
               <>
                 <Settings className="w-4 h-4 mr-2" />
-                Configurar Webhook
+                Configurar Webhook N8N
               </>
             )}
           </Button>

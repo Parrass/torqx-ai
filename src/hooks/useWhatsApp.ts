@@ -131,7 +131,7 @@ export const useWhatsApp = () => {
           pairingCode: response.data.pairingCode
         });
 
-        // Iniciar verificação de status após gerar QR code
+        // Iniciar verificação de status a cada 10 segundos após gerar QR code
         startStatusPolling();
       } else {
         throw new Error(response.error || 'Erro ao gerar QR Code');
@@ -165,13 +165,13 @@ export const useWhatsApp = () => {
           status: newStatus,
         }));
 
-        // Se acabou de conectar (transição de desconectado para conectado), configurar webhook
+        // Se acabou de conectar (transição de desconectado para conectado), configurar webhook para N8N
         if (isConnected && wasDisconnected) {
-          console.log('Instância conectada! Configurando webhook...');
+          console.log('Instância conectada! Configurando webhook para N8N...');
           
           try {
             await whatsappApi.setWebhook(connection.instanceName);
-            console.log('Webhook configurado com sucesso');
+            console.log('Webhook para N8N configurado com sucesso');
           } catch (webhookError) {
             console.error('Erro ao configurar webhook:', webhookError);
             // Não interromper o fluxo por erro no webhook
@@ -205,7 +205,7 @@ export const useWhatsApp = () => {
       if (isConnected) {
         clearInterval(pollInterval);
       }
-    }, 3000); // Verificar a cada 3 segundos
+    }, 10000); // Verificar a cada 10 segundos (mudança de 3s para 10s)
 
     // Parar polling após 5 minutos para evitar requisições desnecessárias
     setTimeout(() => {
@@ -231,13 +231,13 @@ export const useWhatsApp = () => {
           instance: response.data,
         }));
 
-        // Se acabou de conectar, configurar webhook
+        // Se acabou de conectar, configurar webhook para N8N
         if (isConnected && wasDisconnected) {
-          console.log('Instância conectada via fetch! Configurando webhook...');
+          console.log('Instância conectada via fetch! Configurando webhook para N8N...');
           
           try {
             await whatsappApi.setWebhook(connection.instanceName);
-            console.log('Webhook configurado com sucesso via fetch');
+            console.log('Webhook para N8N configurado com sucesso via fetch');
             
             toast({
               title: 'WhatsApp Conectado!',
