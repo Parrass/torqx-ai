@@ -10,6 +10,7 @@ import OnboardingWizard from '@/components/onboarding/OnboardingWizard';
 import TaskChecklist from '@/components/onboarding/TaskChecklist';
 import WelcomeMessage from '@/components/dashboard/WelcomeMessage';
 import QuickStartGuide from '@/components/dashboard/QuickStartGuide';
+import InventoryAlerts from '@/components/dashboard/InventoryAlerts';
 import { useOnboarding } from '@/hooks/useOnboarding';
 
 const Dashboard = () => {
@@ -84,6 +85,11 @@ const Dashboard = () => {
               <TaskChecklist />
             ) : (
               <QuickStartGuide />
+            )}
+            
+            {/* Alertas de Estoque - sempre visível após onboarding */}
+            {shouldShowWelcomeMessage && (
+              <InventoryAlerts />
             )}
           </div>
         </div>
