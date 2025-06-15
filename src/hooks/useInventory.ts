@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,6 +21,16 @@ export interface InventoryItem {
   updated_at: string;
 }
 
+export interface InventoryAlert {
+  id: string;
+  name: string;
+  category: string;
+  sku: string;
+  current_stock: number;
+  minimum_stock: number;
+  alert_level: 'low' | 'critical' | 'warning';
+}
+
 export interface InventoryStats {
   total_items: number;
   in_stock: number;
@@ -32,6 +41,10 @@ export interface InventoryStats {
 
 export const useInventory = () => {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [inventoryAlerts, setInventoryAlerts] = useState<{ data: InventoryAlert[] | null; loading: boolean }>({
+    data: null,
+    loading: true
+  });
   const [stats, setStats] = useState<InventoryStats>({
     total_items: 0,
     in_stock: 0,
@@ -42,6 +55,44 @@ export const useInventory = () => {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
+
+  const fetchInventoryAlerts = async () => {
+    if (!user?.user_metadata?.tenant_id) {
+      setInventoryAlerts({ data: null, loading: false });
+      return;
+    }
+
+    try {
+      setInventoryAlerts(prev => ({ ...prev, loading: true }));
+      
+      const { data, error } = await supabase
+        .from('inventory_alerts')
+        .select('*')
+        .eq('tenant_id', user.user_metadata.tenant_id)
+        .order('alert_level', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching inventory alerts:', error);
+        setInventoryAlerts({ data: [], loading: false });
+        return;
+      }
+
+      const alerts: InventoryAlert[] = (data || []).map(item => ({
+        id: item.id,
+        name: item.name || '',
+        category: item.category || '',
+        sku: item.sku || '',
+        current_stock: item.current_stock || 0,
+        minimum_stock: item.minimum_stock || 0,
+        alert_level: item.alert_level as 'low' | 'critical' | 'warning'
+      }));
+
+      setInventoryAlerts({ data: alerts, loading: false });
+    } catch (error) {
+      console.error('Error fetching inventory alerts:', error);
+      setInventoryAlerts({ data: [], loading: false });
+    }
+  };
 
   const fetchInventory = async () => {
     if (!user?.user_metadata?.tenant_id) {
@@ -243,10 +294,12 @@ export const useInventory = () => {
 
   useEffect(() => {
     fetchInventory();
+    fetchInventoryAlerts();
   }, [user]);
 
   return {
     inventory,
+    inventoryAlerts,
     stats,
     loading,
     createInventoryItem,
