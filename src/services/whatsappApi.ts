@@ -6,24 +6,38 @@ interface WhatsAppApiResponse<T = any> {
   status?: number;
 }
 
-interface SendMessageData {
-  number: string;
-  message: string;
+interface CreateInstanceData {
+  instanceName: string;
+  token?: string;
+  integration?: string;
+  qrcode?: boolean;
 }
 
-interface SendMediaData {
-  number: string;
-  media: string;
-  mediaType: 'image' | 'video' | 'audio' | 'document';
-  caption?: string;
+interface WebhookConfig {
+  enabled: boolean;
+  url: string;
+  webhookByEvents: boolean;
+  webhookBase64: boolean;
+  events: string[];
 }
 
-interface ChatMessage {
-  id: string;
-  fromMe: boolean;
-  body: string;
-  timestamp: number;
-  type: string;
+interface InstanceSettings {
+  rejectCall?: boolean;
+  msgCall?: string;
+  groupsIgnore?: boolean;
+  alwaysOnline?: boolean;
+  readMessages?: boolean;
+  readStatus?: boolean;
+  syncFullHistory?: boolean;
+}
+
+interface InstanceInfo {
+  instanceName: string;
+  instanceId: string;
+  status: string;
+  serverUrl?: string;
+  apikey?: string;
+  owner?: string;
 }
 
 class WhatsAppApi {
@@ -74,63 +88,166 @@ class WhatsAppApi {
     }
   }
 
-  // Gerenciamento de instância
-  async createInstance(instanceName: string = 'torqx-instance'): Promise<WhatsAppApiResponse> {
+  // 1. Testar conexão com Evolution API
+  async testConnection(): Promise<WhatsAppApiResponse> {
+    return this.makeRequest('/whatsapp-integration', {
+      action: 'test_connection',
+    });
+  }
+
+  // 2. Criar instância para cliente
+  async createInstance(data: CreateInstanceData): Promise<WhatsAppApiResponse> {
     return this.makeRequest('/whatsapp-integration', {
       action: 'create_instance',
-      instanceName,
+      instanceName: data.instanceName,
+      token: data.token || this.generateToken(),
+      integration: data.integration || 'WHATSAPP-BAILEYS',
+      qrcode: data.qrcode !== false,
     });
   }
 
-  async getQRCode(instanceName: string = 'torqx-instance'): Promise<WhatsAppApiResponse> {
+  // 3. Configurar webhook
+  async setWebhook(instanceName: string, webhookConfig: WebhookConfig): Promise<WhatsAppApiResponse> {
     return this.makeRequest('/whatsapp-integration', {
-      action: 'get_qr_code',
+      action: 'set_webhook',
       instanceName,
+      ...webhookConfig,
     });
   }
 
-  async getInstanceStatus(instanceName: string = 'torqx-instance'): Promise<WhatsAppApiResponse> {
+  // 4. Configurar settings da instância
+  async setSettings(instanceName: string, settings: InstanceSettings): Promise<WhatsAppApiResponse> {
     return this.makeRequest('/whatsapp-integration', {
-      action: 'get_instance_status',
+      action: 'set_settings',
+      instanceName,
+      settings,
+    });
+  }
+
+  // 5. Buscar instâncias existentes
+  async findInstances(): Promise<WhatsAppApiResponse<InstanceInfo[]>> {
+    return this.makeRequest('/whatsapp-integration', {
+      action: 'find_instances',
+    });
+  }
+
+  // Conectar instância
+  async connectInstance(instanceName: string): Promise<WhatsAppApiResponse> {
+    return this.makeRequest('/whatsapp-integration', {
+      action: 'connect_instance',
       instanceName,
     });
   }
 
-  async logoutInstance(instanceName: string = 'torqx-instance'): Promise<WhatsAppApiResponse> {
+  // Desconectar instância
+  async logoutInstance(instanceName: string): Promise<WhatsAppApiResponse> {
     return this.makeRequest('/whatsapp-integration', {
       action: 'logout_instance',
       instanceName,
     });
   }
 
-  // Envio de mensagens
-  async sendMessage(data: SendMessageData, instanceName: string = 'torqx-instance'): Promise<WhatsAppApiResponse> {
+  // Reiniciar instância
+  async restartInstance(instanceName: string): Promise<WhatsAppApiResponse> {
     return this.makeRequest('/whatsapp-integration', {
-      action: 'send_message',
+      action: 'restart_instance',
       instanceName,
-      ...data,
     });
   }
 
-  async sendMedia(data: SendMediaData, instanceName: string = 'torqx-instance'): Promise<WhatsAppApiResponse> {
+  // Obter QR Code
+  async getQRCode(instanceName: string): Promise<WhatsAppApiResponse> {
     return this.makeRequest('/whatsapp-integration', {
-      action: 'send_media',
+      action: 'get_qr_code',
       instanceName,
-      ...data,
     });
   }
 
-  // Chat e mensagens
-  async getChatMessages(number: string, limit: number = 50, instanceName: string = 'torqx-instance'): Promise<WhatsAppApiResponse<ChatMessage[]>> {
+  // Status da instância
+  async getInstanceStatus(instanceName: string): Promise<WhatsAppApiResponse> {
     return this.makeRequest('/whatsapp-integration', {
-      action: 'get_chat_messages',
+      action: 'get_instance_status',
       instanceName,
-      number,
-      limit,
     });
   }
 
-  // IA Chat
+  // Setup completo para cliente (criar + configurar webhook + settings)
+  async setupClientInstance(
+    clientId: string, 
+    webhookUrl: string,
+    settings?: InstanceSettings
+  ): Promise<WhatsAppApiResponse> {
+    const instanceName = `cliente-${clientId}`;
+    
+    try {
+      // 1. Criar instância
+      const createResult = await this.createInstance({ instanceName });
+      if (!createResult.success) {
+        throw new Error(createResult.error);
+      }
+
+      // 2. Configurar webhook
+      const webhookConfig: WebhookConfig = {
+        enabled: true,
+        url: webhookUrl,
+        webhookByEvents: true,
+        webhookBase64: true,
+        events: [
+          'APPLICATION_STARTUP',
+          'MESSAGE_RECEIVED', 
+          'MESSAGE_SENT',
+          'CONNECTION_UPDATE',
+          'QRCODE_UPDATED'
+        ]
+      };
+
+      const webhookResult = await this.setWebhook(instanceName, webhookConfig);
+      if (!webhookResult.success) {
+        console.warn('Falha ao configurar webhook:', webhookResult.error);
+      }
+
+      // 3. Configurar settings
+      const defaultSettings: InstanceSettings = {
+        rejectCall: true,
+        msgCall: 'Chamadas não são aceitas. Entre em contato via mensagem.',
+        groupsIgnore: true,
+        alwaysOnline: true,
+        readMessages: true,
+        readStatus: true,
+        syncFullHistory: false,
+        ...settings
+      };
+
+      const settingsResult = await this.setSettings(instanceName, defaultSettings);
+      if (!settingsResult.success) {
+        console.warn('Falha ao configurar settings:', settingsResult.error);
+      }
+
+      return {
+        success: true,
+        data: {
+          instanceName,
+          instanceId: createResult.data?.instance?.instanceId,
+          webhook: webhookResult.data,
+          settings: settingsResult.data
+        }
+      };
+
+    } catch (error) {
+      console.error('Erro no setup da instância:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Erro desconhecido'
+      };
+    }
+  }
+
+  // Função utilitária para gerar token único
+  private generateToken(): string {
+    return `torqx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  // IA Chat (manter compatibilidade)
   async sendAIMessage(message: string, customerPhone: string, instanceName: string = 'torqx-instance'): Promise<WhatsAppApiResponse> {
     return this.makeRequest('/whatsapp-ai-chat', {
       message,
@@ -141,4 +258,10 @@ class WhatsAppApi {
 }
 
 export const whatsappApi = new WhatsAppApi();
-export type { SendMessageData, SendMediaData, ChatMessage, WhatsAppApiResponse };
+export type { 
+  CreateInstanceData, 
+  WebhookConfig, 
+  InstanceSettings, 
+  InstanceInfo,
+  WhatsAppApiResponse 
+};

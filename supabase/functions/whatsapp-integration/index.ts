@@ -39,40 +39,109 @@ serve(async (req) => {
     const { action, instanceName, ...data } = await req.json();
 
     let response;
-    const baseUrl = `${evolutionApiUrl}/instance`;
     const headers = {
       'Content-Type': 'application/json',
       'apikey': evolutionApiKey,
     };
 
+    console.log(`Evolution API Action: ${action} for instance: ${instanceName}`);
+
     switch (action) {
+      // 1. Testar conexão
+      case 'test_connection':
+        response = await fetch(`${evolutionApiUrl}/`, {
+          method: 'GET',
+          headers: { 'apikey': evolutionApiKey },
+        });
+        break;
+
+      // 2. Criar instância
       case 'create_instance':
-        response = await fetch(`${baseUrl}/create`, {
+        response = await fetch(`${evolutionApiUrl}/instance/create`, {
           method: 'POST',
           headers,
           body: JSON.stringify({
-            instanceName: instanceName || 'torqx-instance',
-            token: evolutionApiKey,
-            qrcode: true,
-            integration: 'WHATSAPP-BAILEYS'
+            instanceName: instanceName,
+            token: data.token,
+            integration: data.integration || 'WHATSAPP-BAILEYS',
+            qrcode: data.qrcode !== false,
           }),
         });
         break;
 
+      // 3. Configurar webhook
+      case 'set_webhook':
+        response = await fetch(`${evolutionApiUrl}/webhook/set/${instanceName}`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            enabled: data.enabled,
+            url: data.url,
+            webhookByEvents: data.webhookByEvents,
+            webhookBase64: data.webhookBase64,
+            events: data.events,
+          }),
+        });
+        break;
+
+      // 4. Configurar settings
+      case 'set_settings':
+        response = await fetch(`${evolutionApiUrl}/settings/set/${instanceName}`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(data.settings),
+        });
+        break;
+
+      // 5. Buscar instâncias
+      case 'find_instances':
+        response = await fetch(`${evolutionApiUrl}/instance/find`, {
+          method: 'GET',
+          headers,
+        });
+        break;
+
+      // Conectar instância
+      case 'connect_instance':
+        response = await fetch(`${evolutionApiUrl}/instance/connect/${instanceName}`, {
+          method: 'GET',
+          headers,
+        });
+        break;
+
+      // Desconectar instância
+      case 'logout_instance':
+        response = await fetch(`${evolutionApiUrl}/instance/logout/${instanceName}`, {
+          method: 'DELETE',
+          headers,
+        });
+        break;
+
+      // Reiniciar instância
+      case 'restart_instance':
+        response = await fetch(`${evolutionApiUrl}/instance/restart/${instanceName}`, {
+          method: 'PUT',
+          headers,
+        });
+        break;
+
+      // Obter QR Code
       case 'get_qr_code':
-        response = await fetch(`${baseUrl}/connect/${instanceName}`, {
+        response = await fetch(`${evolutionApiUrl}/instance/connect/${instanceName}`, {
           method: 'GET',
           headers,
         });
         break;
 
+      // Status da instância
       case 'get_instance_status':
-        response = await fetch(`${baseUrl}/connectionState/${instanceName}`, {
+        response = await fetch(`${evolutionApiUrl}/instance/connectionState/${instanceName}`, {
           method: 'GET',
           headers,
         });
         break;
 
+      // Ações legadas (manter compatibilidade)
       case 'send_message':
         response = await fetch(`${evolutionApiUrl}/message/sendText/${instanceName}`, {
           method: 'POST',
@@ -110,18 +179,17 @@ serve(async (req) => {
         });
         break;
 
-      case 'logout_instance':
-        response = await fetch(`${baseUrl}/logout/${instanceName}`, {
-          method: 'DELETE',
-          headers,
-        });
-        break;
-
       default:
         throw new Error(`Unknown action: ${action}`);
     }
 
     const result = await response.json();
+
+    console.log(`Evolution API Response [${action}]:`, {
+      status: response.status,
+      success: response.ok,
+      data: result
+    });
 
     return new Response(JSON.stringify({
       success: response.ok,
