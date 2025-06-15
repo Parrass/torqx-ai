@@ -103,7 +103,9 @@ class WhatsAppApi {
     
     console.log('Criando instância:', { instanceName, tenantId });
     
-    const data: CreateInstanceData = {
+    return this.makeRequest('/whatsapp-integration', {
+      action: 'create_instance',
+      tenantId,
       instanceName,
       token,
       qrcode: true,
@@ -127,12 +129,6 @@ class WhatsAppApi {
           'QRCODE_UPDATED'
         ]
       }
-    };
-
-    return this.makeRequest('/whatsapp-integration', {
-      action: 'create_instance',
-      tenantId,
-      ...data,
     });
   }
 

@@ -75,13 +75,16 @@ serve(async (req) => {
       case 'create_instance':
         console.log('=== CRIANDO INSTÂNCIA ===');
         
-        if (!data.instanceName || !tenantId) {
-          throw new Error('instanceName e tenantId são obrigatórios');
+        if (!tenantId) {
+          throw new Error('tenantId é obrigatório para criar instância');
         }
+        
+        // Gerar nome da instância se não fornecido
+        const finalInstanceName = instanceName || `torqx_${tenantId.substring(0, 8)}`;
         
         // Payload seguindo exatamente a API da Evolution
         const instancePayload = {
-          instanceName: data.instanceName,
+          instanceName: finalInstanceName,
           token: data.token || `torqx_${Date.now()}`,
           qrcode: true,
           integration: 'WHATSAPP-BAILEYS',
@@ -128,8 +131,8 @@ serve(async (req) => {
               .from('whatsapp_instances')
               .insert({
                 tenant_id: tenantId,
-                instance_name: data.instanceName,
-                instance_id: instanceResult.instance?.instanceId || data.instanceName,
+                instance_name: finalInstanceName,
+                instance_id: instanceResult.instance?.instanceId || finalInstanceName,
                 status: instanceResult.instance?.status || 'created',
                 token: instancePayload.token,
                 webhook_url: instancePayload.webhook.url,
@@ -162,6 +165,11 @@ serve(async (req) => {
 
       case 'get_qr_code':
         console.log(`=== QR CODE para ${instanceName} ===`);
+        
+        if (!instanceName) {
+          throw new Error('instanceName é obrigatório para gerar QR code');
+        }
+        
         try {
           response = await fetch(`${evolutionApiUrl}/instance/connect/${instanceName}`, {
             method: 'GET',
@@ -199,6 +207,11 @@ serve(async (req) => {
 
       case 'get_instance_status':
         console.log(`=== STATUS da ${instanceName} ===`);
+        
+        if (!instanceName) {
+          throw new Error('instanceName é obrigatório para verificar status');
+        }
+        
         try {
           response = await fetch(`${evolutionApiUrl}/instance/connectionState/${instanceName}`, {
             method: 'GET',
@@ -236,6 +249,11 @@ serve(async (req) => {
 
       case 'logout_instance':
         console.log(`=== LOGOUT da ${instanceName} ===`);
+        
+        if (!instanceName) {
+          throw new Error('instanceName é obrigatório para desconectar');
+        }
+        
         try {
           response = await fetch(`${evolutionApiUrl}/instance/logout/${instanceName}`, {
             method: 'DELETE',
@@ -268,6 +286,11 @@ serve(async (req) => {
 
       case 'get_instance_by_tenant':
         console.log(`=== BUSCAR INSTÂNCIA do tenant ${tenantId} ===`);
+        
+        if (!tenantId) {
+          throw new Error('tenantId é obrigatório para buscar instância');
+        }
+        
         const { data: instance, error: instanceError } = await supabaseClient
           .from('whatsapp_instances')
           .select('*')
