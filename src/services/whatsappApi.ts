@@ -1,4 +1,3 @@
-
 interface WhatsAppApiResponse<T = any> {
   success: boolean;
   data?: T;
@@ -96,6 +95,9 @@ class WhatsAppApi {
     try {
       const token = await this.getAuthToken();
       
+      console.log('Fazendo requisição para:', `${this.baseUrl}${endpoint}`);
+      console.log('Dados da requisição:', data);
+      
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
         method: 'POST',
         headers: {
@@ -106,6 +108,8 @@ class WhatsAppApi {
       });
 
       const result = await response.json();
+      
+      console.log('Resposta da API:', { status: response.status, result });
       
       if (!response.ok) {
         throw new Error(result.error || `HTTP error! status: ${response.status}`);
@@ -122,6 +126,8 @@ class WhatsAppApi {
   async createInstance(tenantId: string): Promise<WhatsAppApiResponse<WhatsAppInstance>> {
     const instanceName = `torqx_${tenantId}`;
     const token = this.generateToken();
+    
+    console.log('Criando instância:', { instanceName, tenantId });
     
     const data: CreateInstanceData = {
       instanceName,

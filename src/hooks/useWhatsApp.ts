@@ -26,15 +26,26 @@ export const useWhatsApp = () => {
     
     if (!user) throw new Error('Usuário não autenticado');
     
-    const { data: userData } = await supabase
+    // Primeiro tentar obter diretamente do perfil do usuário
+    const { data: profile } = await supabase
       .from('users')
       .select('tenant_id')
       .eq('id', user.id)
       .single();
     
-    if (!userData?.tenant_id) throw new Error('Tenant não encontrado');
+    if (profile?.tenant_id) {
+      return profile.tenant_id;
+    }
     
-    return userData.tenant_id;
+    // Se não encontrou, tentar usar a função do banco
+    const { data: tenantData, error } = await supabase.rpc('get_current_user_tenant_id');
+    
+    if (error || !tenantData) {
+      console.error('Erro ao obter tenant_id:', error);
+      throw new Error('Tenant não encontrado. Verifique se o usuário está associado a uma oficina.');
+    }
+    
+    return tenantData;
   }, []);
 
   // Criar instância WhatsApp
@@ -42,6 +53,8 @@ export const useWhatsApp = () => {
     setIsLoading(true);
     try {
       const tenantId = await getTenantId();
+      console.log('Criando instância para tenant:', tenantId);
+      
       const response = await whatsappApi.createInstance(tenantId);
       
       if (response.success && response.data) {
@@ -65,7 +78,7 @@ export const useWhatsApp = () => {
       console.error('Erro ao criar instância:', error);
       toast({
         title: 'Erro',
-        description: 'Erro ao criar instância WhatsApp',
+        description: error instanceof Error ? error.message : 'Erro ao criar instância WhatsApp',
         variant: 'destructive',
       });
       throw error;
