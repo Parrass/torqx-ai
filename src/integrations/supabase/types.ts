@@ -1933,6 +1933,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_or_create_tenant_for_user: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

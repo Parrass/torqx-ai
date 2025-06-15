@@ -19,11 +19,14 @@ export const useWhatsApp = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  // Função simplificada para obter tenant ID
+  // Função simplificada para obter tenant ID usando a função do banco
   const getTenantId = useCallback(async () => {
     const { supabase } = await import('@/integrations/supabase/client');
     
     try {
+      console.log('Obtendo tenant ID...');
+      
+      // Verificar se usuário está autenticado
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       
       if (userError || !user) {
@@ -33,49 +36,21 @@ export const useWhatsApp = () => {
       
       console.log('Usuário autenticado:', user.id, user.email);
       
-      // Buscar tenant_id do usuário
-      const { data: userProfile, error: profileError } = await supabase
-        .from('users')
-        .select('tenant_id')
-        .eq('id', user.id)
-        .maybeSingle();
+      // Usar a função do banco para obter ou criar tenant
+      const { data: tenantId, error: tenantError } = await supabase
+        .rpc('get_or_create_tenant_for_user');
       
-      if (userProfile?.tenant_id) {
-        console.log('Tenant ID encontrado:', userProfile.tenant_id);
-        return userProfile.tenant_id;
+      if (tenantError) {
+        console.error('Erro ao obter/criar tenant:', tenantError);
+        throw new Error(`Erro ao configurar conta: ${tenantError.message}`);
       }
       
-      console.log('Criando tenant para o usuário');
-      const { data: newTenant, error: createError } = await supabase
-        .from('tenants')
-        .insert({
-          name: user.email?.split('@')[0] || 'Oficina',
-          business_name: user.email?.split('@')[0] || 'Oficina',
-          email: user.email,
-          document_number: '00000000000',
-          status: 'active'
-        })
-        .select()
-        .single();
-      
-      if (createError) {
-        console.error('Erro ao criar tenant:', createError);
-        throw new Error('Não foi possível criar tenant');
+      if (!tenantId) {
+        throw new Error('Não foi possível obter ID da oficina');
       }
       
-      // Atualizar o usuário com o tenant_id
-      await supabase
-        .from('users')
-        .upsert({
-          id: user.id,
-          email: user.email,
-          full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário',
-          role: 'owner',
-          tenant_id: newTenant.id
-        });
-      
-      console.log('Tenant criado:', newTenant.id);
-      return newTenant.id;
+      console.log('Tenant ID obtido:', tenantId);
+      return tenantId;
       
     } catch (error) {
       console.error('Erro ao obter tenant ID:', error);

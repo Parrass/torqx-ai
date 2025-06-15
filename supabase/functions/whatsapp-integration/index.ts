@@ -28,7 +28,14 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
     if (authError || !user) {
       console.error('Erro de autenticação:', authError);
-      throw new Error('Usuário não autenticado');
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Usuário não autenticado',
+        details: authError?.message
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     console.log('Usuário autenticado:', user.id);
@@ -37,7 +44,7 @@ serve(async (req) => {
     const evolutionApiUrl = Deno.env.get('EVOLUTION_API_URL');
     const evolutionApiKey = Deno.env.get('EVOLUTION_API_KEY');
 
-    console.log('Credenciais Evolution API:', {
+    console.log('Verificando credenciais Evolution API:', {
       url: evolutionApiUrl ? 'OK' : 'FALTANDO',
       key: evolutionApiKey ? 'OK' : 'FALTANDO'
     });
@@ -56,7 +63,7 @@ serve(async (req) => {
     const requestBody = await req.json();
     const { action, tenantId, instanceName, ...data } = requestBody;
 
-    console.log(`Ação: ${action}`, { tenantId, instanceName, data });
+    console.log(`=== AÇÃO: ${action} ===`, { tenantId, instanceName, data });
 
     let response;
     const headers = {
@@ -72,14 +79,14 @@ serve(async (req) => {
           throw new Error('instanceName e tenantId são obrigatórios');
         }
         
-        // Payload simplificado para Evolution API
+        // Payload otimizado para Evolution API
         const instancePayload = {
           instanceName: data.instanceName,
-          token: data.token,
+          token: data.token || `torqx_${Date.now()}`,
           integration: 'WHATSAPP-BAILEYS',
           qrcode: true,
           rejectCall: true,
-          msgCall: 'Chamadas não são aceitas.',
+          msgCall: 'Chamadas não são aceitas. Entre em contato via mensagem.',
           groupsIgnore: true,
           alwaysOnline: true,
           readMessages: true,
@@ -112,7 +119,7 @@ serve(async (req) => {
                 instance_name: data.instanceName,
                 instance_id: instanceResult.instance?.instanceId || data.instanceName,
                 status: instanceResult.instance?.status || 'created',
-                token: data.token,
+                token: instancePayload.token,
                 settings: instancePayload
               })
               .select()
@@ -123,7 +130,7 @@ serve(async (req) => {
               throw new Error(`Erro ao salvar instância: ${dbError.message}`);
             }
 
-            console.log('Instância salva:', dbInstance);
+            console.log('Instância salva com sucesso:', dbInstance);
 
             return new Response(JSON.stringify({
               success: true,
@@ -136,7 +143,7 @@ serve(async (req) => {
           }
         } catch (fetchError) {
           console.error('Erro na requisição Evolution:', fetchError);
-          throw new Error(`Erro de comunicação: ${fetchError.message}`);
+          throw new Error(`Erro de comunicação com Evolution API: ${fetchError.message}`);
         }
 
       case 'get_qr_code':
@@ -172,6 +179,7 @@ serve(async (req) => {
           });
 
           if (response.ok) {
+            // Atualizar status no banco
             await supabaseClient
               .from('whatsapp_instances')
               .update({ 
@@ -199,6 +207,8 @@ serve(async (req) => {
           console.error('Erro ao buscar instância:', instanceError);
           throw new Error(`Erro ao buscar instância: ${instanceError.message}`);
         }
+
+        console.log('Instância encontrada:', instance);
 
         return new Response(JSON.stringify({
           success: true,
@@ -233,11 +243,16 @@ serve(async (req) => {
     throw new Error('Nenhuma resposta gerada');
 
   } catch (error) {
-    console.error('ERRO na integração WhatsApp:', error);
+    console.error('ERRO GERAL na integração WhatsApp:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    
     return new Response(JSON.stringify({
       success: false,
       error: error.message,
-      stack: error.stack,
+      details: error.stack,
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
