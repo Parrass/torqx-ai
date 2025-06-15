@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Rocket, CheckCircle, TrendingUp, Settings } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import OnboardingBanner from '@/components/onboarding/OnboardingBanner';
 import OnboardingWizard from '@/components/onboarding/OnboardingWizard';
@@ -12,6 +13,7 @@ interface WelcomeMessageProps {
 }
 
 const WelcomeMessage: React.FC<WelcomeMessageProps> = ({ onStartTour }) => {
+  const navigate = useNavigate();
   const { progress, isLoading } = useOnboarding();
   const [showWizard, setShowWizard] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
@@ -118,7 +120,16 @@ const WelcomeMessage: React.FC<WelcomeMessageProps> = ({ onStartTour }) => {
             </div>
           </div>
           
-          <div>
+          <div className="flex space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/welcome')}
+              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+            >
+              <Rocket className="w-4 h-4 mr-2" />
+              Conhecer Torqx
+            </Button>
             <Button
               variant="outline"
               size="sm"

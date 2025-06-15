@@ -38,33 +38,30 @@ const SidebarCategoryItem = ({ category, userPermissions }: SidebarCategoryItemP
         onClick={() => setIsExpanded(!isExpanded)}
         className="flex items-center w-full py-2 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-torqx-primary-light transition-colors text-left min-h-[40px] relative"
       >
-        {/* Icon container - sempre centralizado quando colapsado */}
+        {/* Icon container - sempre visível e centralizado quando colapsado */}
         <div className={`
-          flex items-center justify-center transition-all duration-300
-          ${open ? 'w-4 h-4 flex-shrink-0' : 'w-full h-4'}
+          flex items-center justify-center flex-shrink-0 transition-all duration-300
+          ${open ? 'w-4 h-4 mr-3' : 'w-full h-4'}
         `}>
           {category.icon}
         </div>
         
-        {/* Category label with animation */}
-        <motion.span 
-          className="text-torqx-primary dark:text-white text-sm font-medium whitespace-nowrap"
-          animate={{
-            opacity: open ? 1 : 0,
-            width: open ? "auto" : 0,
-            marginLeft: open ? 12 : 0,
-          }}
-          style={{
-            overflow: "hidden"
-          }}
-        >
-          {category.label}
-        </motion.span>
+        {/* Category label - só aparece quando expandido */}
+        {open && (
+          <motion.span 
+            className="text-torqx-primary dark:text-white text-sm font-medium whitespace-nowrap flex-1"
+            initial={{ opacity: 0, width: 0 }}
+            animate={{ opacity: 1, width: "auto" }}
+            exit={{ opacity: 0, width: 0 }}
+          >
+            {category.label}
+          </motion.span>
+        )}
         
-        {/* Chevron with animation */}
+        {/* Chevron - só aparece quando expandido */}
         {open && (
           <motion.div
-            className="ml-auto"
+            className="flex-shrink-0"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

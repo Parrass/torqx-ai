@@ -187,31 +187,28 @@ export const SidebarLink = ({
       )}
       {...props}
     >
-      {/* Icon container - sempre centralizado quando colapsado */}
+      {/* Icon container - sempre visível e centralizado quando colapsado */}
       <div className={cn(
-        "flex items-center justify-center transition-all duration-300",
-        open ? "w-4 h-4 flex-shrink-0" : "w-full h-4"
+        "flex items-center justify-center flex-shrink-0 transition-all duration-300",
+        open ? "w-4 h-4 mr-3" : "w-full h-4"
       )}>
         {link.icon}
       </div>
       
-      {/* Text with animation */}
-      <motion.span
-        className={cn(
-          "text-torqx-primary dark:text-white text-sm group-hover/sidebar:translate-x-1 transition-transform duration-300 whitespace-nowrap",
-          isActive ? 'text-torqx-secondary font-medium' : ''
-        )}
-        animate={{
-          opacity: open ? 1 : 0,
-          width: open ? "auto" : 0,
-          marginLeft: open ? 12 : 0,
-        }}
-        style={{
-          overflow: "hidden"
-        }}
-      >
-        {link.label}
-      </motion.span>
+      {/* Text with animation - só aparece quando expandido */}
+      {open && (
+        <motion.span
+          className={cn(
+            "text-torqx-primary dark:text-white text-sm group-hover/sidebar:translate-x-1 transition-transform duration-300 whitespace-nowrap",
+            isActive ? 'text-torqx-secondary font-medium' : ''
+          )}
+          initial={{ opacity: 0, width: 0 }}
+          animate={{ opacity: 1, width: "auto" }}
+          exit={{ opacity: 0, width: 0 }}
+        >
+          {link.label}
+        </motion.span>
+      )}
     </button>
   );
 };
