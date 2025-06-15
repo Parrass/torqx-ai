@@ -52,151 +52,138 @@ const WelcomeMessage: React.FC<WelcomeMessageProps> = ({ onStartTour }) => {
     );
   }
 
-  // Se o onboarding foi completado
-  if (progress && progress.isCompleted) {
-    console.log('WelcomeMessage: Mostrando estado de conclusão');
-    return (
-      <Card className="bg-gradient-to-r from-torqx-secondary to-torqx-accent text-white border-0 shadow-lg mb-6">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
-                <CheckCircle className="w-8 h-8" />
-              </div>
-              
-              <div>
-                <h2 className="text-2xl font-bold mb-2 font-satoshi">
-                  Parabéns! Configuração concluída! 🎉
-                </h2>
-                <p className="text-sm opacity-90 mb-4">
-                  Sua oficina está pronta para usar todo o potencial do Torqx. 
-                  Agora você pode gerenciar clientes, veículos e ordens de serviço com eficiência.
-                </p>
+  return (
+    <>
+      {/* Sempre mostrar a barra de progresso do onboarding */}
+      <OnboardingProgressBar />
+      
+      {/* Banner de onboarding se não foi dispensado e não está completo */}
+      {!bannerDismissed && progress && !progress.isCompleted && (
+        <OnboardingBanner 
+          onOpenWizard={() => setShowWizard(true)}
+          onDismiss={() => setBannerDismissed(true)}
+        />
+      )}
+
+      {/* Se o onboarding foi completado */}
+      {progress && progress.isCompleted && (
+        <Card className="bg-gradient-to-r from-torqx-secondary to-torqx-accent text-white border-0 shadow-lg mb-6">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
+                  <CheckCircle className="w-8 h-8" />
+                </div>
                 
-                <div className="flex items-center space-x-6 text-sm">
-                  <div className="flex items-center space-x-2">
-                    <CheckCircle className="w-4 h-4" />
-                    <span>Oficina configurada</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <CheckCircle className="w-4 h-4" />
-                    <span>Dados iniciais criados</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <TrendingUp className="w-4 h-4" />
-                    <span>Pronto para crescer</span>
+                <div>
+                  <h2 className="text-2xl font-bold mb-2 font-satoshi">
+                    Parabéns! Configuração concluída! 🎉
+                  </h2>
+                  <p className="text-sm opacity-90 mb-4">
+                    Sua oficina está pronta para usar todo o potencial do Torqx. 
+                    Agora você pode gerenciar clientes, veículos e ordens de serviço com eficiência.
+                  </p>
+                  
+                  <div className="flex items-center space-x-6 text-sm">
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle className="w-4 h-4" />
+                      <span>Oficina configurada</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle className="w-4 h-4" />
+                      <span>Dados iniciais criados</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <TrendingUp className="w-4 h-4" />
+                      <span>Pronto para crescer</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-            
-            <div className="flex flex-col space-y-2">
-              {onStartTour && (
+              
+              <div className="flex flex-col space-y-2">
+                {onStartTour && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onStartTour}
+                    className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                  >
+                    <Rocket className="w-4 h-4 mr-2" />
+                    Tour da Plataforma
+                  </Button>
+                )}
+                
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={onStartTour}
+                  onClick={() => resetOnboarding()}
+                  className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Refazer Setup
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Se não há progresso ou está iniciando, mostrar convite para iniciar */}
+      {(!progress || !progress.isCompleted) && (
+        <Card className="bg-gradient-to-r from-torqx-primary to-torqx-primary-light text-white border-0 shadow-lg mb-6">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
+                  <Settings className="w-8 h-8" />
+                </div>
+                
+                <div>
+                  <h2 className="text-2xl font-bold mb-2 font-satoshi">
+                    Bem-vindo ao Torqx! 👋
+                  </h2>
+                  <p className="text-sm opacity-90 mb-4">
+                    Configure sua oficina em poucos passos e comece a usar todas as funcionalidades.
+                  </p>
+                  
+                  <div className="flex items-center space-x-2 text-sm bg-yellow-500/20 rounded-lg px-3 py-2">
+                    <AlertCircle className="w-4 h-4" />
+                    <span>Vamos configurar sua oficina para começar a usar o Torqx!</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate('/welcome')}
                   className="bg-white/10 border-white/20 text-white hover:bg-white/20"
                 >
                   <Rocket className="w-4 h-4 mr-2" />
-                  Tour da Plataforma
+                  Conhecer Torqx
                 </Button>
-              )}
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => resetOnboarding()}
-                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-              >
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Refazer Setup
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Se há progresso em andamento, mostrar barra de progresso
-  if (progress && !progress.isCompleted) {
-    console.log('WelcomeMessage: Mostrando barra de progresso');
-    return (
-      <>
-        <OnboardingProgressBar />
-        
-        {/* Banner de continuação se não foi dispensado */}
-        {!bannerDismissed && (
-          <OnboardingBanner 
-            onOpenWizard={() => setShowWizard(true)}
-            onDismiss={() => setBannerDismissed(true)}
-          />
-        )}
-        
-        <OnboardingWizard 
-          isOpen={showWizard}
-          onClose={() => setShowWizard(false)}
-        />
-      </>
-    );
-  }
-
-  // Se não há progresso, mostrar convite para iniciar
-  console.log('WelcomeMessage: Mostrando convite inicial');
-  return (
-    <>
-      <Card className="bg-gradient-to-r from-torqx-primary to-torqx-primary-light text-white border-0 shadow-lg mb-6">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
-                <Settings className="w-8 h-8" />
-              </div>
-              
-              <div>
-                <h2 className="text-2xl font-bold mb-2 font-satoshi">
-                  Bem-vindo ao Torqx! 👋
-                </h2>
-                <p className="text-sm opacity-90 mb-4">
-                  Configure sua oficina em poucos passos e comece a usar todas as funcionalidades.
-                </p>
-                
-                <div className="flex items-center space-x-2 text-sm bg-yellow-500/20 rounded-lg px-3 py-2">
-                  <AlertCircle className="w-4 h-4" />
-                  <span>Vamos configurar sua oficina para começar a usar o Torqx!</span>
-                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowWizard(true)}
+                  className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                >
+                  <Settings className="w-4 h-4 mr-2" />
+                  Configurar Agora
+                </Button>
               </div>
             </div>
-            
-            <div className="flex space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate('/welcome')}
-                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-              >
-                <Rocket className="w-4 h-4 mr-2" />
-                Conhecer Torqx
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowWizard(true)}
-                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-              >
-                <Settings className="w-4 h-4 mr-2" />
-                Configurar Agora
-              </Button>
-            </div>
-          </div>
-          
-          <OnboardingWizard 
-            isOpen={showWizard}
-            onClose={() => setShowWizard(false)}
-          />
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
+      
+      {/* Wizard do onboarding */}
+      <OnboardingWizard 
+        isOpen={showWizard}
+        onClose={() => setShowWizard(false)}
+      />
     </>
   );
 };
