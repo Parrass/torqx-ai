@@ -94,7 +94,7 @@ const WhatsAppInstanceSettings = ({ instanceName, isConnected }: WhatsAppInstanc
       // Determinar se webhook deve estar habilitado
       const isWebhookEnabled = webhookEnabled; // true por padrão
       
-      // Estrutura correta do payload para Evolution API (SEM webhookByEvents para evitar rotas separadas)
+      // Estrutura correta do payload para Evolution API com eventos válidos
       const webhookConfig = {
         enabled: isWebhookEnabled,
         url: webhookUrl || `${import.meta.env.VITE_SUPABASE_URL || 'https://bszcwxrjhvbvixrdnzvf.supabase.co'}/functions/v1/whatsapp-webhook`,
@@ -102,9 +102,7 @@ const WhatsAppInstanceSettings = ({ instanceName, isConnected }: WhatsAppInstanc
         webhookBase64: true,
         events: isWebhookEnabled ? [
           'APPLICATION_STARTUP',
-          'MESSAGES_UPSERT',
-          'CONNECTION_UPDATE',
-          'QRCODE_UPDATED'
+          'MESSAGES_UPSERT'
         ] : [] // Se desabilitado, array vazio
       };
 
@@ -368,6 +366,9 @@ const WhatsAppInstanceSettings = ({ instanceName, isConnected }: WhatsAppInstanc
           <div className="bg-blue-50 p-3 rounded-lg">
             <p className="text-sm text-blue-800">
               <strong>Configuração:</strong> webhookByEvents = false (todos os eventos numa URL única)
+            </p>
+            <p className="text-xs text-blue-600 mt-1">
+              Eventos: APPLICATION_STARTUP, MESSAGES_UPSERT
             </p>
           </div>
 

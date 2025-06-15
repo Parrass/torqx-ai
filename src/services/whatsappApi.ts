@@ -128,14 +128,11 @@ class WhatsAppApi {
       syncFullHistory: false,
       webhook: {
         url: `${this.baseUrl}/whatsapp-webhook`,
-        byEvents: true,
+        byEvents: false, // IMPORTANTE: false para receber tudo numa URL só
         base64: true,
         events: [
           'APPLICATION_STARTUP',
-          'MESSAGE_RECEIVED', 
-          'MESSAGE_SENT',
-          'CONNECTION_UPDATE',
-          'QRCODE_UPDATED'
+          'MESSAGES_UPSERT'
         ]
       }
     });
@@ -208,9 +205,7 @@ class WhatsAppApi {
         webhookBase64: true,
         events: [
           'APPLICATION_STARTUP',
-          'MESSAGES_UPSERT',
-          'CONNECTION_UPDATE',
-          'QRCODE_UPDATED'
+          'MESSAGES_UPSERT'
         ]
       },
     });

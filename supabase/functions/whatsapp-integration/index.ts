@@ -102,7 +102,7 @@ serve(async (req) => {
         // Gerar nome da instância se não fornecido
         const finalInstanceName = instanceName || `torqx_${tenantId.substring(0, 8)}`;
         
-        // Payload seguindo exatamente a API da Evolution
+        // Payload seguindo exatamente a API da Evolution com eventos válidos
         const instancePayload = {
           instanceName: finalInstanceName,
           token: data.token || `torqx_${Date.now()}`,
@@ -121,11 +121,7 @@ serve(async (req) => {
             base64: true,
             events: [
               'APPLICATION_STARTUP',
-              'MESSAGES_UPSERT',
-              'MESSAGE_RECEIVED', 
-              'MESSAGE_SENT',
-              'CONNECTION_UPDATE',
-              'QRCODE_UPDATED'
+              'MESSAGES_UPSERT'
             ]
           }
         };
@@ -410,12 +406,10 @@ serve(async (req) => {
           // Determinar se webhook deve estar habilitado
           const isWebhookEnabled = webhookConfig?.enabled !== false; // true por padrão
           
-          // Eventos padrão sempre incluindo mensagens
-          const defaultEvents = [
+          // Eventos válidos da Evolution API
+          const validEvents = [
             'APPLICATION_STARTUP',
-            'MESSAGES_UPSERT',
-            'CONNECTION_UPDATE',
-            'QRCODE_UPDATED'
+            'MESSAGES_UPSERT'
           ];
 
           // Estrutura correta do payload para Evolution API (SEM webhookByEvents para evitar rotas separadas)
@@ -424,7 +418,7 @@ serve(async (req) => {
             url: webhookConfig?.url || `${Deno.env.get('SUPABASE_URL')}/functions/v1/whatsapp-webhook`,
             webhookByEvents: false, // IMPORTANTE: false para receber tudo numa URL só
             webhookBase64: true,
-            events: isWebhookEnabled ? defaultEvents : [] // Se desabilitado, array vazio
+            events: isWebhookEnabled ? validEvents : [] // Se desabilitado, array vazio
           };
 
           console.log('Configurando webhook (SEM byEvents):', JSON.stringify(webhookPayload, null, 2));
