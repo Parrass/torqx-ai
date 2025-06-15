@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
   MessageCircle, QrCode, CheckCircle, 
-  AlertCircle, Wifi, WifiOff, RefreshCw
+  AlertCircle, Wifi, WifiOff, RefreshCw, Trash2
 } from 'lucide-react';
 import { useWhatsApp } from '@/hooks/useWhatsApp';
 import QRCodeDisplay from './QRCodeDisplay';
@@ -30,7 +31,7 @@ const WhatsAppConnection = ({
   onInstanceChange,
   metrics 
 }: WhatsAppConnectionProps) => {
-  const { connection, isLoading, createInstance, generateQRCode, checkStatus, fetchInstanceData, disconnect, loadExistingInstance } = useWhatsApp();
+  const { connection, isLoading, createInstance, generateQRCode, checkStatus, fetchInstanceData, disconnect, deleteInstance, loadExistingInstance } = useWhatsApp();
   const [showQRCode, setShowQRCode] = useState(false);
 
   // Carregar instância existente ao montar o componente
@@ -80,6 +81,14 @@ const WhatsAppConnection = ({
     await disconnect();
     setBotStatus('paused');
     setShowQRCode(false);
+  };
+
+  const handleDeleteInstance = async () => {
+    if (window.confirm('Tem certeza que deseja deletar permanentemente esta instância? Esta ação não pode ser desfeita.')) {
+      await deleteInstance();
+      setBotStatus('paused');
+      setShowQRCode(false);
+    }
   };
 
   const handleRefreshStatus = async () => {
@@ -149,6 +158,9 @@ const WhatsAppConnection = ({
                   <Button variant="outline" size="sm" onClick={handleDisconnect}>
                     Desconectar
                   </Button>
+                  <Button variant="destructive" size="sm" onClick={handleDeleteInstance}>
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
                 </>
               ) : hasInstance ? (
                 <div className="space-x-2">
@@ -172,8 +184,8 @@ const WhatsAppConnection = ({
                   <Button variant="outline" size="sm" onClick={handleRefreshStatus}>
                     <RefreshCw className="w-4 h-4" />
                   </Button>
-                  <Button variant="outline" size="sm" onClick={handleDisconnect}>
-                    Remover Instância
+                  <Button variant="destructive" size="sm" onClick={handleDeleteInstance}>
+                    <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
               ) : (
@@ -191,9 +203,7 @@ const WhatsAppConnection = ({
                     <>
                       <MessageCircle className="w-4 h-4 mr-2" />
                       Conectar WhatsApp
-                    </>
-                  )}
-                </Button>
+                    </Button>
               )}
             </div>
           </div>

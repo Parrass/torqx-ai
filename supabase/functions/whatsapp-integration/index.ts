@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
@@ -474,6 +473,51 @@ serve(async (req) => {
         } catch (fetchError) {
           console.error('Erro detalhado ao configurar webhook:', fetchError);
           throw new Error(`Erro ao configurar webhook: ${fetchError.message}`);
+        }
+
+      case 'delete_instance':
+        console.log(`=== DELETAR INSTÂNCIA ${instanceName} ===`);
+        
+        if (!instanceName) {
+          throw new Error('instanceName é obrigatório para deletar instância');
+        }
+        
+        try {
+          response = await fetch(`${evolutionApiUrl}/instance/delete/${instanceName}`, {
+            method: 'DELETE',
+            headers,
+          });
+
+          if (response.ok) {
+            const deleteResult = response.status === 204 ? { message: 'Instância deletada com sucesso' } : await response.json();
+            console.log('Instância deletada:', deleteResult);
+            
+            // Remover instância do banco de dados
+            const { error: dbError } = await supabaseClient
+              .from('whatsapp_instances')
+              .delete()
+              .eq('instance_name', instanceName);
+
+            if (dbError) {
+              console.error('Erro ao remover instância do banco:', dbError);
+              // Não falhar a operação se a remoção do banco falhar
+              console.log('Instância deletada da Evolution API, mas erro ao remover do banco local');
+            } else {
+              console.log('Instância removida do banco local com sucesso');
+            }
+            
+            return new Response(JSON.stringify({
+              success: true,
+              data: deleteResult
+            }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          } else {
+            const errorResult = await response.json();
+            throw new Error(errorResult?.message || `Erro ao deletar instância: ${response.status}`);
+          }
+        } catch (fetchError) {
+          throw new Error(`Erro ao deletar instância: ${fetchError.message}`);
         }
 
       case 'logout_instance':

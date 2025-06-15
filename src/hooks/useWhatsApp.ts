@@ -270,6 +270,49 @@ export const useWhatsApp = () => {
     }
   }, [connection.instanceName, connection.isConnected, toast]);
 
+  const deleteInstance = useCallback(async () => {
+    if (!connection.instanceName) {
+      toast({
+        title: 'Erro',
+        description: 'Nenhuma instância encontrada para deletar.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await whatsappApi.deleteInstance(connection.instanceName);
+      
+      if (response.success) {
+        setConnection({
+          isConnected: false,
+          qrCode: undefined,
+          pairingCode: undefined,
+          instanceName: undefined,
+          status: undefined,
+          instance: undefined,
+        });
+        
+        toast({
+          title: 'Instância deletada',
+          description: 'A instância WhatsApp foi deletada permanentemente.',
+        });
+      } else {
+        throw new Error(response.error || 'Erro ao deletar instância');
+      }
+    } catch (error) {
+      console.error('Erro ao deletar instância:', error);
+      toast({
+        title: 'Erro ao deletar instância',
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [connection.instanceName, toast]);
+
   const disconnect = useCallback(async () => {
     if (!connection.instanceName) return;
 
@@ -366,6 +409,7 @@ export const useWhatsApp = () => {
     checkStatus,
     fetchInstanceData,
     disconnect,
+    deleteInstance,
     loadExistingInstance,
     sendAIMessage,
   };

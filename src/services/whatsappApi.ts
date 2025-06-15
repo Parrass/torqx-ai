@@ -205,6 +205,14 @@ class WhatsAppApi {
     });
   }
 
+  // Deletar instância permanentemente
+  async deleteInstance(instanceName: string): Promise<WhatsAppApiResponse> {
+    return this.makeRequest('/whatsapp-integration', {
+      action: 'delete_instance',
+      instanceName,
+    });
+  }
+
   // Desconectar instância
   async logoutInstance(instanceName: string): Promise<WhatsAppApiResponse> {
     return this.makeRequest('/whatsapp-integration', {
