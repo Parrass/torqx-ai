@@ -2,12 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { 
-  MessageCircle, Smartphone, QrCode, CheckCircle, 
-  AlertCircle, Wifi, WifiOff, Settings as SettingsIcon,
-  RefreshCw, Phone, Users, BarChart3, Copy
+  MessageCircle, QrCode, CheckCircle, 
+  AlertCircle, Wifi, WifiOff, RefreshCw, Copy
 } from 'lucide-react';
 import { useWhatsApp } from '@/hooks/useWhatsApp';
 import { useToast } from '@/hooks/use-toast';
@@ -32,16 +29,21 @@ const WhatsAppConnection = ({
   setBotStatus,
   metrics 
 }: WhatsAppConnectionProps) => {
-  const { connection, isLoading, createInstance, getQRCode, checkStatus, disconnect } = useWhatsApp();
-  const [instanceName, setInstanceName] = useState('torqx-instance');
+  const { connection, isLoading, createInstance, generateQRCode, checkStatus, disconnect, loadExistingInstance } = useWhatsApp();
+  const [showQRCode, setShowQRCode] = useState(false);
   const { toast } = useToast();
+
+  // Carregar instância existente ao montar o componente
+  useEffect(() => {
+    loadExistingInstance();
+  }, [loadExistingInstance]);
 
   // Sincronizar estado local com hook
   useEffect(() => {
     propSetIsConnected(connection.isConnected);
   }, [connection.isConnected, propSetIsConnected]);
 
-  // Verificar status periodicamente
+  // Verificar status periodicamente se conectado
   useEffect(() => {
     if (connection.isConnected) {
       const interval = setInterval(checkStatus, 10000); // A cada 10s
@@ -49,17 +51,28 @@ const WhatsAppConnection = ({
     }
   }, [connection.isConnected, checkStatus]);
 
-  const handleConnect = async () => {
-    await createInstance();
+  const handleCreateInstance = async () => {
+    try {
+      await createInstance();
+      setShowQRCode(false); // Reset QR code display
+    } catch (error) {
+      console.error('Erro ao criar instância:', error);
+    }
+  };
+
+  const handleGenerateQRCode = async () => {
+    try {
+      await generateQRCode();
+      setShowQRCode(true);
+    } catch (error) {
+      console.error('Erro ao gerar QR Code:', error);
+    }
   };
 
   const handleDisconnect = async () => {
     await disconnect();
     setBotStatus('paused');
-  };
-
-  const handleRefreshQR = async () => {
-    await getQRCode();
+    setShowQRCode(false);
   };
 
   const copyQRCode = () => {
@@ -71,6 +84,19 @@ const WhatsAppConnection = ({
       });
     }
   };
+
+  const copyPairingCode = () => {
+    if (connection.pairingCode) {
+      navigator.clipboard.writeText(connection.pairingCode);
+      toast({
+        title: 'Código de pareamento copiado',
+        description: 'Código copiado para a área de transferência',
+      });
+    }
+  };
+
+  // Determinar se tem instância criada
+  const hasInstance = !!connection.instance || !!connection.instanceName;
 
   return (
     <div className="space-y-6">
@@ -93,9 +119,12 @@ const WhatsAppConnection = ({
                 <p className={`text-sm ${
                   connection.isConnected ? 'text-torqx-accent' : 'text-red-600'
                 }`}>
-                  {connection.isConnected ? 'Conectado' : 'Desconectado'}
+                  {connection.isConnected ? 'Conectado' : hasInstance ? 'Instância criada' : 'Desconectado'}
                   {connection.status && ` • ${connection.status}`}
                 </p>
+                {connection.instanceName && (
+                  <p className="text-xs text-gray-500">Instância: {connection.instanceName}</p>
+                )}
               </div>
             </div>
             <div className="flex space-x-2">
@@ -119,20 +148,42 @@ const WhatsAppConnection = ({
                     )}
                   </Button>
                   <Button variant="outline" size="sm" onClick={handleDisconnect}>
-                    <SettingsIcon className="w-4 h-4 mr-2" />
                     Desconectar
                   </Button>
                 </>
+              ) : hasInstance ? (
+                <div className="space-x-2">
+                  <Button
+                    onClick={handleGenerateQRCode}
+                    className="bg-gradient-to-r from-torqx-secondary to-torqx-accent text-white"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        Gerando...
+                      </>
+                    ) : (
+                      <>
+                        <QrCode className="w-4 h-4 mr-2" />
+                        Gerar QR Code
+                      </>
+                    )}
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleDisconnect}>
+                    Remover Instância
+                  </Button>
+                </div>
               ) : (
                 <Button
-                  onClick={handleConnect}
+                  onClick={handleCreateInstance}
                   className="bg-gradient-to-r from-torqx-secondary to-torqx-accent text-white"
                   disabled={isLoading}
                 >
                   {isLoading ? (
                     <>
                       <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                      Conectando...
+                      Criando...
                     </>
                   ) : (
                     <>
@@ -146,44 +197,69 @@ const WhatsAppConnection = ({
           </div>
         </CardHeader>
 
-        {connection.qrCode && !connection.isConnected && (
+        {/* QR Code Display */}
+        {showQRCode && (connection.qrCode || connection.pairingCode) && !connection.isConnected && (
           <CardContent>
             <div className="text-center p-8 bg-gray-50 rounded-lg">
-              <div className="relative">
-                {connection.qrCode.startsWith('data:') ? (
-                  <img 
-                    src={connection.qrCode} 
-                    alt="QR Code WhatsApp" 
-                    className="w-64 h-64 mx-auto border-2 border-gray-200 rounded-lg"
-                  />
-                ) : (
-                  <div className="w-64 h-64 mx-auto border-2 border-gray-200 rounded-lg flex items-center justify-center bg-white">
-                    <QrCode className="w-32 h-32 text-gray-400" />
+              {connection.qrCode && (
+                <div className="relative mb-6">
+                  {connection.qrCode.startsWith('data:') ? (
+                    <img 
+                      src={connection.qrCode} 
+                      alt="QR Code WhatsApp" 
+                      className="w-64 h-64 mx-auto border-2 border-gray-200 rounded-lg"
+                    />
+                  ) : (
+                    <div className="w-64 h-64 mx-auto border-2 border-gray-200 rounded-lg flex items-center justify-center bg-white">
+                      <QrCode className="w-32 h-32 text-gray-400" />
+                    </div>
+                  )}
+                  <Button
+                    onClick={copyQRCode}
+                    variant="outline"
+                    size="sm"
+                    className="absolute top-2 right-2"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
+
+              {connection.pairingCode && (
+                <div className="mb-6">
+                  <h4 className="text-lg font-medium text-gray-900 mb-2">
+                    Código de Pareamento
+                  </h4>
+                  <div className="flex items-center justify-center space-x-2">
+                    <code className="bg-white px-4 py-2 rounded border text-lg font-mono">
+                      {connection.pairingCode}
+                    </code>
+                    <Button
+                      onClick={copyPairingCode}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </Button>
                   </div>
-                )}
-                <Button
-                  onClick={copyQRCode}
-                  variant="outline"
-                  size="sm"
-                  className="absolute top-2 right-2"
-                >
-                  <Copy className="w-4 h-4" />
-                </Button>
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2 mt-4">
-                Escaneie o QR Code
+                </div>
+              )}
+
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Conecte seu WhatsApp
               </h3>
               <p className="text-gray-600 mb-4">
-                Abra o WhatsApp no seu celular e escaneie este código para conectar
+                Escaneie o QR Code ou use o código de pareamento no WhatsApp
               </p>
-              <Button onClick={handleRefreshQR} variant="outline" size="sm">
+              <Button onClick={handleGenerateQRCode} variant="outline" size="sm">
                 <RefreshCw className="w-4 h-4 mr-2" />
-                Atualizar QR Code
+                Atualizar
               </Button>
             </div>
           </CardContent>
         )}
 
+        {/* Status Info when Connected */}
         {connection.isConnected && (
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -212,25 +288,16 @@ const WhatsAppConnection = ({
         )}
       </Card>
 
-      {/* Configurações de Conexão */}
-      {!connection.isConnected && (
+      {/* Instruções quando não há instância */}
+      {!hasInstance && (
         <Card>
           <CardHeader>
-            <CardTitle>Configurar Conexão</CardTitle>
+            <CardTitle>Como Conectar</CardTitle>
             <CardDescription>
-              Configure sua instância WhatsApp Business
+              Siga os passos para conectar sua oficina ao WhatsApp Business
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="instanceName">Nome da Instância</Label>
-              <Input
-                id="instanceName"
-                value={instanceName}
-                onChange={(e) => setInstanceName(e.target.value)}
-                placeholder="torqx-instance"
-              />
-            </div>
             <div className="p-4 bg-blue-50 rounded-lg">
               <div className="flex items-start space-x-3">
                 <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
@@ -239,59 +306,13 @@ const WhatsAppConnection = ({
                   <ul className="text-sm text-blue-700 mt-1 list-disc list-inside">
                     <li>Conta WhatsApp Business ativa</li>
                     <li>Acesso ao dispositivo com WhatsApp</li>
-                    <li>Evolution API configurada</li>
+                    <li>Número de telefone válido</li>
                   </ul>
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
-      )}
-
-      {/* Métricas de Performance */}
-      {propIsConnected && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Conversas Hoje</CardTitle>
-              <MessageCircle className="h-4 w-4 text-torqx-secondary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-torqx-primary">{metrics.total_conversations}</div>
-              <p className="text-xs text-gray-600 mt-1">+12% vs ontem</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Taxa Resposta IA</CardTitle>
-              <BarChart3 className="h-4 w-4 text-torqx-accent" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-torqx-accent">78%</div>
-              <p className="text-xs text-gray-600 mt-1">Resolvidas sem humano</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Agendamentos</CardTitle>
-              <Phone className="h-4 w-4 text-torqx-secondary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-torqx-primary">{metrics.appointments_scheduled}</div>
-              <p className="text-xs text-gray-600 mt-1">Via WhatsApp IA</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Satisfação</CardTitle>
-              <Users className="h-4 w-4 text-torqx-accent" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-torqx-accent">4.6/5</div>
-              <p className="text-xs text-gray-600 mt-1">Avaliação média</p>
-            </CardContent>
-          </Card>
-        </div>
       )}
     </div>
   );

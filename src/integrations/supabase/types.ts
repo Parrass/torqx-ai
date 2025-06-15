@@ -1612,6 +1612,65 @@ export type Database = {
           },
         ]
       }
+      whatsapp_instances: {
+        Row: {
+          created_at: string | null
+          id: string
+          instance_id: string | null
+          instance_name: string
+          is_connected: boolean | null
+          last_connected_at: string | null
+          pairing_code: string | null
+          qr_code: string | null
+          settings: Json | null
+          status: string | null
+          tenant_id: string
+          token: string | null
+          updated_at: string | null
+          webhook_url: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          instance_id?: string | null
+          instance_name: string
+          is_connected?: boolean | null
+          last_connected_at?: string | null
+          pairing_code?: string | null
+          qr_code?: string | null
+          settings?: Json | null
+          status?: string | null
+          tenant_id: string
+          token?: string | null
+          updated_at?: string | null
+          webhook_url?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          instance_id?: string | null
+          instance_name?: string
+          is_connected?: boolean | null
+          last_connected_at?: string | null
+          pairing_code?: string | null
+          qr_code?: string | null
+          settings?: Json | null
+          status?: string | null
+          tenant_id?: string
+          token?: string | null
+          updated_at?: string | null
+          webhook_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_instances_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workshop_services: {
         Row: {
           base_price: number | null

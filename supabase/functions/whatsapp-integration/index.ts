@@ -36,7 +36,7 @@ serve(async (req) => {
       throw new Error('Evolution API credentials not configured');
     }
 
-    const { action, instanceName, ...data } = await req.json();
+    const { action, tenantId, instanceName, ...data } = await req.json();
 
     let response;
     const headers = {
@@ -44,88 +44,71 @@ serve(async (req) => {
       'apikey': evolutionApiKey,
     };
 
-    console.log(`Evolution API Action: ${action} for instance: ${instanceName}`);
+    console.log(`Evolution API Action: ${action}`);
 
     switch (action) {
-      // 1. Testar conexão
-      case 'test_connection':
-        response = await fetch(`${evolutionApiUrl}/`, {
-          method: 'GET',
-          headers: { 'apikey': evolutionApiKey },
-        });
-        break;
-
-      // 2. Criar instância
       case 'create_instance':
+        // Primeiro criar no Evolution API
         response = await fetch(`${evolutionApiUrl}/instance/create`, {
           method: 'POST',
           headers,
           body: JSON.stringify({
-            instanceName: instanceName,
+            instanceName: data.instanceName,
             token: data.token,
             integration: data.integration || 'WHATSAPP-BAILEYS',
             qrcode: data.qrcode !== false,
+            rejectCall: data.rejectCall,
+            msgCall: data.msgCall,
+            groupsIgnore: data.groupsIgnore,
+            alwaysOnline: data.alwaysOnline,
+            readMessages: data.readMessages,
+            readStatus: data.readStatus,
+            syncFullHistory: data.syncFullHistory,
+            webhook: data.webhook,
           }),
         });
+
+        const instanceResult = await response.json();
+        
+        if (response.ok) {
+          // Salvar no banco de dados
+          const { data: dbInstance, error } = await supabaseClient
+            .from('whatsapp_instances')
+            .insert({
+              tenant_id: tenantId,
+              instance_name: data.instanceName,
+              instance_id: instanceResult.instance?.instanceId,
+              status: 'created',
+              token: data.token,
+              webhook_url: data.webhook?.url,
+              settings: {
+                rejectCall: data.rejectCall,
+                msgCall: data.msgCall,
+                groupsIgnore: data.groupsIgnore,
+                alwaysOnline: data.alwaysOnline,
+                readMessages: data.readMessages,
+                readStatus: data.readStatus,
+                syncFullHistory: data.syncFullHistory,
+              }
+            })
+            .select()
+            .single();
+
+          if (error) {
+            console.error('Database error:', error);
+            throw new Error('Failed to save instance to database');
+          }
+
+          return new Response(JSON.stringify({
+            success: true,
+            data: dbInstance,
+            evolutionResponse: instanceResult,
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
         break;
 
-      // 3. Configurar webhook
-      case 'set_webhook':
-        response = await fetch(`${evolutionApiUrl}/webhook/set/${instanceName}`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            enabled: data.enabled,
-            url: data.url,
-            webhookByEvents: data.webhookByEvents,
-            webhookBase64: data.webhookBase64,
-            events: data.events,
-          }),
-        });
-        break;
-
-      // 4. Configurar settings
-      case 'set_settings':
-        response = await fetch(`${evolutionApiUrl}/settings/set/${instanceName}`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(data.settings),
-        });
-        break;
-
-      // 5. Buscar instâncias
-      case 'find_instances':
-        response = await fetch(`${evolutionApiUrl}/instance/find`, {
-          method: 'GET',
-          headers,
-        });
-        break;
-
-      // Conectar instância
-      case 'connect_instance':
-        response = await fetch(`${evolutionApiUrl}/instance/connect/${instanceName}`, {
-          method: 'GET',
-          headers,
-        });
-        break;
-
-      // Desconectar instância
-      case 'logout_instance':
-        response = await fetch(`${evolutionApiUrl}/instance/logout/${instanceName}`, {
-          method: 'DELETE',
-          headers,
-        });
-        break;
-
-      // Reiniciar instância
-      case 'restart_instance':
-        response = await fetch(`${evolutionApiUrl}/instance/restart/${instanceName}`, {
-          method: 'PUT',
-          headers,
-        });
-        break;
-
-      // Obter QR Code
       case 'get_qr_code':
         response = await fetch(`${evolutionApiUrl}/instance/connect/${instanceName}`, {
           method: 'GET',
@@ -133,7 +116,6 @@ serve(async (req) => {
         });
         break;
 
-      // Status da instância
       case 'get_instance_status':
         response = await fetch(`${evolutionApiUrl}/instance/connectionState/${instanceName}`, {
           method: 'GET',
@@ -141,63 +123,67 @@ serve(async (req) => {
         });
         break;
 
-      // Ações legadas (manter compatibilidade)
-      case 'send_message':
-        response = await fetch(`${evolutionApiUrl}/message/sendText/${instanceName}`, {
-          method: 'POST',
+      case 'logout_instance':
+        response = await fetch(`${evolutionApiUrl}/instance/logout/${instanceName}`, {
+          method: 'DELETE',
           headers,
-          body: JSON.stringify({
-            number: data.number,
-            text: data.message,
-          }),
         });
+
+        if (response.ok) {
+          // Atualizar status no banco
+          await supabaseClient
+            .from('whatsapp_instances')
+            .update({ 
+              is_connected: false, 
+              status: 'disconnected',
+              qr_code: null,
+              pairing_code: null 
+            })
+            .eq('instance_name', instanceName);
+        }
         break;
 
-      case 'send_media':
-        response = await fetch(`${evolutionApiUrl}/message/sendMedia/${instanceName}`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            number: data.number,
-            mediatype: data.mediaType,
-            media: data.media,
-            caption: data.caption || '',
-          }),
-        });
-        break;
+      case 'get_instance_by_tenant':
+        const { data: instance, error } = await supabaseClient
+          .from('whatsapp_instances')
+          .select('*')
+          .eq('tenant_id', tenantId)
+          .single();
 
-      case 'get_chat_messages':
-        response = await fetch(`${evolutionApiUrl}/chat/findMessages/${instanceName}`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            where: {
-              remoteJid: data.number,
-            },
-            limit: data.limit || 50,
-          }),
+        if (error && error.code !== 'PGRST116') {
+          throw error;
+        }
+
+        return new Response(JSON.stringify({
+          success: true,
+          data: instance,
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
-        break;
 
       default:
         throw new Error(`Unknown action: ${action}`);
     }
 
-    const result = await response.json();
+    if (response) {
+      const result = await response.json();
 
-    console.log(`Evolution API Response [${action}]:`, {
-      status: response.status,
-      success: response.ok,
-      data: result
-    });
+      console.log(`Evolution API Response [${action}]:`, {
+        status: response.status,
+        success: response.ok,
+        data: result
+      });
 
-    return new Response(JSON.stringify({
-      success: response.ok,
-      data: result,
-      status: response.status,
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+      return new Response(JSON.stringify({
+        success: response.ok,
+        data: result,
+        status: response.status,
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    throw new Error('No response generated');
 
   } catch (error) {
     console.error('WhatsApp Integration Error:', error);

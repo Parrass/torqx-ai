@@ -1,36 +1,63 @@
 
 import { useState, useCallback } from 'react';
-import { whatsappApi, type WhatsAppApiResponse } from '@/services/whatsappApi';
+import { whatsappApi, type WhatsAppApiResponse, type WhatsAppInstance } from '@/services/whatsappApi';
 import { useToast } from '@/hooks/use-toast';
 
 interface WhatsAppConnection {
   isConnected: boolean;
   qrCode?: string;
-  instanceName: string;
+  pairingCode?: string;
+  instanceName?: string;
   status?: string;
+  instance?: WhatsAppInstance;
 }
 
 export const useWhatsApp = () => {
   const [connection, setConnection] = useState<WhatsAppConnection>({
     isConnected: false,
-    instanceName: 'torqx-instance',
   });
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
+  // Obter tenant ID do usuário logado
+  const getTenantId = useCallback(async () => {
+    const { supabase } = await import('@/integrations/supabase/client');
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) throw new Error('Usuário não autenticado');
+    
+    const { data: userData } = await supabase
+      .from('users')
+      .select('tenant_id')
+      .eq('id', user.id)
+      .single();
+    
+    if (!userData?.tenant_id) throw new Error('Tenant não encontrado');
+    
+    return userData.tenant_id;
+  }, []);
+
+  // Criar instância WhatsApp
   const createInstance = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await whatsappApi.createInstance(connection.instanceName);
+      const tenantId = await getTenantId();
+      const response = await whatsappApi.createInstance(tenantId);
       
-      if (response.success) {
+      if (response.success && response.data) {
+        setConnection(prev => ({
+          ...prev,
+          instanceName: response.data.instance_name,
+          instance: response.data,
+          status: response.data.status,
+        }));
+        
         toast({
           title: 'Instância criada',
-          description: 'WhatsApp instance criada com sucesso',
+          description: 'Instância WhatsApp criada com sucesso. Agora você pode gerar o QR Code.',
         });
         
-        // Buscar QR Code
-        await getQRCode();
+        return response.data;
       } else {
         throw new Error(response.error || 'Erro ao criar instância');
       }
@@ -41,35 +68,57 @@ export const useWhatsApp = () => {
         description: 'Erro ao criar instância WhatsApp',
         variant: 'destructive',
       });
+      throw error;
     } finally {
       setIsLoading(false);
     }
-  }, [connection.instanceName]);
+  }, [getTenantId, toast]);
 
-  const getQRCode = useCallback(async () => {
+  // Gerar QR Code
+  const generateQRCode = useCallback(async () => {
+    if (!connection.instanceName) {
+      toast({
+        title: 'Erro',
+        description: 'Nenhuma instância encontrada. Crie uma instância primeiro.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const response = await whatsappApi.getQRCode(connection.instanceName);
+      const response = await whatsappApi.generateQRCode(connection.instanceName);
       
       if (response.success && response.data) {
         setConnection(prev => ({
           ...prev,
-          qrCode: response.data.qrcode || response.data.base64,
+          qrCode: response.data.code || response.data.qrcode,
+          pairingCode: response.data.pairingCode,
         }));
+        
+        toast({
+          title: 'QR Code gerado',
+          description: 'QR Code gerado com sucesso. Escaneie com seu WhatsApp.',
+        });
+      } else {
+        throw new Error(response.error || 'Erro ao gerar QR Code');
       }
     } catch (error) {
-      console.error('Erro ao obter QR Code:', error);
+      console.error('Erro ao gerar QR Code:', error);
       toast({
         title: 'Erro',
-        description: 'Erro ao obter QR Code',
+        description: 'Erro ao gerar QR Code',
         variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
     }
-  }, [connection.instanceName]);
+  }, [connection.instanceName, toast]);
 
+  // Verificar status da instância
   const checkStatus = useCallback(async () => {
+    if (!connection.instanceName) return false;
+
     try {
       const response = await whatsappApi.getInstanceStatus(connection.instanceName);
       
@@ -89,7 +138,10 @@ export const useWhatsApp = () => {
     return false;
   }, [connection.instanceName]);
 
+  // Desconectar instância
   const disconnect = useCallback(async () => {
+    if (!connection.instanceName) return;
+
     setIsLoading(true);
     try {
       const response = await whatsappApi.logoutInstance(connection.instanceName);
@@ -99,7 +151,8 @@ export const useWhatsApp = () => {
           ...prev,
           isConnected: false,
           qrCode: undefined,
-          status: 'close',
+          pairingCode: undefined,
+          status: 'disconnected',
         }));
         
         toast({
@@ -117,33 +170,41 @@ export const useWhatsApp = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [connection.instanceName]);
+  }, [connection.instanceName, toast]);
 
-  const sendMessage = useCallback(async (number: string, message: string) => {
+  // Carregar instância existente
+  const loadExistingInstance = useCallback(async () => {
+    setIsLoading(true);
     try {
-      const response = await whatsappApi.sendMessage({ number, message }, connection.instanceName);
+      const tenantId = await getTenantId();
+      const response = await whatsappApi.getInstanceByTenant(tenantId);
       
-      if (response.success) {
-        toast({
-          title: 'Mensagem enviada',
-          description: 'Mensagem enviada com sucesso',
-        });
-        return true;
-      } else {
-        throw new Error(response.error || 'Erro ao enviar mensagem');
+      if (response.success && response.data) {
+        setConnection(prev => ({
+          ...prev,
+          instanceName: response.data.instance_name,
+          instance: response.data,
+          status: response.data.status,
+          isConnected: response.data.is_connected,
+        }));
       }
     } catch (error) {
-      console.error('Erro ao enviar mensagem:', error);
-      toast({
-        title: 'Erro',
-        description: 'Erro ao enviar mensagem',
-        variant: 'destructive',
-      });
-      return false;
+      console.error('Erro ao carregar instância:', error);
+    } finally {
+      setIsLoading(false);
     }
-  }, [connection.instanceName]);
+  }, [getTenantId]);
 
   const sendAIMessage = useCallback(async (message: string, customerPhone: string) => {
+    if (!connection.instanceName) {
+      toast({
+        title: 'Erro',
+        description: 'Nenhuma instância WhatsApp conectada',
+        variant: 'destructive',
+      });
+      return null;
+    }
+
     try {
       const response = await whatsappApi.sendAIMessage(message, customerPhone, connection.instanceName);
       
@@ -161,16 +222,16 @@ export const useWhatsApp = () => {
       });
       return null;
     }
-  }, [connection.instanceName]);
+  }, [connection.instanceName, toast]);
 
   return {
     connection,
     isLoading,
     createInstance,
-    getQRCode,
+    generateQRCode,
     checkStatus,
     disconnect,
-    sendMessage,
+    loadExistingInstance,
     sendAIMessage,
   };
 };
