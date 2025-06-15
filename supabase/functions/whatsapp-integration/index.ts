@@ -411,11 +411,18 @@ serve(async (req) => {
           if (webhookConfig && webhookConfig.url) {
             // Usar webhook customizado
             webhookPayload = {
-              enabled: webhookConfig.enabled,
+              enabled: webhookConfig.enabled !== undefined ? webhookConfig.enabled : true,
               url: webhookConfig.url,
-              webhookByEvents: webhookConfig.webhookByEvents,
-              webhookBase64: webhookConfig.webhookBase64,
-              events: webhookConfig.events
+              webhookByEvents: webhookConfig.webhookByEvents !== undefined ? webhookConfig.webhookByEvents : true,
+              webhookBase64: webhookConfig.webhookBase64 !== undefined ? webhookConfig.webhookBase64 : true,
+              events: webhookConfig.events || [
+                'APPLICATION_STARTUP',
+                'MESSAGES_UPSERT',
+                'MESSAGE_RECEIVED',
+                'MESSAGE_SENT', 
+                'CONNECTION_UPDATE',
+                'QRCODE_UPDATED'
+              ]
             };
           } else {
             // Usar webhook padrão do Supabase que faz proxy para N8N com TODOS os eventos de mensagem
@@ -435,7 +442,7 @@ serve(async (req) => {
             };
           }
 
-          console.log('Configurando webhook:', webhookPayload);
+          console.log('Configurando webhook:', JSON.stringify(webhookPayload, null, 2));
 
           response = await fetch(`${evolutionApiUrl}/webhook/set/${instanceName}`, {
             method: 'POST',
@@ -443,9 +450,19 @@ serve(async (req) => {
             body: JSON.stringify(webhookPayload),
           });
 
+          const responseText = await response.text();
+          console.log('Resposta raw da Evolution API:', responseText);
+
+          let webhookResult;
+          try {
+            webhookResult = JSON.parse(responseText);
+          } catch (parseError) {
+            console.error('Erro ao fazer parse da resposta:', parseError);
+            webhookResult = { message: responseText };
+          }
+
           if (response.ok) {
-            const webhookResult = await response.json();
-            console.log('Webhook configurado:', webhookResult);
+            console.log('Webhook configurado com sucesso:', webhookResult);
             
             // Atualizar instância no banco com URL do webhook
             await supabaseClient
@@ -463,10 +480,15 @@ serve(async (req) => {
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });
           } else {
-            const errorResult = await response.json();
-            throw new Error(errorResult?.message || `Erro ao configurar webhook: ${response.status}`);
+            console.error('Erro da Evolution API:', {
+              status: response.status,
+              statusText: response.statusText,
+              body: webhookResult
+            });
+            throw new Error(webhookResult?.message || `Erro HTTP ${response.status}: ${response.statusText}`);
           }
         } catch (fetchError) {
+          console.error('Erro detalhado ao configurar webhook:', fetchError);
           throw new Error(`Erro ao configurar webhook: ${fetchError.message}`);
         }
 
