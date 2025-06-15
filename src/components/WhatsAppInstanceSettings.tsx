@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -92,13 +91,22 @@ const WhatsAppInstanceSettings = ({ instanceName, isConnected }: WhatsAppInstanc
 
     setIsLoading(true);
     try {
-      const webhookConfig = webhookUrl ? {
-        enabled: webhookEnabled,
-        url: webhookUrl,
-        webhookByEvents: true,
+      // Determinar se webhook deve estar habilitado
+      const isWebhookEnabled = webhookEnabled; // true por padrão
+      
+      // Estrutura correta do payload para Evolution API (SEM webhookByEvents para evitar rotas separadas)
+      const webhookConfig = {
+        enabled: isWebhookEnabled,
+        url: webhookUrl || `${import.meta.env.VITE_SUPABASE_URL || 'https://bszcwxrjhvbvixrdnzvf.supabase.co'}/functions/v1/whatsapp-webhook`,
+        webhookByEvents: false, // IMPORTANTE: false para receber tudo numa URL só
         webhookBase64: true,
-        events: ['MESSAGES_UPSERT']
-      } : undefined;
+        events: isWebhookEnabled ? [
+          'APPLICATION_STARTUP',
+          'MESSAGES_UPSERT',
+          'CONNECTION_UPDATE',
+          'QRCODE_UPDATED'
+        ] : [] // Se desabilitado, array vazio
+      };
 
       const response = await whatsappApi.setWebhook(instanceName, webhookConfig);
       
@@ -325,7 +333,7 @@ const WhatsAppInstanceSettings = ({ instanceName, isConnected }: WhatsAppInstanc
             <span>Configuração de Webhook</span>
           </CardTitle>
           <CardDescription>
-            Configure webhook personalizado (opcional)
+            Configure webhook (recebe todos os eventos numa URL única)
           </CardDescription>
         </CardHeader>
 
@@ -353,7 +361,13 @@ const WhatsAppInstanceSettings = ({ instanceName, isConnected }: WhatsAppInstanc
               disabled={!isConnected}
             />
             <p className="text-xs text-gray-500">
-              Deixe vazio para usar o webhook padrão do N8N
+              Deixe vazio para usar o webhook padrão do Supabase
+            </p>
+          </div>
+
+          <div className="bg-blue-50 p-3 rounded-lg">
+            <p className="text-sm text-blue-800">
+              <strong>Configuração:</strong> webhookByEvents = false (todos os eventos numa URL única)
             </p>
           </div>
 
