@@ -57,10 +57,12 @@ serve(async (req) => {
     // Verificar credenciais da Evolution API
     const rawEvolutionApiUrl = Deno.env.get('EVOLUTION_API_URL');
     const evolutionApiKey = Deno.env.get('EVOLUTION_API_KEY');
+    const n8nWebhookUrl = Deno.env.get('N8N_WEBHOOK_URL');
 
     console.log('Verificando credenciais Evolution API:', {
       url: rawEvolutionApiUrl ? 'OK' : 'FALTANDO',
-      key: evolutionApiKey ? 'OK' : 'FALTANDO'
+      key: evolutionApiKey ? 'OK' : 'FALTANDO',
+      webhook: n8nWebhookUrl ? 'OK' : 'FALTANDO'
     });
 
     if (!rawEvolutionApiUrl || !evolutionApiKey) {
@@ -310,6 +312,63 @@ serve(async (req) => {
           }
         } catch (fetchError) {
           throw new Error(`Erro ao buscar dados da instância: ${fetchError.message}`);
+        }
+
+      case 'set_webhook':
+        console.log(`=== CONFIGURAR WEBHOOK da ${instanceName} ===`);
+        
+        if (!instanceName) {
+          throw new Error('instanceName é obrigatório para configurar webhook');
+        }
+
+        if (!n8nWebhookUrl) {
+          throw new Error('N8N_WEBHOOK_URL não configurada nos secrets do Supabase');
+        }
+        
+        try {
+          const webhookPayload = {
+            enabled: true,
+            url: n8nWebhookUrl,
+            webhookByEvents: true,
+            webhookBase64: true,
+            events: [
+              'MESSAGES_UPSERT'
+            ]
+          };
+
+          console.log('Configurando webhook:', webhookPayload);
+
+          response = await fetch(`${evolutionApiUrl}/webhook/set/${instanceName}`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(webhookPayload),
+          });
+
+          if (response.ok) {
+            const webhookResult = await response.json();
+            console.log('Webhook configurado:', webhookResult);
+            
+            // Atualizar instância no banco com URL do webhook
+            await supabaseClient
+              .from('whatsapp_instances')
+              .update({ 
+                webhook_url: n8nWebhookUrl,
+                updated_at: new Date().toISOString()
+              })
+              .eq('instance_name', instanceName);
+            
+            return new Response(JSON.stringify({
+              success: true,
+              data: webhookResult
+            }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          } else {
+            const errorResult = await response.json();
+            throw new Error(errorResult?.message || `Erro ao configurar webhook: ${response.status}`);
+          }
+        } catch (fetchError) {
+          throw new Error(`Erro ao configurar webhook: ${fetchError.message}`);
         }
 
       case 'logout_instance':

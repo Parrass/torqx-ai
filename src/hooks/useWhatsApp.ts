@@ -157,6 +157,7 @@ export const useWhatsApp = () => {
       if (response.success && response.data) {
         const isConnected = response.data.instance?.state === 'open';
         const newStatus = response.data.instance?.state;
+        const wasDisconnected = !connection.isConnected;
         
         setConnection(prev => ({
           ...prev,
@@ -164,8 +165,18 @@ export const useWhatsApp = () => {
           status: newStatus,
         }));
 
-        // Se conectou, limpar QR code e mostrar toast
-        if (isConnected && !connection.isConnected) {
+        // Se acabou de conectar (transição de desconectado para conectado), configurar webhook
+        if (isConnected && wasDisconnected) {
+          console.log('Instância conectada! Configurando webhook...');
+          
+          try {
+            await whatsappApi.setWebhook(connection.instanceName);
+            console.log('Webhook configurado com sucesso');
+          } catch (webhookError) {
+            console.error('Erro ao configurar webhook:', webhookError);
+            // Não interromper o fluxo por erro no webhook
+          }
+          
           setConnection(prev => ({
             ...prev,
             qrCode: undefined,
@@ -174,7 +185,7 @@ export const useWhatsApp = () => {
           
           toast({
             title: 'WhatsApp Conectado!',
-            description: 'Sua instância WhatsApp foi conectada com sucesso.',
+            description: 'Sua instância WhatsApp foi conectada e configurada com sucesso.',
           });
         }
         
@@ -211,6 +222,7 @@ export const useWhatsApp = () => {
       
       if (response.success && response.data) {
         const isConnected = response.data.instance?.state === 'open';
+        const wasDisconnected = !connection.isConnected;
         
         setConnection(prev => ({
           ...prev,
@@ -218,11 +230,33 @@ export const useWhatsApp = () => {
           status: response.data.instance?.state,
           instance: response.data,
         }));
-        
-        toast({
-          title: 'Status atualizado',
-          description: `Status da instância: ${response.data.instance?.state || 'desconhecido'}`,
-        });
+
+        // Se acabou de conectar, configurar webhook
+        if (isConnected && wasDisconnected) {
+          console.log('Instância conectada via fetch! Configurando webhook...');
+          
+          try {
+            await whatsappApi.setWebhook(connection.instanceName);
+            console.log('Webhook configurado com sucesso via fetch');
+            
+            toast({
+              title: 'WhatsApp Conectado!',
+              description: 'Sua instância WhatsApp foi conectada e configurada com sucesso.',
+            });
+          } catch (webhookError) {
+            console.error('Erro ao configurar webhook:', webhookError);
+            toast({
+              title: 'WhatsApp Conectado',
+              description: 'Instância conectada, mas houve erro na configuração do webhook.',
+              variant: 'destructive',
+            });
+          }
+        } else {
+          toast({
+            title: 'Status atualizado',
+            description: `Status da instância: ${response.data.instance?.state || 'desconhecido'}`,
+          });
+        }
       }
     } catch (error) {
       console.error('Erro ao buscar dados da instância:', error);
@@ -234,7 +268,7 @@ export const useWhatsApp = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [connection.instanceName, toast]);
+  }, [connection.instanceName, connection.isConnected, toast]);
 
   const disconnect = useCallback(async () => {
     if (!connection.instanceName) return;

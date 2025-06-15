@@ -163,6 +163,14 @@ class WhatsAppApi {
     });
   }
 
+  // Configurar webhook
+  async setWebhook(instanceName: string): Promise<WhatsAppApiResponse> {
+    return this.makeRequest('/whatsapp-integration', {
+      action: 'set_webhook',
+      instanceName,
+    });
+  }
+
   // Desconectar instância
   async logoutInstance(instanceName: string): Promise<WhatsAppApiResponse> {
     return this.makeRequest('/whatsapp-integration', {
