@@ -2,6 +2,11 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import type { Database } from '@/integrations/supabase/types';
+
+type WorkshopSettingsRow = Database['public']['Tables']['workshop_settings']['Row'];
+type WorkshopSettingsInsert = Database['public']['Tables']['workshop_settings']['Insert'];
+type WorkshopSettingsUpdate = Database['public']['Tables']['workshop_settings']['Update'];
 
 export interface WorkshopSettings {
   id: string;
@@ -18,19 +23,31 @@ export interface WorkshopSettings {
   email?: string;
   website?: string;
   address?: string;
-  working_hours: Record<string, any>;
+  working_hours: WorkingHours;
   created_at: string;
   updated_at: string;
   created_by_user_id: string;
 }
 
-interface WorkingHours {
-  [key: string]: {
-    isOpen: boolean;
-    openTime: string;
-    closeTime: string;
-  };
+export interface WorkingHours {
+  monday: { isOpen: boolean; openTime: string; closeTime: string; };
+  tuesday: { isOpen: boolean; openTime: string; closeTime: string; };
+  wednesday: { isOpen: boolean; openTime: string; closeTime: string; };
+  thursday: { isOpen: boolean; openTime: string; closeTime: string; };
+  friday: { isOpen: boolean; openTime: string; closeTime: string; };
+  saturday: { isOpen: boolean; openTime: string; closeTime: string; };
+  sunday: { isOpen: boolean; openTime: string; closeTime: string; };
 }
+
+const defaultWorkingHours: WorkingHours = {
+  monday: { isOpen: true, openTime: '08:00', closeTime: '18:00' },
+  tuesday: { isOpen: true, openTime: '08:00', closeTime: '18:00' },
+  wednesday: { isOpen: true, openTime: '08:00', closeTime: '18:00' },
+  thursday: { isOpen: true, openTime: '08:00', closeTime: '18:00' },
+  friday: { isOpen: true, openTime: '08:00', closeTime: '18:00' },
+  saturday: { isOpen: true, openTime: '08:00', closeTime: '12:00' },
+  sunday: { isOpen: false, openTime: '08:00', closeTime: '18:00' }
+};
 
 export const useWorkshopSettings = () => {
   const [settings, setSettings] = useState<WorkshopSettings | null>(null);
@@ -50,7 +67,16 @@ export const useWorkshopSettings = () => {
         throw error;
       }
 
-      setSettings(data || null);
+      if (data) {
+        // Converter os dados do Supabase para o formato esperado
+        const convertedSettings: WorkshopSettings = {
+          ...data,
+          working_hours: (data.working_hours as WorkingHours) || defaultWorkingHours
+        };
+        setSettings(convertedSettings);
+      } else {
+        setSettings(null);
+      }
     } catch (error) {
       console.error('Erro ao buscar configurações:', error);
       toast({
@@ -83,9 +109,25 @@ export const useWorkshopSettings = () => {
       
       if (settings?.id) {
         // Atualizar configurações existentes
+        const updateData: WorkshopSettingsUpdate = {
+          workshop_name: settingsData.workshop_name,
+          business_name: settingsData.business_name,
+          cnpj: settingsData.cnpj,
+          state_registration: settingsData.state_registration,
+          description: settingsData.description,
+          logo_url: settingsData.logo_url,
+          workshop_photo_url: settingsData.workshop_photo_url,
+          phone: settingsData.phone,
+          mobile: settingsData.mobile,
+          email: settingsData.email,
+          website: settingsData.website,
+          address: settingsData.address,
+          working_hours: settingsData.working_hours as any
+        };
+
         const { data, error } = await supabase
           .from('workshop_settings')
-          .update(settingsData)
+          .update(updateData)
           .eq('id', settings.id)
           .select()
           .single();
@@ -94,13 +136,27 @@ export const useWorkshopSettings = () => {
         result = data;
       } else {
         // Criar novas configurações
+        const insertData: WorkshopSettingsInsert = {
+          workshop_name: settingsData.workshop_name!,
+          business_name: settingsData.business_name,
+          cnpj: settingsData.cnpj,
+          state_registration: settingsData.state_registration,
+          description: settingsData.description,
+          logo_url: settingsData.logo_url,
+          workshop_photo_url: settingsData.workshop_photo_url,
+          phone: settingsData.phone,
+          mobile: settingsData.mobile,
+          email: settingsData.email,
+          website: settingsData.website,
+          address: settingsData.address,
+          working_hours: settingsData.working_hours as any,
+          created_by_user_id: userData.user.id,
+          tenant_id: userProfile.tenant_id
+        };
+
         const { data, error } = await supabase
           .from('workshop_settings')
-          .insert({
-            ...settingsData,
-            created_by_user_id: userData.user.id,
-            tenant_id: userProfile.tenant_id
-          })
+          .insert(insertData)
           .select()
           .single();
 
@@ -108,13 +164,19 @@ export const useWorkshopSettings = () => {
         result = data;
       }
 
-      setSettings(result);
+      // Converter resultado para o formato esperado
+      const convertedResult: WorkshopSettings = {
+        ...result,
+        working_hours: (result.working_hours as WorkingHours) || defaultWorkingHours
+      };
+
+      setSettings(convertedResult);
       toast({
         title: "Sucesso",
         description: "Configurações salvas com sucesso!",
       });
       
-      return result;
+      return convertedResult;
     } catch (error) {
       console.error('Erro ao salvar configurações:', error);
       toast({

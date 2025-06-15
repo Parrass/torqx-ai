@@ -15,7 +15,7 @@ import {
   FileText,
   Loader2
 } from 'lucide-react';
-import { useWorkshopSettings } from '@/hooks/useWorkshopSettings';
+import { useWorkshopSettings, WorkingHours } from '@/hooks/useWorkshopSettings';
 
 const WorkshopSettings = () => {
   const { settings, loading, saveSettings, updateWorkingHours } = useWorkshopSettings();
@@ -33,7 +33,7 @@ const WorkshopSettings = () => {
     address: ''
   });
 
-  const [workingHours, setWorkingHours] = useState({
+  const [workingHours, setWorkingHours] = useState<WorkingHours>({
     monday: { isOpen: true, openTime: '08:00', closeTime: '18:00' },
     tuesday: { isOpen: true, openTime: '08:00', closeTime: '18:00' },
     wednesday: { isOpen: true, openTime: '08:00', closeTime: '18:00' },
@@ -85,7 +85,7 @@ const WorkshopSettings = () => {
     }));
   };
 
-  const handleWorkingHourChange = (day: string, field: string, value: string | boolean) => {
+  const handleWorkingHourChange = (day: keyof WorkingHours, field: string, value: string | boolean) => {
     setWorkingHours(prev => ({
       ...prev,
       [day]: {
@@ -327,24 +327,24 @@ const WorkshopSettings = () => {
                   <Input 
                     className="w-20" 
                     type="time"
-                    value={workingHours[day.key]?.openTime || '08:00'}
-                    onChange={(e) => handleWorkingHourChange(day.key, 'openTime', e.target.value)}
-                    disabled={!workingHours[day.key]?.isOpen}
+                    value={workingHours[day.key as keyof WorkingHours]?.openTime || '08:00'}
+                    onChange={(e) => handleWorkingHourChange(day.key as keyof WorkingHours, 'openTime', e.target.value)}
+                    disabled={!workingHours[day.key as keyof WorkingHours]?.isOpen}
                   />
                   <span className="text-gray-400">às</span>
                   <Input 
                     className="w-20" 
                     type="time"
-                    value={workingHours[day.key]?.closeTime || '18:00'}
-                    onChange={(e) => handleWorkingHourChange(day.key, 'closeTime', e.target.value)}
-                    disabled={!workingHours[day.key]?.isOpen}
+                    value={workingHours[day.key as keyof WorkingHours]?.closeTime || '18:00'}
+                    onChange={(e) => handleWorkingHourChange(day.key as keyof WorkingHours, 'closeTime', e.target.value)}
+                    disabled={!workingHours[day.key as keyof WorkingHours]?.isOpen}
                   />
                   <Button 
-                    variant={workingHours[day.key]?.isOpen ? "default" : "outline"} 
+                    variant={workingHours[day.key as keyof WorkingHours]?.isOpen ? "default" : "outline"} 
                     size="sm"
-                    onClick={() => handleWorkingHourChange(day.key, 'isOpen', !workingHours[day.key]?.isOpen)}
+                    onClick={() => handleWorkingHourChange(day.key as keyof WorkingHours, 'isOpen', !workingHours[day.key as keyof WorkingHours]?.isOpen)}
                   >
-                    {workingHours[day.key]?.isOpen ? 'Aberto' : 'Fechado'}
+                    {workingHours[day.key as keyof WorkingHours]?.isOpen ? 'Aberto' : 'Fechado'}
                   </Button>
                 </div>
               ))}
