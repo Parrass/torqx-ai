@@ -66,27 +66,38 @@ serve(async (req) => {
           throw new Error('instanceName e tenantId são obrigatórios');
         }
         
-        // Preparar payload para Evolution API
+        // Preparar payload correto para Evolution API
         const instancePayload = {
           instanceName: data.instanceName,
-          token: data.token || `torqx_${Date.now()}`,
-          integration: data.integration || 'WHATSAPP-BAILEYS',
-          qrcode: data.qrcode !== false,
-          rejectCall: data.rejectCall || true,
-          msgCall: data.msgCall || 'Chamadas não são aceitas. Entre em contato via mensagem.',
-          groupsIgnore: data.groupsIgnore !== false,
-          alwaysOnline: data.alwaysOnline !== false,
-          readMessages: data.readMessages !== false,
-          readStatus: data.readStatus !== false,
-          syncFullHistory: data.syncFullHistory || false,
+          token: data.token || undefined,
+          integration: 'WHATSAPP-BAILEYS',
+          qrcode: true,
+          rejectCall: true,
+          msgCall: 'Chamadas não são aceitas. Entre em contato via mensagem.',
+          groupsIgnore: true,
+          alwaysOnline: true,
+          readMessages: true,
+          readStatus: true,
+          syncFullHistory: false,
         };
 
         // Adicionar webhook se fornecido
-        if (data.webhook) {
-          instancePayload.webhook = data.webhook;
+        if (data.webhook?.url) {
+          instancePayload.webhook = {
+            url: data.webhook.url,
+            byEvents: data.webhook.byEvents || true,
+            base64: data.webhook.base64 || true,
+            events: data.webhook.events || [
+              'APPLICATION_STARTUP',
+              'MESSAGE_RECEIVED', 
+              'MESSAGE_SENT',
+              'CONNECTION_UPDATE',
+              'QRCODE_UPDATED'
+            ]
+          };
         }
 
-        console.log('Payload para Evolution API:', instancePayload);
+        console.log('Payload final para Evolution API:', JSON.stringify(instancePayload, null, 2));
         
         // Fazer requisição para Evolution API
         response = await fetch(`${evolutionApiUrl}/instance/create`, {
@@ -109,8 +120,8 @@ serve(async (req) => {
             .insert({
               tenant_id: tenantId,
               instance_name: data.instanceName,
-              instance_id: instanceResult.instance?.instanceId || instanceResult.instanceId,
-              status: instanceResult.instance?.status || 'created',
+              instance_id: instanceResult.instance?.instanceId || instanceResult.instanceId || data.instanceName,
+              status: instanceResult.instance?.status || instanceResult.status || 'created',
               token: instancePayload.token,
               webhook_url: data.webhook?.url,
               settings: {
@@ -142,7 +153,7 @@ serve(async (req) => {
           });
         } else {
           console.error('Erro na Evolution API:', { status: response.status, result: instanceResult });
-          throw new Error(instanceResult?.message || `Erro da Evolution API: ${response.status}`);
+          throw new Error(instanceResult?.message || instanceResult?.error || `Erro da Evolution API: ${response.status}`);
         }
 
       case 'get_qr_code':
@@ -224,7 +235,7 @@ serve(async (req) => {
         success: response.ok,
         data: result,
         status: response.status,
-        error: !response.ok ? result.message || `Erro da Evolution API: ${response.status}` : undefined,
+        error: !response.ok ? result.message || result.error || `Erro da Evolution API: ${response.status}` : undefined,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });

@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { whatsappApi, type WhatsAppApiResponse, type WhatsAppInstance } from '@/services/whatsappApi';
 import { useToast } from '@/hooks/use-toast';
@@ -19,7 +18,7 @@ export const useWhatsApp = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  // Obter tenant ID do usuário logado com múltiplas estratégias
+  // Obter tenant ID do usuário logado
   const getTenantId = useCallback(async () => {
     const { supabase } = await import('@/integrations/supabase/client');
     
@@ -31,9 +30,9 @@ export const useWhatsApp = () => {
         throw new Error('Usuário não autenticado');
       }
       
-      console.log('User autenticado:', user.id);
+      console.log('User autenticado:', user.id, user.email);
       
-      // Estratégia 1: Buscar na tabela users diretamente
+      // Primeiro, tentar buscar na tabela users
       const { data: userProfile, error: profileError } = await supabase
         .from('users')
         .select('tenant_id')
@@ -47,7 +46,7 @@ export const useWhatsApp = () => {
         return userProfile.tenant_id;
       }
       
-      // Estratégia 2: Buscar na tabela tenants pelo email do usuário
+      // Se não encontrou, buscar na tabela tenants pelo email
       const { data: tenantByEmail, error: tenantError } = await supabase
         .from('tenants')
         .select('id')
@@ -61,19 +60,22 @@ export const useWhatsApp = () => {
         return tenantByEmail.id;
       }
       
-      // Estratégia 3: Usar função RPC como fallback
-      const { data: rpcTenantId, error: rpcError } = await supabase.rpc('get_current_user_tenant_id');
-      
-      console.log('Resultado da função RPC:', { rpcTenantId, rpcError });
-      
-      if (rpcTenantId) {
-        console.log('Tenant ID da função RPC:', rpcTenantId);
-        return rpcTenantId;
+      // Como último recurso, usar função RPC
+      try {
+        const { data: rpcTenantId, error: rpcError } = await supabase.rpc('get_current_user_tenant_id');
+        console.log('Resultado da função RPC:', { rpcTenantId, rpcError });
+        
+        if (rpcTenantId) {
+          console.log('Tenant ID da função RPC:', rpcTenantId);
+          return rpcTenantId;
+        }
+      } catch (rpcError) {
+        console.log('Erro na função RPC (ignorando):', rpcError);
       }
       
       // Se chegou até aqui, não encontrou tenant
       console.error('Nenhum tenant encontrado para o usuário:', user.id);
-      throw new Error('Tenant não encontrado. O usuário pode não estar associado a uma oficina ou ser necessário completar o cadastro.');
+      throw new Error('Tenant não encontrado. Verifique se sua conta está associada a uma oficina.');
       
     } catch (error) {
       console.error('Erro ao obter tenant ID:', error);
@@ -122,7 +124,6 @@ export const useWhatsApp = () => {
     }
   }, [getTenantId, toast]);
 
-  // Gerar QR Code
   const generateQRCode = useCallback(async () => {
     if (!connection.instanceName) {
       toast({
