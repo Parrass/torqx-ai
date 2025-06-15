@@ -13,6 +13,7 @@ interface WhatsAppConnectionProps {
   setIsConnected: (connected: boolean) => void;
   botStatus: string;
   setBotStatus: (status: string) => void;
+  onInstanceChange?: (instanceName: string) => void;
   metrics: {
     total_conversations: number;
     active_conversations: number;
@@ -26,6 +27,7 @@ const WhatsAppConnection = ({
   setIsConnected: propSetIsConnected, 
   botStatus, 
   setBotStatus,
+  onInstanceChange,
   metrics 
 }: WhatsAppConnectionProps) => {
   const { connection, isLoading, createInstance, generateQRCode, checkStatus, fetchInstanceData, disconnect, loadExistingInstance } = useWhatsApp();
@@ -48,6 +50,13 @@ const WhatsAppConnection = ({
       return () => clearInterval(interval);
     }
   }, [connection.isConnected, checkStatus]);
+
+  // Notificar mudanças no instanceName
+  useEffect(() => {
+    if (connection.instanceName && onInstanceChange) {
+      onInstanceChange(connection.instanceName);
+    }
+  }, [connection.instanceName, onInstanceChange]);
 
   const handleCreateInstance = async () => {
     try {

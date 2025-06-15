@@ -81,9 +81,9 @@ serve(async (req) => {
     console.log('URL Evolution formatada:', evolutionApiUrl);
 
     const requestBody = await req.json();
-    const { action, tenantId, instanceName, ...data } = requestBody;
+    const { action, tenantId, instanceName, settings, webhookConfig, ...data } = requestBody;
 
-    console.log(`=== AÇÃO: ${action} ===`, { tenantId, instanceName, data });
+    console.log(`=== AÇÃO: ${action} ===`, { tenantId, instanceName, settings, webhookConfig, data });
 
     let response;
     const headers = {
@@ -314,6 +314,90 @@ serve(async (req) => {
           throw new Error(`Erro ao buscar dados da instância: ${fetchError.message}`);
         }
 
+      case 'set_instance_settings':
+        console.log(`=== CONFIGURAR SETTINGS da ${instanceName} ===`);
+        
+        if (!instanceName || !settings) {
+          throw new Error('instanceName e settings são obrigatórios para configurar settings');
+        }
+        
+        try {
+          const settingsPayload = {
+            rejectCall: settings.rejectCall,
+            msgCall: settings.msgCall,
+            groupsIgnore: settings.groupsIgnore,
+            alwaysOnline: settings.alwaysOnline,
+            readMessages: settings.readMessages,
+            readStatus: settings.readStatus,
+            syncFullHistory: settings.syncFullHistory
+          };
+
+          console.log('Configurando settings:', settingsPayload);
+
+          response = await fetch(`${evolutionApiUrl}/settings/set/${instanceName}`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(settingsPayload),
+          });
+
+          if (response.ok) {
+            const settingsResult = await response.json();
+            console.log('Settings configuradas:', settingsResult);
+            
+            // Atualizar instância no banco com novas settings
+            await supabaseClient
+              .from('whatsapp_instances')
+              .update({ 
+                settings: settingsPayload,
+                updated_at: new Date().toISOString()
+              })
+              .eq('instance_name', instanceName);
+            
+            return new Response(JSON.stringify({
+              success: true,
+              data: settingsResult
+            }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          } else {
+            const errorResult = await response.json();
+            throw new Error(errorResult?.message || `Erro ao configurar settings: ${response.status}`);
+          }
+        } catch (fetchError) {
+          throw new Error(`Erro ao configurar settings: ${fetchError.message}`);
+        }
+
+      case 'get_instance_settings':
+        console.log(`=== BUSCAR SETTINGS da ${instanceName} ===`);
+        
+        if (!instanceName) {
+          throw new Error('instanceName é obrigatório para buscar settings');
+        }
+        
+        try {
+          response = await fetch(`${evolutionApiUrl}/settings/find/${instanceName}`, {
+            method: 'GET',
+            headers,
+          });
+
+          if (response.ok) {
+            const settingsResult = await response.json();
+            console.log('Settings obtidas:', settingsResult);
+            
+            return new Response(JSON.stringify({
+              success: true,
+              data: settingsResult
+            }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          } else {
+            const errorResult = await response.json();
+            throw new Error(errorResult?.message || `Erro ao buscar settings: ${response.status}`);
+          }
+        } catch (fetchError) {
+          throw new Error(`Erro ao buscar settings: ${fetchError.message}`);
+        }
+
       case 'set_webhook':
         console.log(`=== CONFIGURAR WEBHOOK da ${instanceName} ===`);
         
@@ -321,20 +405,32 @@ serve(async (req) => {
           throw new Error('instanceName é obrigatório para configurar webhook');
         }
 
-        if (!n8nWebhookUrl) {
-          throw new Error('N8N_WEBHOOK_URL não configurada nos secrets do Supabase');
-        }
-        
         try {
-          const webhookPayload = {
-            enabled: true,
-            url: n8nWebhookUrl,
-            webhookByEvents: true,
-            webhookBase64: true,
-            events: [
-              'MESSAGES_UPSERT'
-            ]
-          };
+          let webhookPayload;
+          
+          if (webhookConfig && webhookConfig.url) {
+            // Usar webhook customizado
+            webhookPayload = {
+              enabled: webhookConfig.enabled,
+              url: webhookConfig.url,
+              webhookByEvents: webhookConfig.webhookByEvents,
+              webhookBase64: webhookConfig.webhookBase64,
+              events: webhookConfig.events
+            };
+          } else {
+            // Usar webhook padrão do N8N
+            if (!n8nWebhookUrl) {
+              throw new Error('N8N_WEBHOOK_URL não configurada nos secrets do Supabase');
+            }
+            
+            webhookPayload = {
+              enabled: true,
+              url: n8nWebhookUrl,
+              webhookByEvents: true,
+              webhookBase64: true,
+              events: ['MESSAGES_UPSERT']
+            };
+          }
 
           console.log('Configurando webhook:', webhookPayload);
 
@@ -352,7 +448,7 @@ serve(async (req) => {
             await supabaseClient
               .from('whatsapp_instances')
               .update({ 
-                webhook_url: n8nWebhookUrl,
+                webhook_url: webhookPayload.url,
                 updated_at: new Date().toISOString()
               })
               .eq('instance_name', instanceName);

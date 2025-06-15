@@ -25,6 +25,16 @@ interface CreateInstanceData {
   };
 }
 
+interface WhatsAppSettings {
+  rejectCall: boolean;
+  msgCall: string;
+  groupsIgnore: boolean;
+  alwaysOnline: boolean;
+  readMessages: boolean;
+  readStatus: boolean;
+  syncFullHistory: boolean;
+}
+
 interface WhatsAppInstance {
   id: string;
   tenant_id: string;
@@ -163,11 +173,35 @@ class WhatsAppApi {
     });
   }
 
+  // Configurar settings da instância
+  async setInstanceSettings(instanceName: string, settings: WhatsAppSettings): Promise<WhatsAppApiResponse> {
+    return this.makeRequest('/whatsapp-integration', {
+      action: 'set_instance_settings',
+      instanceName,
+      settings,
+    });
+  }
+
+  // Buscar settings da instância
+  async getInstanceSettings(instanceName: string): Promise<WhatsAppApiResponse> {
+    return this.makeRequest('/whatsapp-integration', {
+      action: 'get_instance_settings',
+      instanceName,
+    });
+  }
+
   // Configurar webhook
-  async setWebhook(instanceName: string): Promise<WhatsAppApiResponse> {
+  async setWebhook(instanceName: string, webhookConfig?: {
+    enabled: boolean;
+    url: string;
+    webhookByEvents: boolean;
+    webhookBase64: boolean;
+    events: string[];
+  }): Promise<WhatsAppApiResponse> {
     return this.makeRequest('/whatsapp-integration', {
       action: 'set_webhook',
       instanceName,
+      webhookConfig,
     });
   }
 
@@ -198,5 +232,6 @@ export const whatsappApi = new WhatsAppApi();
 export type { 
   CreateInstanceData, 
   WhatsAppApiResponse,
-  WhatsAppInstance
+  WhatsAppInstance,
+  WhatsAppSettings
 };

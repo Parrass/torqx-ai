@@ -5,9 +5,10 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  MessageCircle, Download, ExternalLink, Brain, Smartphone
+  MessageCircle, Download, ExternalLink, Brain, Smartphone, Settings
 } from 'lucide-react';
 import WhatsAppConnection from '@/components/WhatsAppConnection';
+import WhatsAppInstanceSettings from '@/components/WhatsAppInstanceSettings';
 import AIConfiguration from '@/components/AIConfiguration';
 
 interface Metrics {
@@ -20,7 +21,8 @@ interface Metrics {
 }
 
 const WhatsAppAI = () => {
-  const [isConnected, setIsConnected] = useState(true);
+  const [isConnected, setIsConnected] = useState(false);
+  const [instanceName, setInstanceName] = useState<string>('');
   const [botStatus, setBotStatus] = useState('active');
   const [activeTab, setActiveTab] = useState('whatsapp');
   const [metrics, setMetrics] = useState<Metrics>({
@@ -57,32 +59,51 @@ const WhatsAppAI = () => {
           </div>
         </div>
 
-        {/* Tabs para WhatsApp e IA */}
+        {/* Tabs para WhatsApp, Configurações e IA */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 bg-gray-100">
+          <TabsList className="grid w-full grid-cols-3 bg-gray-100">
             <TabsTrigger 
               value="whatsapp" 
               className="flex items-center space-x-2 data-[state=active]:bg-white data-[state=active]:text-torqx-primary"
             >
               <Smartphone className="w-4 h-4" />
-              <span>WhatsApp</span>
+              <span>Conexão</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="settings" 
+              className="flex items-center space-x-2 data-[state=active]:bg-white data-[state=active]:text-torqx-primary"
+            >
+              <Settings className="w-4 h-4" />
+              <span>Configurações</span>
             </TabsTrigger>
             <TabsTrigger 
               value="ai-config" 
               className="flex items-center space-x-2 data-[state=active]:bg-white data-[state=active]:text-torqx-primary"
             >
               <Brain className="w-4 h-4" />
-              <span>Configuração IA</span>
+              <span>IA</span>
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="whatsapp" className="space-y-6">
             <WhatsAppConnection
               isConnected={isConnected}
-              setIsConnected={setIsConnected}
+              setIsConnected={(connected) => {
+                setIsConnected(connected);
+                // Capturar instanceName quando a conexão for atualizada
+                // Isso seria idealmente passado pelo componente WhatsAppConnection
+              }}
               botStatus={botStatus}
               setBotStatus={setBotStatus}
               metrics={metrics}
+              onInstanceChange={(name) => setInstanceName(name)}
+            />
+          </TabsContent>
+
+          <TabsContent value="settings" className="space-y-6">
+            <WhatsAppInstanceSettings
+              instanceName={instanceName}
+              isConnected={isConnected}
             />
           </TabsContent>
 
