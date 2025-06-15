@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import OnboardingBanner from '@/components/onboarding/OnboardingBanner';
 import OnboardingWizard from '@/components/onboarding/OnboardingWizard';
+import OnboardingProgressBar from '@/components/onboarding/OnboardingProgressBar';
 
 interface WelcomeMessageProps {
   onStartTour?: () => void;
@@ -118,15 +119,21 @@ const WelcomeMessage: React.FC<WelcomeMessageProps> = ({ onStartTour }) => {
     );
   }
 
-  // Se há progresso em andamento e não foi dispensado
-  if (progress && !progress.isCompleted && !bannerDismissed) {
-    console.log('WelcomeMessage: Mostrando banner de progresso');
+  // Se há progresso em andamento, mostrar barra de progresso
+  if (progress && !progress.isCompleted) {
+    console.log('WelcomeMessage: Mostrando barra de progresso');
     return (
       <>
-        <OnboardingBanner 
-          onOpenWizard={() => setShowWizard(true)}
-          onDismiss={() => setBannerDismissed(true)}
-        />
+        <OnboardingProgressBar />
+        
+        {/* Banner de continuação se não foi dispensado */}
+        {!bannerDismissed && (
+          <OnboardingBanner 
+            onOpenWizard={() => setShowWizard(true)}
+            onDismiss={() => setBannerDismissed(true)}
+          />
+        )}
+        
         <OnboardingWizard 
           isOpen={showWizard}
           onClose={() => setShowWizard(false)}
@@ -135,7 +142,7 @@ const WelcomeMessage: React.FC<WelcomeMessageProps> = ({ onStartTour }) => {
     );
   }
 
-  // Se não há progresso ou foi dispensado, mostrar convite para iniciar
+  // Se não há progresso, mostrar convite para iniciar
   console.log('WelcomeMessage: Mostrando convite inicial');
   return (
     <>
@@ -155,12 +162,10 @@ const WelcomeMessage: React.FC<WelcomeMessageProps> = ({ onStartTour }) => {
                   Configure sua oficina em poucos passos e comece a usar todas as funcionalidades.
                 </p>
                 
-                {!progress && (
-                  <div className="flex items-center space-x-2 text-sm bg-yellow-500/20 rounded-lg px-3 py-2">
-                    <AlertCircle className="w-4 h-4" />
-                    <span>Vamos configurar sua oficina para começar a usar o Torqx!</span>
-                  </div>
-                )}
+                <div className="flex items-center space-x-2 text-sm bg-yellow-500/20 rounded-lg px-3 py-2">
+                  <AlertCircle className="w-4 h-4" />
+                  <span>Vamos configurar sua oficina para começar a usar o Torqx!</span>
+                </div>
               </div>
             </div>
             
