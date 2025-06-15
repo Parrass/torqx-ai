@@ -8,7 +8,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface DashboardMetricsProps {
-  metrics: {
+  metrics?: {
     total_customers: number;
     total_vehicles: number;
     active_service_orders: number;

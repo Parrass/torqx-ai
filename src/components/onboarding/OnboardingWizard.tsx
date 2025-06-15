@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { X, ChevronLeft, ChevronRight, Skip, CheckCircle } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, SkipForward, CheckCircle } from 'lucide-react';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -131,7 +131,7 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ isOpen, onClose }) 
                 onClick={handleSkip}
                 className="flex items-center space-x-2"
               >
-                <Skip className="w-4 h-4" />
+                <SkipForward className="w-4 h-4" />
                 <span>Pular</span>
               </Button>
             )}

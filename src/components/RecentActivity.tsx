@@ -18,10 +18,10 @@ interface RecentOrder {
 }
 
 interface RecentActivityProps {
-  recentOrders: RecentOrder[];
+  recentOrders?: RecentOrder[];
 }
 
-const RecentActivity = ({ recentOrders }: RecentActivityProps) => {
+const RecentActivity = ({ recentOrders = [] }: RecentActivityProps) => {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
