@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -37,12 +38,14 @@ export interface CustomerFilters {
 }
 
 export const useCustomers = (filters: CustomerFilters = {}) => {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
 
   return useQuery({
     queryKey: ['customers', filters],
     queryFn: async () => {
-      if (!user) throw new Error('User not authenticated');
+      if (!user || !userProfile?.tenant_id) {
+        throw new Error('User not authenticated or tenant not found');
+      }
 
       let query = supabase
         .from('customers')
@@ -50,6 +53,7 @@ export const useCustomers = (filters: CustomerFilters = {}) => {
           *,
           vehicles:vehicles(count)
         `)
+        .eq('tenant_id', userProfile.tenant_id)
         .order('created_at', { ascending: false });
 
       // Apply filters
@@ -80,7 +84,6 @@ export const useCustomers = (filters: CustomerFilters = {}) => {
         throw error;
       }
 
-      // Transform data to match our interface with proper type conversion
       return data?.map(customer => ({
         ...customer,
         customer_type: (customer.customer_type as 'individual' | 'business') || 'individual',
@@ -89,22 +92,25 @@ export const useCustomers = (filters: CustomerFilters = {}) => {
         vehicles_count: customer.vehicles?.[0]?.count || 0
       })) || [];
     },
-    enabled: !!user,
+    enabled: !!user && !!userProfile?.tenant_id,
   });
 };
 
 export const useCustomerStats = () => {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
 
   return useQuery({
     queryKey: ['customer-stats'],
     queryFn: async () => {
-      if (!user) throw new Error('User not authenticated');
+      if (!user || !userProfile?.tenant_id) {
+        throw new Error('User not authenticated or tenant not found');
+      }
 
       // Get total customers
       const { count: totalCustomers } = await supabase
         .from('customers')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true })
+        .eq('tenant_id', userProfile.tenant_id);
 
       // Get new customers this month
       const startOfMonth = new Date();
@@ -114,12 +120,14 @@ export const useCustomerStats = () => {
       const { count: newThisMonth } = await supabase
         .from('customers')
         .select('*', { count: 'exact', head: true })
+        .eq('tenant_id', userProfile.tenant_id)
         .gte('created_at', startOfMonth.toISOString());
 
-      // Get revenue and average ticket from customer metrics
+      // Get revenue and average ticket from customer data
       const { data: revenue } = await supabase
         .from('customers')
-        .select('total_spent');
+        .select('total_spent')
+        .eq('tenant_id', userProfile.tenant_id);
 
       const totalRevenue = revenue?.reduce((sum, customer) => sum + (customer.total_spent || 0), 0) || 0;
       const averageTicket = totalCustomers ? totalRevenue / totalCustomers : 0;
@@ -131,32 +139,23 @@ export const useCustomerStats = () => {
         averageTicket
       };
     },
-    enabled: !!user,
+    enabled: !!user && !!userProfile?.tenant_id,
   });
 };
 
 export const useCreateCustomer = () => {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
 
   return useMutation({
     mutationFn: async (customerData: Omit<Customer, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>) => {
-      if (!user) throw new Error('User not authenticated');
-
-      // Get user's tenant_id
-      const { data: userData } = await supabase
-        .from('users')
-        .select('tenant_id')
-        .eq('id', user.id)
-        .single();
-
-      if (!userData?.tenant_id) {
-        throw new Error('User tenant not found');
+      if (!user || !userProfile?.tenant_id) {
+        throw new Error('User not authenticated or tenant not found');
       }
 
       const { data, error } = await supabase
         .from('customers')
-        .insert([{ ...customerData, tenant_id: userData.tenant_id }])
+        .insert([{ ...customerData, tenant_id: userProfile.tenant_id }])
         .select()
         .single();
 

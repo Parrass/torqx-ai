@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import type { Database } from '@/integrations/supabase/types';
 
 type WorkshopSettingsRow = Database['public']['Tables']['workshop_settings']['Row'];
@@ -71,14 +72,21 @@ export const useWorkshopSettings = () => {
   const [settings, setSettings] = useState<WorkshopSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { user, userProfile } = useAuth();
 
   // Buscar configurações da oficina
   const fetchSettings = async () => {
+    if (!user || !userProfile?.tenant_id) {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const { data, error } = await supabase
         .from('workshop_settings')
         .select('*')
+        .eq('tenant_id', userProfile.tenant_id)
         .single();
 
       if (error && error.code !== 'PGRST116') {
@@ -109,20 +117,11 @@ export const useWorkshopSettings = () => {
 
   // Criar ou atualizar configurações
   const saveSettings = async (settingsData: Partial<WorkshopSettings>) => {
+    if (!user || !userProfile?.tenant_id) {
+      throw new Error('Usuário não autenticado ou tenant não encontrado');
+    }
+
     try {
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) throw new Error('Usuário não autenticado');
-
-      // Buscar tenant_id do usuário
-      const { data: userProfile, error: userError } = await supabase
-        .from('users')
-        .select('tenant_id')
-        .eq('id', userData.user.id)
-        .single();
-
-      if (userError) throw userError;
-      if (!userProfile?.tenant_id) throw new Error('Tenant não encontrado para o usuário');
-
       let result;
       
       if (settings?.id) {
@@ -168,7 +167,7 @@ export const useWorkshopSettings = () => {
           website: settingsData.website,
           address: settingsData.address,
           working_hours: settingsData.working_hours as unknown as Database['public']['Tables']['workshop_settings']['Insert']['working_hours'],
-          created_by_user_id: userData.user.id,
+          created_by_user_id: user.id,
           tenant_id: userProfile.tenant_id
         };
 
@@ -216,8 +215,10 @@ export const useWorkshopSettings = () => {
   };
 
   useEffect(() => {
-    fetchSettings();
-  }, []);
+    if (userProfile?.tenant_id) {
+      fetchSettings();
+    }
+  }, [userProfile?.tenant_id]);
 
   return {
     settings,
