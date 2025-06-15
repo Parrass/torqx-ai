@@ -21,14 +21,18 @@ const TorqxNavbar = () => {
             <Menu className="w-5 h-5 text-torqx-primary dark:text-white" />
           </button>
 
-          {/* Company Logo */}
-          <CompanyLogo />
-          
-          {/* Company Name */}
-          <div className="hidden sm:block">
-            <h1 className="text-xl font-bold text-torqx-primary dark:text-white font-satoshi">
-              Torqx
-            </h1>
+          {/* Logo Torqx com gradiente */}
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-gradient-to-br from-torqx-secondary to-torqx-secondary-dark rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-sm">T</span>
+            </div>
+            
+            {/* Company Name */}
+            <div className="hidden sm:block">
+              <h1 className="text-xl font-bold text-torqx-primary dark:text-white font-satoshi">
+                Torqx
+              </h1>
+            </div>
           </div>
         </div>
 

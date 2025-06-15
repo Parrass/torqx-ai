@@ -36,23 +36,32 @@ const SidebarCategoryItem = ({ category, userPermissions }: SidebarCategoryItemP
     <div className="mb-1">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center w-full py-2 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-torqx-primary-light transition-colors text-left min-h-[40px]"
+        className="flex items-center w-full py-2 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-torqx-primary-light transition-colors text-left min-h-[40px] relative"
       >
-        <div className="flex-shrink-0 w-4 h-4 flex items-center justify-center">
+        {/* Icon container - sempre centralizado quando colapsado */}
+        <div className={`
+          flex items-center justify-center transition-all duration-300
+          ${open ? 'w-4 h-4 flex-shrink-0' : 'w-full h-4'}
+        `}>
           {category.icon}
         </div>
         
+        {/* Category label with animation */}
         <motion.span 
-          className={`text-torqx-primary dark:text-white text-sm font-medium whitespace-nowrap ml-3 ${!open && "opacity-0 w-0 ml-0 overflow-hidden"}`}
+          className="text-torqx-primary dark:text-white text-sm font-medium whitespace-nowrap"
           animate={{
             opacity: open ? 1 : 0,
             width: open ? "auto" : 0,
             marginLeft: open ? 12 : 0,
           }}
+          style={{
+            overflow: "hidden"
+          }}
         >
           {category.label}
         </motion.span>
         
+        {/* Chevron with animation */}
         {open && (
           <motion.div
             className="ml-auto"
