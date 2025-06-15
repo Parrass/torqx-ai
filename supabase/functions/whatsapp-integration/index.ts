@@ -61,15 +61,14 @@ serve(async (req) => {
       case 'create_instance':
         console.log('Criando instância com dados:', data);
         
-        // Validar dados obrigatórios
         if (!data.instanceName || !tenantId) {
           throw new Error('instanceName e tenantId são obrigatórios');
         }
         
-        // Preparar payload correto para Evolution API
+        // Payload correto para Evolution API
         const instancePayload = {
           instanceName: data.instanceName,
-          token: data.token || undefined,
+          token: data.token,
           integration: 'WHATSAPP-BAILEYS',
           qrcode: true,
           rejectCall: true,
@@ -79,121 +78,128 @@ serve(async (req) => {
           readMessages: true,
           readStatus: true,
           syncFullHistory: false,
-        };
-
-        // Adicionar webhook se fornecido
-        if (data.webhook?.url) {
-          instancePayload.webhook = {
-            url: data.webhook.url,
-            byEvents: data.webhook.byEvents || true,
-            base64: data.webhook.base64 || true,
-            events: data.webhook.events || [
+          webhook: data.webhook || {
+            url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/whatsapp-webhook`,
+            byEvents: true,
+            base64: true,
+            events: [
               'APPLICATION_STARTUP',
               'MESSAGE_RECEIVED', 
               'MESSAGE_SENT',
               'CONNECTION_UPDATE',
               'QRCODE_UPDATED'
             ]
-          };
-        }
-
-        console.log('Payload final para Evolution API:', JSON.stringify(instancePayload, null, 2));
-        
-        // Fazer requisição para Evolution API
-        response = await fetch(`${evolutionApiUrl}/instance/create`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(instancePayload),
-        });
-
-        const instanceResult = await response.json();
-        console.log('Resposta da Evolution API:', { 
-          status: response.status, 
-          ok: response.ok,
-          result: instanceResult 
-        });
-        
-        if (response.ok && instanceResult) {
-          // Salvar instância no banco de dados
-          const { data: dbInstance, error: dbError } = await supabaseClient
-            .from('whatsapp_instances')
-            .insert({
-              tenant_id: tenantId,
-              instance_name: data.instanceName,
-              instance_id: instanceResult.instance?.instanceId || instanceResult.instanceId || data.instanceName,
-              status: instanceResult.instance?.status || instanceResult.status || 'created',
-              token: instancePayload.token,
-              webhook_url: data.webhook?.url,
-              settings: {
-                rejectCall: instancePayload.rejectCall,
-                msgCall: instancePayload.msgCall,
-                groupsIgnore: instancePayload.groupsIgnore,
-                alwaysOnline: instancePayload.alwaysOnline,
-                readMessages: instancePayload.readMessages,
-                readStatus: instancePayload.readStatus,
-                syncFullHistory: instancePayload.syncFullHistory,
-              }
-            })
-            .select()
-            .single();
-
-          if (dbError) {
-            console.error('Erro ao salvar no banco:', dbError);
-            throw new Error(`Erro ao salvar instância no banco: ${dbError.message}`);
           }
+        };
 
-          console.log('Instância salva no banco:', dbInstance);
-
-          return new Response(JSON.stringify({
-            success: true,
-            data: dbInstance,
-            evolutionResponse: instanceResult,
-          }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        console.log('Payload para Evolution API:', JSON.stringify(instancePayload, null, 2));
+        
+        try {
+          response = await fetch(`${evolutionApiUrl}/instance/create`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(instancePayload),
           });
-        } else {
-          console.error('Erro na Evolution API:', { status: response.status, result: instanceResult });
-          throw new Error(instanceResult?.message || instanceResult?.error || `Erro da Evolution API: ${response.status}`);
+
+          const instanceResult = await response.json();
+          console.log('Resposta da Evolution API:', { 
+            status: response.status, 
+            ok: response.ok,
+            result: instanceResult 
+          });
+          
+          if (response.ok && instanceResult) {
+            // Salvar instância no banco
+            const { data: dbInstance, error: dbError } = await supabaseClient
+              .from('whatsapp_instances')
+              .insert({
+                tenant_id: tenantId,
+                instance_name: data.instanceName,
+                instance_id: instanceResult.instance?.instanceId || data.instanceName,
+                status: instanceResult.instance?.status || 'created',
+                token: data.token,
+                webhook_url: instancePayload.webhook.url,
+                settings: {
+                  rejectCall: instancePayload.rejectCall,
+                  msgCall: instancePayload.msgCall,
+                  groupsIgnore: instancePayload.groupsIgnore,
+                  alwaysOnline: instancePayload.alwaysOnline,
+                  readMessages: instancePayload.readMessages,
+                  readStatus: instancePayload.readStatus,
+                  syncFullHistory: instancePayload.syncFullHistory,
+                }
+              })
+              .select()
+              .single();
+
+            if (dbError) {
+              console.error('Erro ao salvar no banco:', dbError);
+              throw new Error(`Erro ao salvar instância no banco: ${dbError.message}`);
+            }
+
+            console.log('Instância salva no banco:', dbInstance);
+
+            return new Response(JSON.stringify({
+              success: true,
+              data: dbInstance,
+              evolutionResponse: instanceResult,
+            }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          } else {
+            throw new Error(instanceResult?.message || `Erro da Evolution API: ${response.status}`);
+          }
+        } catch (fetchError) {
+          console.error('Erro na requisição para Evolution API:', fetchError);
+          throw new Error(`Erro de comunicação com Evolution API: ${fetchError.message}`);
         }
 
       case 'get_qr_code':
         console.log(`Obtendo QR code para instância: ${instanceName}`);
-        response = await fetch(`${evolutionApiUrl}/instance/connect/${instanceName}`, {
-          method: 'GET',
-          headers,
-        });
+        try {
+          response = await fetch(`${evolutionApiUrl}/instance/connect/${instanceName}`, {
+            method: 'GET',
+            headers,
+          });
+        } catch (fetchError) {
+          throw new Error(`Erro ao obter QR code: ${fetchError.message}`);
+        }
         break;
 
       case 'get_instance_status':
         console.log(`Obtendo status da instância: ${instanceName}`);
-        response = await fetch(`${evolutionApiUrl}/instance/connectionState/${instanceName}`, {
-          method: 'GET',
-          headers,
-        });
+        try {
+          response = await fetch(`${evolutionApiUrl}/instance/connectionState/${instanceName}`, {
+            method: 'GET',
+            headers,
+          });
+        } catch (fetchError) {
+          throw new Error(`Erro ao obter status: ${fetchError.message}`);
+        }
         break;
 
       case 'logout_instance':
         console.log(`Desconectando instância: ${instanceName}`);
-        response = await fetch(`${evolutionApiUrl}/instance/logout/${instanceName}`, {
-          method: 'DELETE',
-          headers,
-        });
+        try {
+          response = await fetch(`${evolutionApiUrl}/instance/logout/${instanceName}`, {
+            method: 'DELETE',
+            headers,
+          });
 
-        if (response.ok) {
-          // Atualizar status no banco
-          const { error: updateError } = await supabaseClient
-            .from('whatsapp_instances')
-            .update({ 
-              is_connected: false, 
-              status: 'disconnected',
-              qr_code: null,
-              pairing_code: null 
-            })
-            .eq('instance_name', instanceName);
-
-          if (updateError) {
-            console.error('Erro ao atualizar status no banco:', updateError);
+          if (response.ok) {
+            // Atualizar status no banco
+            await supabaseClient
+              .from('whatsapp_instances')
+              .update({ 
+                is_connected: false, 
+                status: 'disconnected',
+                qr_code: null,
+                pairing_code: null 
+              })
+              .eq('instance_name', instanceName);
           }
+        } catch (fetchError) {
+          throw new Error(`Erro ao desconectar: ${fetchError.message}`);
         }
         break;
 
@@ -221,7 +227,7 @@ serve(async (req) => {
         throw new Error(`Ação desconhecida: ${action}`);
     }
 
-    // Processar resposta da Evolution API para outras ações
+    // Processar resposta da Evolution API
     if (response) {
       const result = await response.json();
 

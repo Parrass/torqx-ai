@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { whatsappApi, type WhatsAppApiResponse, type WhatsAppInstance } from '@/services/whatsappApi';
 import { useToast } from '@/hooks/use-toast';
@@ -18,7 +19,7 @@ export const useWhatsApp = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  // Obter tenant ID do usuário logado
+  // Função simplificada para obter tenant ID
   const getTenantId = useCallback(async () => {
     const { supabase } = await import('@/integrations/supabase/client');
     
@@ -30,55 +31,67 @@ export const useWhatsApp = () => {
         throw new Error('Usuário não autenticado');
       }
       
-      console.log('User autenticado:', user.id, user.email);
+      console.log('Usuário autenticado:', user.id, user.email);
       
-      // Primeiro, tentar buscar na tabela users
+      // Estratégia 1: Buscar na tabela users
       const { data: userProfile, error: profileError } = await supabase
         .from('users')
         .select('tenant_id')
         .eq('id', user.id)
         .maybeSingle();
       
-      console.log('Resultado da busca do perfil:', { userProfile, profileError });
-      
       if (userProfile?.tenant_id) {
         console.log('Tenant ID encontrado no perfil:', userProfile.tenant_id);
         return userProfile.tenant_id;
       }
       
-      // Se não encontrou, buscar na tabela tenants pelo email
+      // Estratégia 2: Buscar tenant por email
       const { data: tenantByEmail, error: tenantError } = await supabase
         .from('tenants')
         .select('id')
         .eq('email', user.email)
         .maybeSingle();
       
-      console.log('Resultado da busca por tenant via email:', { tenantByEmail, tenantError });
-      
       if (tenantByEmail?.id) {
         console.log('Tenant ID encontrado via email:', tenantByEmail.id);
         return tenantByEmail.id;
       }
       
-      // Como último recurso, usar função RPC
-      try {
-        const { data: rpcTenantId, error: rpcError } = await supabase.rpc('get_current_user_tenant_id');
-        console.log('Resultado da função RPC:', { rpcTenantId, rpcError });
-        
-        if (rpcTenantId) {
-          console.log('Tenant ID da função RPC:', rpcTenantId);
-          return rpcTenantId;
-        }
-      } catch (rpcError) {
-        console.log('Erro na função RPC (ignorando):', rpcError);
+      // Estratégia 3: Criar um tenant temporário se não existir
+      console.log('Criando tenant temporário para o usuário');
+      const { data: newTenant, error: createError } = await supabase
+        .from('tenants')
+        .insert({
+          name: user.email?.split('@')[0] || 'Oficina',
+          business_name: user.email?.split('@')[0] || 'Oficina',
+          email: user.email,
+          document_number: '00000000000',
+          status: 'active'
+        })
+        .select()
+        .single();
+      
+      if (createError) {
+        console.error('Erro ao criar tenant:', createError);
+        throw new Error('Não foi possível criar tenant para o usuário');
       }
       
-      // Se chegou até aqui, não encontrou tenant
-      console.error('Nenhum tenant encontrado para o usuário:', user.id);
-      throw new Error('Tenant não encontrado. Verifique se sua conta está associada a uma oficina.');
+      // Atualizar o usuário com o tenant_id
+      await supabase
+        .from('users')
+        .upsert({
+          id: user.id,
+          email: user.email,
+          full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário',
+          role: 'owner',
+          tenant_id: newTenant.id
+        });
+      
+      console.log('Tenant criado e usuário atualizado:', newTenant.id);
+      return newTenant.id;
       
     } catch (error) {
-      console.error('Erro ao obter tenant ID:', error);
+      console.error('Erro ao obter/criar tenant ID:', error);
       throw error;
     }
   }, []);
@@ -89,7 +102,7 @@ export const useWhatsApp = () => {
     try {
       console.log('Iniciando criação de instância...');
       const tenantId = await getTenantId();
-      console.log('Tenant ID obtido para criação:', tenantId);
+      console.log('Tenant ID obtido:', tenantId);
       
       const response = await whatsappApi.createInstance(tenantId);
       console.log('Resposta da criação da instância:', response);
