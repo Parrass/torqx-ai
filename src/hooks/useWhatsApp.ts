@@ -33,7 +33,7 @@ export const useWhatsApp = () => {
       
       console.log('Usuário autenticado:', user.id, user.email);
       
-      // Estratégia 1: Buscar na tabela users
+      // Buscar tenant_id do usuário
       const { data: userProfile, error: profileError } = await supabase
         .from('users')
         .select('tenant_id')
@@ -41,24 +41,11 @@ export const useWhatsApp = () => {
         .maybeSingle();
       
       if (userProfile?.tenant_id) {
-        console.log('Tenant ID encontrado no perfil:', userProfile.tenant_id);
+        console.log('Tenant ID encontrado:', userProfile.tenant_id);
         return userProfile.tenant_id;
       }
       
-      // Estratégia 2: Buscar tenant por email
-      const { data: tenantByEmail, error: tenantError } = await supabase
-        .from('tenants')
-        .select('id')
-        .eq('email', user.email)
-        .maybeSingle();
-      
-      if (tenantByEmail?.id) {
-        console.log('Tenant ID encontrado via email:', tenantByEmail.id);
-        return tenantByEmail.id;
-      }
-      
-      // Estratégia 3: Criar um tenant temporário se não existir
-      console.log('Criando tenant temporário para o usuário');
+      console.log('Criando tenant para o usuário');
       const { data: newTenant, error: createError } = await supabase
         .from('tenants')
         .insert({
@@ -73,7 +60,7 @@ export const useWhatsApp = () => {
       
       if (createError) {
         console.error('Erro ao criar tenant:', createError);
-        throw new Error('Não foi possível criar tenant para o usuário');
+        throw new Error('Não foi possível criar tenant');
       }
       
       // Atualizar o usuário com o tenant_id
@@ -87,11 +74,11 @@ export const useWhatsApp = () => {
           tenant_id: newTenant.id
         });
       
-      console.log('Tenant criado e usuário atualizado:', newTenant.id);
+      console.log('Tenant criado:', newTenant.id);
       return newTenant.id;
       
     } catch (error) {
-      console.error('Erro ao obter/criar tenant ID:', error);
+      console.error('Erro ao obter tenant ID:', error);
       throw error;
     }
   }, []);
@@ -105,7 +92,7 @@ export const useWhatsApp = () => {
       console.log('Tenant ID obtido:', tenantId);
       
       const response = await whatsappApi.createInstance(tenantId);
-      console.log('Resposta da criação da instância:', response);
+      console.log('Resposta da criação:', response);
       
       if (response.success && response.data) {
         setConnection(prev => ({
@@ -117,7 +104,7 @@ export const useWhatsApp = () => {
         
         toast({
           title: 'Instância criada',
-          description: 'Instância WhatsApp criada com sucesso. Agora você pode gerar o QR Code.',
+          description: 'Instância WhatsApp criada com sucesso.',
         });
         
         return response.data;
@@ -160,7 +147,7 @@ export const useWhatsApp = () => {
         
         toast({
           title: 'QR Code gerado',
-          description: 'QR Code gerado com sucesso. Escaneie com seu WhatsApp.',
+          description: 'QR Code gerado com sucesso.',
         });
       } else {
         throw new Error(response.error || 'Erro ao gerar QR Code');
