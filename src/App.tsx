@@ -6,6 +6,7 @@ import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
 import Dashboard from '@/pages/Dashboard';
+import Welcome from '@/pages/Welcome';
 import Customers from '@/pages/Customers';
 import Vehicles from '@/pages/Vehicles';
 import ServiceOrders from '@/pages/ServiceOrders';
@@ -31,6 +32,7 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/welcome" element={<Welcome />} />
         <Route path="/customers" element={<Customers />} />
         <Route path="/vehicles" element={<Vehicles />} />
         <Route path="/service-orders" element={<ServiceOrders />} />
