@@ -94,7 +94,7 @@ serve(async (req) => {
 
     switch (action) {
       case 'create_instance':
-        console.log('=== CRIANDO INSTÂNCIA ===');
+        console.log('=== CRIANDO INSTÂNCIA DIRETAMENTE PARA N8N ===');
         
         if (!tenantId) {
           throw new Error('tenantId é obrigatório para criar instância');
@@ -103,12 +103,22 @@ serve(async (req) => {
         // Gerar nome da instância se não fornecido
         const finalInstanceName = instanceName || `torqx_${tenantId.substring(0, 8)}`;
         
-        // Determinar URL do webhook - se vier N8N_WEBHOOK_DIRECT, usar o N8N diretamente
-        const webhookUrl = data.webhook?.url === 'N8N_WEBHOOK_DIRECT' && n8nWebhookUrl
-          ? n8nWebhookUrl
-          : data.webhook?.url || `${Deno.env.get('SUPABASE_URL')}/functions/v1/whatsapp-webhook`;
+        // SEMPRE usar N8N diretamente - CORRIGIDO
+        let webhookUrl = n8nWebhookUrl;
         
-        // Payload seguindo exatamente a API da Evolution com webhook para N8N
+        // Se vier N8N_DIRECT ou N8N_WEBHOOK_DIRECT, usar sempre o N8N
+        if (data.webhook?.url === 'N8N_DIRECT' || data.webhook?.url === 'N8N_WEBHOOK_DIRECT' || !data.webhook?.url) {
+          if (!n8nWebhookUrl) {
+            throw new Error('N8N_WEBHOOK_URL não configurado nos secrets do Supabase');
+          }
+          webhookUrl = n8nWebhookUrl;
+        } else {
+          webhookUrl = data.webhook.url;
+        }
+        
+        console.log('WEBHOOK URL DEFINIDA PARA N8N:', webhookUrl);
+        
+        // Payload seguindo exatamente a API da Evolution com webhook DIRETO para N8N
         const instancePayload = {
           instanceName: finalInstanceName,
           token: data.token || `torqx_${Date.now()}`,
@@ -122,7 +132,7 @@ serve(async (req) => {
           readStatus: true,
           syncFullHistory: false,
           webhook: {
-            url: webhookUrl,
+            url: webhookUrl, // SEMPRE N8N
             byEvents: false, // IMPORTANTE: false para receber tudo numa URL só
             base64: true,
             events: [
@@ -132,7 +142,7 @@ serve(async (req) => {
           }
         };
 
-        console.log('Payload Evolution (webhook para N8N):', JSON.stringify(instancePayload, null, 2));
+        console.log('Payload Evolution (webhook DIRETO para N8N):', JSON.stringify(instancePayload, null, 2));
         console.log('URL de criação:', `${evolutionApiUrl}/instance/create`);
         
         try {
@@ -159,7 +169,7 @@ serve(async (req) => {
                 instance_id: instanceResult.instance?.instanceId || finalInstanceName,
                 status: instanceResult.instance?.status || 'created',
                 token: instancePayload.token,
-                webhook_url: instancePayload.webhook.url,
+                webhook_url: instancePayload.webhook.url, // N8N URL salva aqui
                 settings: instancePayload,
                 is_connected: false
               })
@@ -171,7 +181,7 @@ serve(async (req) => {
               throw new Error(`Erro ao salvar instância: ${dbError.message}`);
             }
 
-            console.log('Instância salva com sucesso:', dbInstance);
+            console.log('Instância salva com webhook N8N:', dbInstance);
 
             return new Response(JSON.stringify({
               success: true,

@@ -106,12 +106,12 @@ class WhatsAppApi {
     }
   }
 
-  // Criar instância para oficina
+  // Criar instância para oficina - CORRIGIDO para apontar diretamente para N8N
   async createInstance(tenantId: string): Promise<WhatsAppApiResponse<WhatsAppInstance>> {
     const instanceName = `torqx_${tenantId.substring(0, 8)}`;
     const token = this.generateToken();
     
-    console.log('Criando instância:', { instanceName, tenantId });
+    console.log('Criando instância apontando DIRETAMENTE para N8N:', { instanceName, tenantId });
     
     return this.makeRequest('/whatsapp-integration', {
       action: 'create_instance',
@@ -128,7 +128,7 @@ class WhatsAppApi {
       readStatus: true,
       syncFullHistory: false,
       webhook: {
-        url: 'N8N_WEBHOOK_DIRECT', // Placeholder que será substituído no backend pelo N8N URL
+        url: 'N8N_DIRECT', // FORÇA o uso direto do N8N
         byEvents: false, // IMPORTANTE: false para receber tudo numa URL só
         base64: true,
         events: [
