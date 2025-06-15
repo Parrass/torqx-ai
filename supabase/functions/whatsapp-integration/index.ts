@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
@@ -405,21 +406,24 @@ serve(async (req) => {
         }
 
         try {
-          // Estrutura correta do webhook para Evolution API
+          // Determinar se webhook deve estar habilitado
+          const isWebhookEnabled = webhookConfig?.enabled !== false; // true por padrão
+          
+          // Eventos padrão sempre incluindo mensagens
+          const defaultEvents = [
+            'APPLICATION_STARTUP',
+            'MESSAGES_UPSERT',
+            'CONNECTION_UPDATE',
+            'QRCODE_UPDATED'
+          ];
+
+          // Estrutura correta do payload para Evolution API (seguindo o curl fornecido)
           const webhookPayload = {
-            webhook: {
-              url: webhookConfig?.url || `${Deno.env.get('SUPABASE_URL')}/functions/v1/whatsapp-webhook`,
-              byEvents: true,
-              base64: true,
-              events: [
-                'APPLICATION_STARTUP',
-                'MESSAGES_UPSERT',
-                'MESSAGE_RECEIVED',
-                'MESSAGE_SENT', 
-                'CONNECTION_UPDATE',
-                'QRCODE_UPDATED'
-              ]
-            }
+            enabled: isWebhookEnabled,
+            url: webhookConfig?.url || `${Deno.env.get('SUPABASE_URL')}/functions/v1/whatsapp-webhook`,
+            webhookByEvents: true,
+            webhookBase64: true,
+            events: isWebhookEnabled ? defaultEvents : [] // Se desabilitado, array vazio
           };
 
           console.log('Configurando webhook:', JSON.stringify(webhookPayload, null, 2));
@@ -448,7 +452,7 @@ serve(async (req) => {
             await supabaseClient
               .from('whatsapp_instances')
               .update({ 
-                webhook_url: webhookPayload.webhook.url,
+                webhook_url: webhookPayload.url,
                 updated_at: new Date().toISOString()
               })
               .eq('instance_name', instanceName);
