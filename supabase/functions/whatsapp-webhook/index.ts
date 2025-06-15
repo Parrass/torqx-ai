@@ -15,84 +15,106 @@ serve(async (req) => {
   try {
     const webhookData = await req.json();
     
-    console.log('Webhook recebido:', JSON.stringify(webhookData, null, 2));
+    console.log('=== WEBHOOK RECEBIDO ===');
+    console.log('Dados completos:', JSON.stringify(webhookData, null, 2));
+    console.log('Event:', webhookData.event);
+    console.log('Type:', webhookData.type);
+    console.log('Instance:', webhookData.instance?.instanceName);
 
-    // Verificar se é evento de mensagem
+    // Verificar URL do N8N
+    const n8nWebhookUrl = Deno.env.get('N8N_WEBHOOK_URL');
+    console.log('N8N URL configurada:', n8nWebhookUrl ? 'SIM' : 'NÃO');
+    
+    if (!n8nWebhookUrl) {
+      console.error('❌ N8N_WEBHOOK_URL não configurada!');
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'N8N_WEBHOOK_URL não configurada nos secrets do Supabase'
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Lógica mais ampla para detectar eventos de mensagem
     const isMessageEvent = webhookData.event === 'MESSAGES_UPSERT' || 
+                          webhookData.event === 'MESSAGE_RECEIVED' ||
+                          webhookData.event === 'MESSAGE_SENT' ||
                           webhookData.type === 'MESSAGE_RECEIVED' ||
-                          webhookData.type === 'MESSAGE_SENT';
+                          webhookData.type === 'MESSAGE_SENT' ||
+                          (webhookData.data && webhookData.data.messages) ||
+                          (webhookData.messages && webhookData.messages.length > 0);
 
-    if (isMessageEvent) {
-      // Redirecionar para N8N para processamento de mensagens
-      const n8nWebhookUrl = Deno.env.get('N8N_WEBHOOK_URL');
-      
-      if (!n8nWebhookUrl) {
-        console.error('N8N_WEBHOOK_URL não configurada');
-        return new Response(JSON.stringify({
-          success: false,
-          error: 'N8N webhook URL não configurada'
-        }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
+    console.log('É evento de mensagem?', isMessageEvent);
 
-      console.log('Redirecionando mensagem para N8N:', n8nWebhookUrl);
+    // SEMPRE redirecionar para N8N para debug
+    console.log('🔄 Redirecionando TODOS os eventos para N8N:', n8nWebhookUrl);
 
-      try {
-        const n8nResponse = await fetch(n8nWebhookUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(webhookData),
-        });
+    try {
+      const n8nResponse = await fetch(n8nWebhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'Supabase-Webhook-Proxy',
+        },
+        body: JSON.stringify({
+          ...webhookData,
+          _torqx_metadata: {
+            processed_at: new Date().toISOString(),
+            is_message_event: isMessageEvent,
+            source: 'evolution-api',
+            webhook_url: req.url
+          }
+        }),
+      });
 
-        console.log('Resposta do N8N:', n8nResponse.status, n8nResponse.statusText);
+      console.log('✅ Resposta do N8N:', {
+        status: n8nResponse.status,
+        statusText: n8nResponse.statusText,
+        ok: n8nResponse.ok
+      });
 
-        // Log da resposta do N8N para debug
-        const n8nResult = await n8nResponse.text();
-        console.log('Conteúdo da resposta N8N:', n8nResult);
+      // Log da resposta do N8N para debug
+      const n8nResponseText = await n8nResponse.text();
+      console.log('📝 Conteúdo da resposta N8N:', n8nResponseText);
 
+      if (n8nResponse.ok) {
         return new Response(JSON.stringify({
           success: true,
-          message: 'Evento de mensagem processado pelo N8N',
-          n8nStatus: n8nResponse.status
+          message: 'Webhook processado com sucesso pelo N8N',
+          n8nStatus: n8nResponse.status,
+          eventType: webhookData.event || webhookData.type || 'unknown'
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
-
-      } catch (n8nError) {
-        console.error('Erro ao enviar para N8N:', n8nError);
-        
+      } else {
+        console.error('❌ Erro na resposta do N8N:', n8nResponse.status, n8nResponse.statusText);
         return new Response(JSON.stringify({
           success: false,
-          error: 'Erro ao processar mensagem no N8N',
-          details: n8nError.message
+          error: `N8N retornou erro: ${n8nResponse.status} - ${n8nResponse.statusText}`,
+          n8nResponse: n8nResponseText
         }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
-    } else {
-      // Para outros eventos (CONNECTION_UPDATE, QRCODE_UPDATED, etc), processar localmente
-      console.log('Processando evento de sistema localmente:', webhookData.event || webhookData.type);
-
-      // Aqui você pode processar eventos de conexão, QR code, etc.
-      // Por exemplo, atualizar status da instância no banco quando há CONNECTION_UPDATE
-
+    } catch (n8nError) {
+      console.error('❌ Erro ao conectar com N8N:', n8nError);
+      
       return new Response(JSON.stringify({
-        success: true,
-        message: 'Evento de sistema processado',
-        event: webhookData.event || webhookData.type
+        success: false,
+        error: 'Erro de conexão com N8N',
+        details: n8nError.message,
+        n8nUrl: n8nWebhookUrl
       }), {
+        status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
   } catch (error) {
-    console.error('Erro no webhook proxy:', error);
+    console.error('❌ Erro geral no webhook proxy:', error);
     
     return new Response(JSON.stringify({
       success: false,
