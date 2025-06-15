@@ -109,18 +109,27 @@ export const useWhatsApp = () => {
 
     setIsLoading(true);
     try {
+      console.log('Gerando QR Code para instância:', connection.instanceName);
       const response = await whatsappApi.generateQRCode(connection.instanceName);
+      console.log('Resposta QR Code:', response);
       
       if (response.success && response.data) {
+        const qrCodeData = response.data.code || response.data.qrcode || response.data.base64;
+        
         setConnection(prev => ({
           ...prev,
-          qrCode: response.data.code || response.data.qrcode || response.data.base64,
+          qrCode: qrCodeData,
           pairingCode: response.data.pairingCode,
         }));
         
         toast({
           title: 'QR Code gerado',
           description: 'QR Code gerado com sucesso. Escaneie com seu WhatsApp.',
+        });
+
+        console.log('QR Code salvo no estado:', {
+          qrCode: qrCodeData ? 'Presente' : 'Ausente',
+          pairingCode: response.data.pairingCode
         });
       } else {
         throw new Error(response.error || 'Erro ao gerar QR Code');
@@ -205,6 +214,8 @@ export const useWhatsApp = () => {
           instance: response.data,
           status: response.data.status,
           isConnected: response.data.is_connected,
+          qrCode: response.data.qr_code,
+          pairingCode: response.data.pairing_code,
         }));
         
         console.log('Instância existente carregada:', response.data);

@@ -4,10 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { 
   MessageCircle, QrCode, CheckCircle, 
-  AlertCircle, Wifi, WifiOff, RefreshCw, Copy
+  AlertCircle, Wifi, WifiOff, RefreshCw
 } from 'lucide-react';
 import { useWhatsApp } from '@/hooks/useWhatsApp';
-import { useToast } from '@/hooks/use-toast';
+import QRCodeDisplay from './QRCodeDisplay';
 
 interface WhatsAppConnectionProps {
   isConnected: boolean;
@@ -31,7 +31,6 @@ const WhatsAppConnection = ({
 }: WhatsAppConnectionProps) => {
   const { connection, isLoading, createInstance, generateQRCode, checkStatus, disconnect, loadExistingInstance } = useWhatsApp();
   const [showQRCode, setShowQRCode] = useState(false);
-  const { toast } = useToast();
 
   // Carregar instância existente ao montar o componente
   useEffect(() => {
@@ -75,28 +74,9 @@ const WhatsAppConnection = ({
     setShowQRCode(false);
   };
 
-  const copyQRCode = () => {
-    if (connection.qrCode) {
-      navigator.clipboard.writeText(connection.qrCode);
-      toast({
-        title: 'QR Code copiado',
-        description: 'QR Code copiado para a área de transferência',
-      });
-    }
-  };
-
-  const copyPairingCode = () => {
-    if (connection.pairingCode) {
-      navigator.clipboard.writeText(connection.pairingCode);
-      toast({
-        title: 'Código de pareamento copiado',
-        description: 'Código copiado para a área de transferência',
-      });
-    }
-  };
-
   // Determinar se tem instância criada
   const hasInstance = !!connection.instance || !!connection.instanceName;
+  const hasQRCodeData = !!(connection.qrCode || connection.pairingCode);
 
   return (
     <div className="space-y-6">
@@ -197,68 +177,6 @@ const WhatsAppConnection = ({
           </div>
         </CardHeader>
 
-        {/* QR Code Display */}
-        {showQRCode && (connection.qrCode || connection.pairingCode) && !connection.isConnected && (
-          <CardContent>
-            <div className="text-center p-8 bg-gray-50 rounded-lg">
-              {connection.qrCode && (
-                <div className="relative mb-6">
-                  {connection.qrCode.startsWith('data:') ? (
-                    <img 
-                      src={connection.qrCode} 
-                      alt="QR Code WhatsApp" 
-                      className="w-64 h-64 mx-auto border-2 border-gray-200 rounded-lg"
-                    />
-                  ) : (
-                    <div className="w-64 h-64 mx-auto border-2 border-gray-200 rounded-lg flex items-center justify-center bg-white">
-                      <QrCode className="w-32 h-32 text-gray-400" />
-                    </div>
-                  )}
-                  <Button
-                    onClick={copyQRCode}
-                    variant="outline"
-                    size="sm"
-                    className="absolute top-2 right-2"
-                  >
-                    <Copy className="w-4 h-4" />
-                  </Button>
-                </div>
-              )}
-
-              {connection.pairingCode && (
-                <div className="mb-6">
-                  <h4 className="text-lg font-medium text-gray-900 mb-2">
-                    Código de Pareamento
-                  </h4>
-                  <div className="flex items-center justify-center space-x-2">
-                    <code className="bg-white px-4 py-2 rounded border text-lg font-mono">
-                      {connection.pairingCode}
-                    </code>
-                    <Button
-                      onClick={copyPairingCode}
-                      variant="outline"
-                      size="sm"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Conecte seu WhatsApp
-              </h3>
-              <p className="text-gray-600 mb-4">
-                Escaneie o QR Code ou use o código de pareamento no WhatsApp
-              </p>
-              <Button onClick={handleGenerateQRCode} variant="outline" size="sm">
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Atualizar
-              </Button>
-            </div>
-          </CardContent>
-        )}
-
         {/* Status Info when Connected */}
         {connection.isConnected && (
           <CardContent>
@@ -287,6 +205,16 @@ const WhatsAppConnection = ({
           </CardContent>
         )}
       </Card>
+
+      {/* QR Code Display */}
+      {(showQRCode || hasQRCodeData) && !connection.isConnected && hasInstance && (
+        <QRCodeDisplay
+          qrCode={connection.qrCode}
+          pairingCode={connection.pairingCode}
+          onRefresh={handleGenerateQRCode}
+          isLoading={isLoading}
+        />
+      )}
 
       {/* Instruções quando não há instância */}
       {!hasInstance && (
