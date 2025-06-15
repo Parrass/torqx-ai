@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
@@ -406,31 +405,12 @@ serve(async (req) => {
         }
 
         try {
-          let webhookPayload;
-          
-          if (webhookConfig && webhookConfig.url) {
-            // Usar webhook customizado
-            webhookPayload = {
-              enabled: webhookConfig.enabled !== undefined ? webhookConfig.enabled : true,
-              url: webhookConfig.url,
-              webhookByEvents: webhookConfig.webhookByEvents !== undefined ? webhookConfig.webhookByEvents : true,
-              webhookBase64: webhookConfig.webhookBase64 !== undefined ? webhookConfig.webhookBase64 : true,
-              events: webhookConfig.events || [
-                'APPLICATION_STARTUP',
-                'MESSAGES_UPSERT',
-                'MESSAGE_RECEIVED',
-                'MESSAGE_SENT', 
-                'CONNECTION_UPDATE',
-                'QRCODE_UPDATED'
-              ]
-            };
-          } else {
-            // Usar webhook padrão do Supabase que faz proxy para N8N com TODOS os eventos de mensagem
-            webhookPayload = {
-              enabled: true,
-              url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/whatsapp-webhook`,
-              webhookByEvents: true,
-              webhookBase64: true,
+          // Estrutura correta do webhook para Evolution API
+          const webhookPayload = {
+            webhook: {
+              url: webhookConfig?.url || `${Deno.env.get('SUPABASE_URL')}/functions/v1/whatsapp-webhook`,
+              byEvents: true,
+              base64: true,
               events: [
                 'APPLICATION_STARTUP',
                 'MESSAGES_UPSERT',
@@ -439,8 +419,8 @@ serve(async (req) => {
                 'CONNECTION_UPDATE',
                 'QRCODE_UPDATED'
               ]
-            };
-          }
+            }
+          };
 
           console.log('Configurando webhook:', JSON.stringify(webhookPayload, null, 2));
 
@@ -468,7 +448,7 @@ serve(async (req) => {
             await supabaseClient
               .from('whatsapp_instances')
               .update({ 
-                webhook_url: webhookPayload.url,
+                webhook_url: webhookPayload.webhook.url,
                 updated_at: new Date().toISOString()
               })
               .eq('instance_name', instanceName);
