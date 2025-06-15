@@ -20,70 +20,25 @@ export const useOnboarding = () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
           console.log('useOnboarding: No user found');
+          setIsInitialized(true);
           return;
         }
 
         console.log('useOnboarding: User found:', user.id);
         setUserId(user.id);
         
-        // Try to get existing tenant from users table
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('tenant_id')
-          .eq('id', user.id)
-          .maybeSingle();
+        // Call the improved function to get or create tenant
+        const { data: tenantId, error } = await supabase.rpc('get_or_create_tenant_for_user');
         
-        if (userError) {
-          console.error('useOnboarding: Error fetching user data:', userError);
+        if (error) {
+          console.error('useOnboarding: Error getting/creating tenant:', error);
+          setIsInitialized(true);
+          return;
         }
 
-        let currentTenantId = userData?.tenant_id;
-
-        // If no tenant, create one
-        if (!currentTenantId) {
-          console.log('useOnboarding: Creating new tenant...');
-          try {
-            const { data: newTenantId, error: tenantError } = await supabase.rpc('get_or_create_tenant_for_user');
-            
-            if (tenantError) {
-              console.error('useOnboarding: Error creating tenant:', tenantError);
-              // Try direct creation as fallback
-              const { data: directTenant, error: directError } = await supabase
-                .from('tenants')
-                .insert({
-                  name: user.email?.split('@')[0] || 'Oficina',
-                  business_name: user.email?.split('@')[0] || 'Oficina',
-                  email: user.email || '',
-                  document_number: '00000000000',
-                  status: 'active'
-                })
-                .select()
-                .single();
-
-              if (directError) {
-                console.error('useOnboarding: Direct tenant creation failed:', directError);
-                return;
-              }
-
-              currentTenantId = directTenant.id;
-              
-              // Update user with tenant_id
-              await supabase
-                .from('users')
-                .update({ tenant_id: currentTenantId })
-                .eq('id', user.id);
-            } else {
-              currentTenantId = newTenantId;
-            }
-          } catch (error) {
-            console.error('useOnboarding: Exception creating tenant:', error);
-            return;
-          }
-        }
-
-        if (currentTenantId) {
-          console.log('useOnboarding: Tenant ID obtained:', currentTenantId);
-          setTenantId(currentTenantId);
+        if (tenantId) {
+          console.log('useOnboarding: Tenant ID obtained:', tenantId);
+          setTenantId(tenantId);
         }
         
         setIsInitialized(true);
@@ -106,7 +61,7 @@ export const useOnboarding = () => {
       }
       
       try {
-        console.log('useOnboarding: Loading progress for user:', userId, 'tenant:', tenantId);
+        console.log('useOnboarding: Loading progress for user:', userId);
         const data = await OnboardingApiService.loadProgress(userId);
         
         if (data) {
@@ -115,7 +70,7 @@ export const useOnboarding = () => {
           return mappedProgress;
         }
         
-        console.log('useOnboarding: No progress found, will initialize');
+        console.log('useOnboarding: No progress found');
         return null;
       } catch (error) {
         console.error('useOnboarding: Error loading progress:', error);

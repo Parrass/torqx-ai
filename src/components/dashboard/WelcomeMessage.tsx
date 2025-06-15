@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Rocket, CheckCircle, TrendingUp, Settings, AlertCircle } from 'lucide-react';
+import { Rocket, CheckCircle, TrendingUp, Settings, AlertCircle, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import OnboardingBanner from '@/components/onboarding/OnboardingBanner';
@@ -14,7 +14,7 @@ interface WelcomeMessageProps {
 
 const WelcomeMessage: React.FC<WelcomeMessageProps> = ({ onStartTour }) => {
   const navigate = useNavigate();
-  const { progress, isLoading } = useOnboarding();
+  const { progress, isLoading, resetOnboarding } = useOnboarding();
   const [showWizard, setShowWizard] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
 
@@ -28,14 +28,6 @@ const WelcomeMessage: React.FC<WelcomeMessageProps> = ({ onStartTour }) => {
     });
   }, [progress, isLoading]);
 
-  // Debug: sempre mostrar o estado atual
-  const debugInfo = (
-    <div className="bg-gray-100 p-2 rounded text-xs font-mono mb-4">
-      <div>Loading: {isLoading ? 'true' : 'false'}</div>
-      <div>Progress: {progress ? JSON.stringify(progress, null, 2) : 'null'}</div>
-    </div>
-  );
-
   // Mostrar loading
   if (isLoading) {
     console.log('WelcomeMessage: Mostrando estado de loading');
@@ -43,14 +35,16 @@ const WelcomeMessage: React.FC<WelcomeMessageProps> = ({ onStartTour }) => {
       <Card className="bg-gray-100 animate-pulse mb-6">
         <CardContent className="p-6">
           <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 bg-gray-300 rounded-full"></div>
+            <div className="w-16 h-16 bg-gray-300 rounded-full flex items-center justify-center">
+              <RefreshCw className="w-8 h-8 animate-spin" />
+            </div>
             <div className="flex-1 space-y-2">
               <div className="h-6 bg-gray-300 rounded w-3/4"></div>
               <div className="h-4 bg-gray-300 rounded w-1/2"></div>
             </div>
           </div>
           <div className="mt-4 text-sm text-gray-600">
-            Carregando configuração do onboarding...
+            Configurando sua oficina no Torqx...
           </div>
         </CardContent>
       </Card>
@@ -95,8 +89,8 @@ const WelcomeMessage: React.FC<WelcomeMessageProps> = ({ onStartTour }) => {
               </div>
             </div>
             
-            {onStartTour && (
-              <div className="flex flex-col space-y-2">
+            <div className="flex flex-col space-y-2">
+              {onStartTour && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -106,8 +100,18 @@ const WelcomeMessage: React.FC<WelcomeMessageProps> = ({ onStartTour }) => {
                   <Rocket className="w-4 h-4 mr-2" />
                   Tour da Plataforma
                 </Button>
-              </div>
-            )}
+              )}
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => resetOnboarding()}
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Refazer Setup
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -135,9 +139,6 @@ const WelcomeMessage: React.FC<WelcomeMessageProps> = ({ onStartTour }) => {
   console.log('WelcomeMessage: Mostrando convite inicial');
   return (
     <>
-      {/* Debug info - remover em produção */}
-      {process.env.NODE_ENV === 'development' && debugInfo}
-      
       <Card className="bg-gradient-to-r from-torqx-primary to-torqx-primary-light text-white border-0 shadow-lg mb-6">
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
@@ -157,7 +158,7 @@ const WelcomeMessage: React.FC<WelcomeMessageProps> = ({ onStartTour }) => {
                 {!progress && (
                   <div className="flex items-center space-x-2 text-sm bg-yellow-500/20 rounded-lg px-3 py-2">
                     <AlertCircle className="w-4 h-4" />
-                    <span>Onboarding não iniciado. Clique em "Configurar Agora" para começar.</span>
+                    <span>Vamos configurar sua oficina para começar a usar o Torqx!</span>
                   </div>
                 )}
               </div>
