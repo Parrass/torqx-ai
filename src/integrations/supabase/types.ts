@@ -640,6 +640,96 @@ export type Database = {
           },
         ]
       }
+      onboarding_progress: {
+        Row: {
+          completed_at: string | null
+          completed_steps: string[] | null
+          created_at: string | null
+          current_step: string
+          id: string
+          is_completed: boolean | null
+          progress: number | null
+          started_at: string | null
+          tenant_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_steps?: string[] | null
+          created_at?: string | null
+          current_step: string
+          id?: string
+          is_completed?: boolean | null
+          progress?: number | null
+          started_at?: string | null
+          tenant_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          completed_steps?: string[] | null
+          created_at?: string | null
+          current_step?: string
+          id?: string
+          is_completed?: boolean | null
+          progress?: number | null
+          started_at?: string | null
+          tenant_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      onboarding_tasks: {
+        Row: {
+          action: string | null
+          category: string | null
+          completed_at: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_completed: boolean | null
+          reward: string | null
+          task_id: string
+          tenant_id: string
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          action?: string | null
+          category?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_completed?: boolean | null
+          reward?: string | null
+          task_id: string
+          tenant_id: string
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string | null
+          category?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_completed?: boolean | null
+          reward?: string | null
+          task_id?: string
+          tenant_id?: string
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       purchase_items: {
         Row: {
           category: string | null

@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { OnboardingStep, OnboardingProgress, OnboardingTask } from '@/types/onboarding';
 
 export const useOnboarding = () => {
@@ -121,118 +122,301 @@ export const useOnboarding = () => {
     }
   }, [user]);
 
-  const loadOnboardingProgress = () => {
+  const loadOnboardingProgress = async () => {
+    if (!user) return;
+    
     setIsLoading(true);
     
-    // Simular carregamento do localStorage por enquanto
-    const savedProgress = localStorage.getItem(`onboarding_${user?.id}`);
-    const savedTasks = localStorage.getItem(`onboarding_tasks_${user?.id}`);
-    
-    if (savedProgress) {
-      const progress = JSON.parse(savedProgress);
-      setProgress(progress);
-      
-      const current = steps.find(step => step.id === progress.currentStep);
-      setCurrentStep(current || steps[0]);
-    } else {
-      // Criar novo progresso
-      const newProgress: OnboardingProgress = {
-        userId: user?.id || '',
-        tenantId: user?.user_metadata?.tenant_id || '',
-        currentStep: steps[0].id,
-        completedSteps: [],
-        startedAt: new Date().toISOString(),
-        isCompleted: false,
-        progress: 0
-      };
-      setProgress(newProgress);
-      setCurrentStep(steps[0]);
-      saveProgress(newProgress);
+    try {
+      // Buscar progresso do onboarding
+      const { data: progressData, error: progressError } = await supabase
+        .from('onboarding_progress')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (progressError && progressError.code !== 'PGRST116') {
+        console.error('Error loading onboarding progress:', progressError);
+        return;
+      }
+
+      // Buscar tarefas do onboarding
+      const { data: tasksData, error: tasksError } = await supabase
+        .from('onboarding_tasks')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (tasksError) {
+        console.error('Error loading onboarding tasks:', tasksError);
+        return;
+      }
+
+      if (progressData) {
+        const mappedProgress: OnboardingProgress = {
+          userId: progressData.user_id,
+          tenantId: progressData.tenant_id,
+          currentStep: progressData.current_step,
+          completedSteps: progressData.completed_steps || [],
+          startedAt: progressData.started_at,
+          completedAt: progressData.completed_at,
+          isCompleted: progressData.is_completed,
+          progress: progressData.progress
+        };
+        setProgress(mappedProgress);
+
+        const current = steps.find(step => step.id === progressData.current_step);
+        setCurrentStep(current || steps[0]);
+      } else {
+        // Criar novo progresso
+        await createInitialProgress();
+      }
+
+      if (tasksData && tasksData.length > 0) {
+        const mappedTasks: OnboardingTask[] = tasksData.map(task => ({
+          id: task.task_id,
+          title: task.title,
+          description: task.description || '',
+          action: task.action || '',
+          isCompleted: task.is_completed,
+          category: task.category as 'setup' | 'first-use' | 'learning',
+          reward: task.reward
+        }));
+        setTasks(mappedTasks);
+      } else {
+        // Criar tarefas padrão
+        await createInitialTasks();
+      }
+    } catch (error) {
+      console.error('Error in loadOnboardingProgress:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const createInitialProgress = async () => {
+    if (!user) return;
+
+    const tenantId = user.user_metadata?.tenant_id;
+    if (!tenantId) {
+      console.error('No tenant_id found for user');
+      return;
     }
 
-    if (savedTasks) {
-      setTasks(JSON.parse(savedTasks));
-    } else {
-      setTasks(defaultTasks);
-      saveTasks(defaultTasks);
-    }
-
-    setIsLoading(false);
-  };
-
-  const saveProgress = (newProgress: OnboardingProgress) => {
-    localStorage.setItem(`onboarding_${user?.id}`, JSON.stringify(newProgress));
-    setProgress(newProgress);
-  };
-
-  const saveTasks = (newTasks: OnboardingTask[]) => {
-    localStorage.setItem(`onboarding_tasks_${user?.id}`, JSON.stringify(newTasks));
-    setTasks(newTasks);
-  };
-
-  const completeStep = (stepId: string) => {
-    if (!progress) return;
-
-    const updatedProgress = {
-      ...progress,
-      completedSteps: [...progress.completedSteps, stepId],
-      progress: Math.round(((progress.completedSteps.length + 1) / steps.length) * 100)
+    const newProgress = {
+      user_id: user.id,
+      tenant_id: tenantId,
+      current_step: steps[0].id,
+      completed_steps: [],
+      is_completed: false,
+      progress: 0
     };
 
-    // Mover para próximo step
+    const { data, error } = await supabase
+      .from('onboarding_progress')
+      .insert(newProgress)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating initial progress:', error);
+      return;
+    }
+
+    const mappedProgress: OnboardingProgress = {
+      userId: data.user_id,
+      tenantId: data.tenant_id,
+      currentStep: data.current_step,
+      completedSteps: data.completed_steps || [],
+      startedAt: data.started_at,
+      completedAt: data.completed_at,
+      isCompleted: data.is_completed,
+      progress: data.progress
+    };
+
+    setProgress(mappedProgress);
+    setCurrentStep(steps[0]);
+  };
+
+  const createInitialTasks = async () => {
+    if (!user) return;
+
+    const tenantId = user.user_metadata?.tenant_id;
+    if (!tenantId) return;
+
+    const tasksToInsert = defaultTasks.map(task => ({
+      user_id: user.id,
+      tenant_id: tenantId,
+      task_id: task.id,
+      title: task.title,
+      description: task.description,
+      action: task.action,
+      category: task.category,
+      reward: task.reward,
+      is_completed: false
+    }));
+
+    const { error } = await supabase
+      .from('onboarding_tasks')
+      .insert(tasksToInsert);
+
+    if (error) {
+      console.error('Error creating initial tasks:', error);
+      return;
+    }
+
+    setTasks(defaultTasks);
+  };
+
+  const completeStep = async (stepId: string) => {
+    if (!progress || !user) return;
+
     const currentIndex = steps.findIndex(s => s.id === stepId);
     const nextStep = steps[currentIndex + 1];
     
+    const updatedCompletedSteps = [...progress.completedSteps, stepId];
+    const newProgress = Math.round((updatedCompletedSteps.length / steps.length) * 100);
+    const isCompleted = !nextStep;
+
+    const updates: any = {
+      completed_steps: updatedCompletedSteps,
+      progress: newProgress,
+      updated_at: new Date().toISOString()
+    };
+
     if (nextStep) {
-      updatedProgress.currentStep = nextStep.id;
-      setCurrentStep(nextStep);
+      updates.current_step = nextStep.id;
     } else {
-      updatedProgress.isCompleted = true;
-      updatedProgress.completedAt = new Date().toISOString();
+      updates.is_completed = true;
+      updates.completed_at = new Date().toISOString();
     }
 
-    saveProgress(updatedProgress);
-  };
+    const { error } = await supabase
+      .from('onboarding_progress')
+      .update(updates)
+      .eq('user_id', user.id);
 
-  const completeTask = (taskId: string) => {
-    const updatedTasks = tasks.map(task =>
-      task.id === taskId ? { ...task, isCompleted: true } : task
-    );
-    saveTasks(updatedTasks);
-  };
+    if (error) {
+      console.error('Error updating progress:', error);
+      return;
+    }
 
-  const skipStep = (stepId: string) => {
-    if (!progress) return;
+    const updatedProgress: OnboardingProgress = {
+      ...progress,
+      completedSteps: updatedCompletedSteps,
+      progress: newProgress,
+      currentStep: nextStep?.id || progress.currentStep,
+      isCompleted,
+      completedAt: isCompleted ? new Date().toISOString() : progress.completedAt
+    };
 
-    const currentIndex = steps.findIndex(s => s.id === stepId);
-    const nextStep = steps[currentIndex + 1];
+    setProgress(updatedProgress);
     
     if (nextStep) {
-      const updatedProgress = {
-        ...progress,
-        currentStep: nextStep.id
-      };
-      saveProgress(updatedProgress);
       setCurrentStep(nextStep);
     }
   };
 
-  const goToStep = (stepId: string) => {
-    const step = steps.find(s => s.id === stepId);
-    if (step && progress) {
-      const updatedProgress = {
-        ...progress,
-        currentStep: stepId
-      };
-      saveProgress(updatedProgress);
-      setCurrentStep(step);
+  const completeTask = async (taskId: string) => {
+    if (!user) return;
+
+    const { error } = await supabase
+      .from('onboarding_tasks')
+      .update({ 
+        is_completed: true, 
+        completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', user.id)
+      .eq('task_id', taskId);
+
+    if (error) {
+      console.error('Error completing task:', error);
+      return;
     }
+
+    setTasks(prev => prev.map(task =>
+      task.id === taskId ? { ...task, isCompleted: true } : task
+    ));
   };
 
-  const resetOnboarding = () => {
-    localStorage.removeItem(`onboarding_${user?.id}`);
-    localStorage.removeItem(`onboarding_tasks_${user?.id}`);
-    loadOnboardingProgress();
+  const skipStep = async (stepId: string) => {
+    if (!progress || !user) return;
+
+    const currentIndex = steps.findIndex(s => s.id === stepId);
+    const nextStep = steps[currentIndex + 1];
+    
+    if (!nextStep) return;
+
+    const { error } = await supabase
+      .from('onboarding_progress')
+      .update({ 
+        current_step: nextStep.id,
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('Error skipping step:', error);
+      return;
+    }
+
+    const updatedProgress: OnboardingProgress = {
+      ...progress,
+      currentStep: nextStep.id
+    };
+
+    setProgress(updatedProgress);
+    setCurrentStep(nextStep);
+  };
+
+  const goToStep = async (stepId: string) => {
+    if (!progress || !user) return;
+
+    const step = steps.find(s => s.id === stepId);
+    if (!step) return;
+
+    const { error } = await supabase
+      .from('onboarding_progress')
+      .update({ 
+        current_step: stepId,
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('Error updating current step:', error);
+      return;
+    }
+
+    const updatedProgress: OnboardingProgress = {
+      ...progress,
+      currentStep: stepId
+    };
+
+    setProgress(updatedProgress);
+    setCurrentStep(step);
+  };
+
+  const resetOnboarding = async () => {
+    if (!user) return;
+
+    const { error: progressError } = await supabase
+      .from('onboarding_progress')
+      .delete()
+      .eq('user_id', user.id);
+
+    const { error: tasksError } = await supabase
+      .from('onboarding_tasks')
+      .delete()
+      .eq('user_id', user.id);
+
+    if (progressError || tasksError) {
+      console.error('Error resetting onboarding:', { progressError, tasksError });
+      return;
+    }
+
+    await createInitialProgress();
+    await createInitialTasks();
   };
 
   return {
