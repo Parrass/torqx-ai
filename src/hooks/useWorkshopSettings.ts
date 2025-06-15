@@ -49,6 +49,24 @@ const defaultWorkingHours: WorkingHours = {
   sunday: { isOpen: false, openTime: '08:00', closeTime: '18:00' }
 };
 
+// Função helper para validar e converter working_hours
+const parseWorkingHours = (workingHoursData: unknown): WorkingHours => {
+  if (!workingHoursData || typeof workingHoursData !== 'object') {
+    return defaultWorkingHours;
+  }
+  
+  // Verificar se tem a estrutura básica esperada
+  const data = workingHoursData as Record<string, any>;
+  const hasRequiredDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+    .every(day => data[day] && typeof data[day] === 'object');
+  
+  if (!hasRequiredDays) {
+    return defaultWorkingHours;
+  }
+  
+  return data as WorkingHours;
+};
+
 export const useWorkshopSettings = () => {
   const [settings, setSettings] = useState<WorkshopSettings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -71,7 +89,7 @@ export const useWorkshopSettings = () => {
         // Converter os dados do Supabase para o formato esperado
         const convertedSettings: WorkshopSettings = {
           ...data,
-          working_hours: (data.working_hours as WorkingHours) || defaultWorkingHours
+          working_hours: parseWorkingHours(data.working_hours)
         };
         setSettings(convertedSettings);
       } else {
@@ -122,7 +140,7 @@ export const useWorkshopSettings = () => {
           email: settingsData.email,
           website: settingsData.website,
           address: settingsData.address,
-          working_hours: settingsData.working_hours as any
+          working_hours: settingsData.working_hours as unknown as Database['public']['Tables']['workshop_settings']['Update']['working_hours']
         };
 
         const { data, error } = await supabase
@@ -149,7 +167,7 @@ export const useWorkshopSettings = () => {
           email: settingsData.email,
           website: settingsData.website,
           address: settingsData.address,
-          working_hours: settingsData.working_hours as any,
+          working_hours: settingsData.working_hours as unknown as Database['public']['Tables']['workshop_settings']['Insert']['working_hours'],
           created_by_user_id: userData.user.id,
           tenant_id: userProfile.tenant_id
         };
@@ -167,7 +185,7 @@ export const useWorkshopSettings = () => {
       // Converter resultado para o formato esperado
       const convertedResult: WorkshopSettings = {
         ...result,
-        working_hours: (result.working_hours as WorkingHours) || defaultWorkingHours
+        working_hours: parseWorkingHours(result.working_hours)
       };
 
       setSettings(convertedResult);
