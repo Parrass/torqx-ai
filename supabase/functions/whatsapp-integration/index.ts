@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
@@ -82,6 +83,8 @@ serve(async (req) => {
     const { action, tenantId, instanceName, settings, webhookConfig, ...data } = requestBody;
 
     console.log(`=== AÇÃO: ${action} ===`, { tenantId, instanceName, settings, webhookConfig, data });
+    console.log('Tipo da action:', typeof action);
+    console.log('Action exata recebida:', JSON.stringify(action));
 
     let response;
     const headers = {
@@ -483,14 +486,32 @@ serve(async (req) => {
         }
         
         try {
+          console.log('Fazendo DELETE request para:', `${evolutionApiUrl}/instance/delete/${instanceName}`);
+          
           response = await fetch(`${evolutionApiUrl}/instance/delete/${instanceName}`, {
             method: 'DELETE',
             headers,
           });
 
-          if (response.ok) {
-            const deleteResult = response.status === 204 ? { message: 'Instância deletada com sucesso' } : await response.json();
-            console.log('Instância deletada:', deleteResult);
+          console.log('Resposta do DELETE:', { 
+            status: response.status, 
+            ok: response.ok,
+            statusText: response.statusText 
+          });
+
+          if (response.ok || response.status === 204) {
+            let deleteResult;
+            if (response.status === 204) {
+              deleteResult = { message: 'Instância deletada com sucesso' };
+            } else {
+              try {
+                deleteResult = await response.json();
+              } catch {
+                deleteResult = { message: 'Instância deletada com sucesso' };
+              }
+            }
+            
+            console.log('Instância deletada da Evolution API:', deleteResult);
             
             // Remover instância do banco de dados
             const { error: dbError } = await supabaseClient
@@ -513,10 +534,16 @@ serve(async (req) => {
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });
           } else {
-            const errorResult = await response.json();
+            let errorResult;
+            try {
+              errorResult = await response.json();
+            } catch {
+              errorResult = { message: `Erro HTTP ${response.status}: ${response.statusText}` };
+            }
             throw new Error(errorResult?.message || `Erro ao deletar instância: ${response.status}`);
           }
         } catch (fetchError) {
+          console.error('Erro detalhado ao deletar instância:', fetchError);
           throw new Error(`Erro ao deletar instância: ${fetchError.message}`);
         }
 
@@ -585,6 +612,19 @@ serve(async (req) => {
         });
 
       default:
+        console.error(`AÇÃO NÃO RECONHECIDA: "${action}"`);
+        console.error('Todas as ações disponíveis:', [
+          'create_instance',
+          'get_qr_code', 
+          'get_instance_status',
+          'fetch_instance',
+          'set_instance_settings',
+          'get_instance_settings', 
+          'set_webhook',
+          'delete_instance',
+          'logout_instance',
+          'get_instance_by_tenant'
+        ]);
         throw new Error(`Ação desconhecida: ${action}`);
     }
 
