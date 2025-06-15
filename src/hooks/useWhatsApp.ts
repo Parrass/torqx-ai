@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { whatsappApi, type WhatsAppApiResponse, type WhatsAppInstance } from '@/services/whatsappApi';
 import { useToast } from '@/hooks/use-toast';
@@ -24,27 +23,41 @@ export const useWhatsApp = () => {
     const { supabase } = await import('@/integrations/supabase/client');
     const { data: { user } } = await supabase.auth.getUser();
     
-    if (!user) throw new Error('Usuário não autenticado');
+    if (!user) {
+      throw new Error('Usuário não autenticado');
+    }
+    
+    console.log('User ID:', user.id);
     
     // Primeiro tentar obter diretamente do perfil do usuário
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('users')
       .select('tenant_id')
       .eq('id', user.id)
       .single();
     
+    console.log('Profile query result:', { profile, profileError });
+    
     if (profile?.tenant_id) {
+      console.log('Tenant ID encontrado no perfil:', profile.tenant_id);
       return profile.tenant_id;
     }
     
     // Se não encontrou, tentar usar a função do banco
     const { data: tenantData, error } = await supabase.rpc('get_current_user_tenant_id');
     
-    if (error || !tenantData) {
-      console.error('Erro ao obter tenant_id:', error);
+    console.log('RPC query result:', { tenantData, error });
+    
+    if (error) {
+      console.error('Erro na função RPC:', error);
+      throw new Error(`Erro ao obter tenant: ${error.message}`);
+    }
+    
+    if (!tenantData) {
       throw new Error('Tenant não encontrado. Verifique se o usuário está associado a uma oficina.');
     }
     
+    console.log('Tenant ID da função RPC:', tenantData);
     return tenantData;
   }, []);
 
@@ -52,10 +65,12 @@ export const useWhatsApp = () => {
   const createInstance = useCallback(async () => {
     setIsLoading(true);
     try {
+      console.log('Iniciando criação de instância...');
       const tenantId = await getTenantId();
-      console.log('Criando instância para tenant:', tenantId);
+      console.log('Tenant ID obtido:', tenantId);
       
       const response = await whatsappApi.createInstance(tenantId);
+      console.log('Resposta da criação:', response);
       
       if (response.success && response.data) {
         setConnection(prev => ({
