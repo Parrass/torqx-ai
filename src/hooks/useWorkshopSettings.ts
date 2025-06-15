@@ -49,21 +49,24 @@ const defaultWorkingHours: WorkingHours = {
   sunday: { isOpen: false, openTime: '08:00', closeTime: '18:00' }
 };
 
-// Função helper para validar e converter working_hours
 const parseWorkingHours = (workingHoursData: unknown): WorkingHours => {
+  console.log('useWorkshopSettings: Parsing working hours:', workingHoursData);
+  
   if (!workingHoursData || typeof workingHoursData !== 'object') {
+    console.log('useWorkshopSettings: No working hours data, using defaults');
     return defaultWorkingHours;
   }
   
-  // Verificar se tem a estrutura básica esperada
   const data = workingHoursData as Record<string, any>;
   const hasRequiredDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
     .every(day => data[day] && typeof data[day] === 'object');
   
   if (!hasRequiredDays) {
+    console.log('useWorkshopSettings: Invalid working hours structure, using defaults');
     return defaultWorkingHours;
   }
   
+  console.log('useWorkshopSettings: Working hours parsed successfully');
   return data as WorkingHours;
 };
 
@@ -72,31 +75,82 @@ export const useWorkshopSettings = () => {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Buscar configurações da oficina
   const fetchSettings = async () => {
     try {
+      console.log('useWorkshopSettings: Starting to fetch settings...');
       setLoading(true);
+      
+      // Verificar se o usuário está autenticado
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        console.error('useWorkshopSettings: Authentication error:', authError);
+        toast({
+          title: "Erro de Autenticação",
+          description: "Usuário não está autenticado.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      console.log('useWorkshopSettings: User authenticated:', user.id);
+      
+      // Buscar tenant_id do usuário
+      const { data: userProfile, error: userError } = await supabase
+        .from('users')
+        .select('tenant_id')
+        .eq('id', user.id)
+        .single();
+
+      if (userError) {
+        console.error('useWorkshopSettings: Error fetching user profile:', userError);
+        toast({
+          title: "Erro",
+          description: "Não foi possível buscar dados do usuário.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('useWorkshopSettings: User profile found:', userProfile);
+
+      if (!userProfile?.tenant_id) {
+        console.warn('useWorkshopSettings: No tenant_id found for user');
+        toast({
+          title: "Aviso",
+          description: "Nenhuma oficina associada ao usuário.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Buscar configurações da oficina
+      console.log('useWorkshopSettings: Fetching workshop settings for tenant:', userProfile.tenant_id);
+      
       const { data, error } = await supabase
         .from('workshop_settings')
         .select('*')
+        .eq('tenant_id', userProfile.tenant_id)
         .single();
 
       if (error && error.code !== 'PGRST116') {
+        console.error('useWorkshopSettings: Error fetching settings:', error);
         throw error;
       }
 
       if (data) {
-        // Converter os dados do Supabase para o formato esperado
+        console.log('useWorkshopSettings: Settings found:', data);
         const convertedSettings: WorkshopSettings = {
           ...data,
           working_hours: parseWorkingHours(data.working_hours)
         };
         setSettings(convertedSettings);
+        console.log('useWorkshopSettings: Settings converted and set:', convertedSettings);
       } else {
+        console.log('useWorkshopSettings: No settings found, will need to create');
         setSettings(null);
       }
     } catch (error) {
-      console.error('Erro ao buscar configurações:', error);
+      console.error('useWorkshopSettings: Error in fetchSettings:', error);
       toast({
         title: "Erro",
         description: "Não foi possível carregar as configurações.",
@@ -107,11 +161,17 @@ export const useWorkshopSettings = () => {
     }
   };
 
-  // Criar ou atualizar configurações
   const saveSettings = async (settingsData: Partial<WorkshopSettings>) => {
     try {
+      console.log('useWorkshopSettings: Starting to save settings:', settingsData);
+      
       const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) throw new Error('Usuário não autenticado');
+      if (!userData.user) {
+        console.error('useWorkshopSettings: No authenticated user');
+        throw new Error('Usuário não autenticado');
+      }
+
+      console.log('useWorkshopSettings: User authenticated for save:', userData.user.id);
 
       // Buscar tenant_id do usuário
       const { data: userProfile, error: userError } = await supabase
@@ -120,13 +180,23 @@ export const useWorkshopSettings = () => {
         .eq('id', userData.user.id)
         .single();
 
-      if (userError) throw userError;
-      if (!userProfile?.tenant_id) throw new Error('Tenant não encontrado para o usuário');
+      if (userError) {
+        console.error('useWorkshopSettings: Error fetching user profile for save:', userError);
+        throw userError;
+      }
+      
+      if (!userProfile?.tenant_id) {
+        console.error('useWorkshopSettings: No tenant found for user');
+        throw new Error('Tenant não encontrado para o usuário');
+      }
+
+      console.log('useWorkshopSettings: Tenant found for save:', userProfile.tenant_id);
 
       let result;
       
       if (settings?.id) {
-        // Atualizar configurações existentes
+        console.log('useWorkshopSettings: Updating existing settings:', settings.id);
+        
         const updateData: WorkshopSettingsUpdate = {
           workshop_name: settingsData.workshop_name,
           business_name: settingsData.business_name,
@@ -140,8 +210,11 @@ export const useWorkshopSettings = () => {
           email: settingsData.email,
           website: settingsData.website,
           address: settingsData.address,
-          working_hours: settingsData.working_hours as unknown as Database['public']['Tables']['workshop_settings']['Update']['working_hours']
+          working_hours: settingsData.working_hours as unknown as Database['public']['Tables']['workshop_settings']['Update']['working_hours'],
+          updated_at: new Date().toISOString()
         };
+
+        console.log('useWorkshopSettings: Update data prepared:', updateData);
 
         const { data, error } = await supabase
           .from('workshop_settings')
@@ -150,10 +223,16 @@ export const useWorkshopSettings = () => {
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('useWorkshopSettings: Error updating settings:', error);
+          throw error;
+        }
+        
+        console.log('useWorkshopSettings: Settings updated successfully:', data);
         result = data;
       } else {
-        // Criar novas configurações
+        console.log('useWorkshopSettings: Creating new settings');
+        
         const insertData: WorkshopSettingsInsert = {
           workshop_name: settingsData.workshop_name!,
           business_name: settingsData.business_name,
@@ -172,23 +251,32 @@ export const useWorkshopSettings = () => {
           tenant_id: userProfile.tenant_id
         };
 
+        console.log('useWorkshopSettings: Insert data prepared:', insertData);
+
         const { data, error } = await supabase
           .from('workshop_settings')
           .insert(insertData)
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('useWorkshopSettings: Error creating settings:', error);
+          throw error;
+        }
+
+        console.log('useWorkshopSettings: Settings created successfully:', data);
         result = data;
       }
 
-      // Converter resultado para o formato esperado
       const convertedResult: WorkshopSettings = {
         ...result,
         working_hours: parseWorkingHours(result.working_hours)
       };
 
       setSettings(convertedResult);
+      
+      console.log('useWorkshopSettings: Settings saved and state updated');
+      
       toast({
         title: "Sucesso",
         description: "Configurações salvas com sucesso!",
@@ -196,26 +284,27 @@ export const useWorkshopSettings = () => {
       
       return convertedResult;
     } catch (error) {
-      console.error('Erro ao salvar configurações:', error);
+      console.error('useWorkshopSettings: Error in saveSettings:', error);
       toast({
         title: "Erro",
-        description: "Não foi possível salvar as configurações.",
+        description: `Não foi possível salvar as configurações: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
         variant: "destructive",
       });
       throw error;
     }
   };
 
-  // Atualizar horários de funcionamento
   const updateWorkingHours = async (workingHours: WorkingHours) => {
     try {
+      console.log('useWorkshopSettings: Updating working hours:', workingHours);
       await saveSettings({ working_hours: workingHours });
     } catch (error) {
-      console.error('Erro ao atualizar horários:', error);
+      console.error('useWorkshopSettings: Error updating working hours:', error);
     }
   };
 
   useEffect(() => {
+    console.log('useWorkshopSettings: Hook initialized, fetching settings');
     fetchSettings();
   }, []);
 

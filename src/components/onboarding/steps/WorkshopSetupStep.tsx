@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { useWorkshopSettings, WorkingHours } from '@/hooks/useWorkshopSettings';
+import { useToast } from '@/hooks/use-toast';
 
 interface WorkshopSetupStepProps {
   onNext: () => void;
@@ -12,6 +14,10 @@ interface WorkshopSetupStepProps {
 }
 
 const WorkshopSetupStep: React.FC<WorkshopSetupStepProps> = ({ onNext, onSkip }) => {
+  const { saveSettings } = useWorkshopSettings();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+  
   const [formData, setFormData] = useState({
     workshopName: '',
     description: '',
@@ -31,10 +37,66 @@ const WorkshopSetupStep: React.FC<WorkshopSetupStepProps> = ({ onNext, onSkip })
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = () => {
-    // Aqui você salvaria os dados
-    console.log('Saving workshop data:', formData);
-    onNext();
+  const parseTimeRange = (timeRange: string): { openTime: string; closeTime: string; isOpen: boolean } => {
+    if (timeRange === 'Fechado' || timeRange === 'fechado') {
+      return { openTime: '08:00', closeTime: '18:00', isOpen: false };
+    }
+    
+    const [openTime, closeTime] = timeRange.split('-');
+    return { 
+      openTime: openTime || '08:00', 
+      closeTime: closeTime || '18:00', 
+      isOpen: true 
+    };
+  };
+
+  const handleSubmit = async () => {
+    try {
+      setIsLoading(true);
+      console.log('WorkshopSetupStep: Starting form submission');
+      
+      // Converter horários para formato WorkingHours
+      const workingHours: WorkingHours = {
+        monday: parseTimeRange(formData.mondayHours),
+        tuesday: parseTimeRange(formData.tuesdayHours),
+        wednesday: parseTimeRange(formData.wednesdayHours),
+        thursday: parseTimeRange(formData.thursdayHours),
+        friday: parseTimeRange(formData.fridayHours),
+        saturday: parseTimeRange(formData.saturdayHours),
+        sunday: parseTimeRange(formData.sundayHours)
+      };
+
+      const settingsData = {
+        workshop_name: formData.workshopName,
+        description: formData.description,
+        phone: formData.phone,
+        email: formData.email,
+        address: formData.address,
+        working_hours: workingHours
+      };
+
+      console.log('WorkshopSetupStep: Saving settings:', settingsData);
+      
+      await saveSettings(settingsData);
+      
+      console.log('WorkshopSetupStep: Settings saved successfully, proceeding to next step');
+      
+      toast({
+        title: "Sucesso!",
+        description: "Configurações da oficina salvas com sucesso.",
+      });
+      
+      onNext();
+    } catch (error) {
+      console.error('WorkshopSetupStep: Error saving settings:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível salvar as configurações. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -129,6 +191,7 @@ const WorkshopSetupStep: React.FC<WorkshopSetupStepProps> = ({ onNext, onSkip })
                 id="mondayHours"
                 value={formData.mondayHours}
                 onChange={(e) => handleInputChange('mondayHours', e.target.value)}
+                placeholder="08:00-18:00 ou Fechado"
               />
             </div>
             
@@ -138,6 +201,7 @@ const WorkshopSetupStep: React.FC<WorkshopSetupStepProps> = ({ onNext, onSkip })
                 id="tuesdayHours"
                 value={formData.tuesdayHours}
                 onChange={(e) => handleInputChange('tuesdayHours', e.target.value)}
+                placeholder="08:00-18:00 ou Fechado"
               />
             </div>
             
@@ -147,6 +211,7 @@ const WorkshopSetupStep: React.FC<WorkshopSetupStepProps> = ({ onNext, onSkip })
                 id="wednesdayHours"
                 value={formData.wednesdayHours}
                 onChange={(e) => handleInputChange('wednesdayHours', e.target.value)}
+                placeholder="08:00-18:00 ou Fechado"
               />
             </div>
             
@@ -156,6 +221,7 @@ const WorkshopSetupStep: React.FC<WorkshopSetupStepProps> = ({ onNext, onSkip })
                 id="thursdayHours"
                 value={formData.thursdayHours}
                 onChange={(e) => handleInputChange('thursdayHours', e.target.value)}
+                placeholder="08:00-18:00 ou Fechado"
               />
             </div>
             
@@ -165,6 +231,7 @@ const WorkshopSetupStep: React.FC<WorkshopSetupStepProps> = ({ onNext, onSkip })
                 id="fridayHours"
                 value={formData.fridayHours}
                 onChange={(e) => handleInputChange('fridayHours', e.target.value)}
+                placeholder="08:00-18:00 ou Fechado"
               />
             </div>
             
@@ -174,6 +241,7 @@ const WorkshopSetupStep: React.FC<WorkshopSetupStepProps> = ({ onNext, onSkip })
                 id="saturdayHours"
                 value={formData.saturdayHours}
                 onChange={(e) => handleInputChange('saturdayHours', e.target.value)}
+                placeholder="08:00-12:00 ou Fechado"
               />
             </div>
           </div>
@@ -184,6 +252,7 @@ const WorkshopSetupStep: React.FC<WorkshopSetupStepProps> = ({ onNext, onSkip })
               id="sundayHours"
               value={formData.sundayHours}
               onChange={(e) => handleInputChange('sundayHours', e.target.value)}
+              placeholder="Fechado"
             />
           </div>
         </div>
@@ -191,16 +260,16 @@ const WorkshopSetupStep: React.FC<WorkshopSetupStepProps> = ({ onNext, onSkip })
         {/* Actions */}
         <div className="flex justify-between pt-4">
           {onSkip && (
-            <Button variant="outline" onClick={onSkip}>
+            <Button variant="outline" onClick={onSkip} disabled={isLoading}>
               Pular por agora
             </Button>
           )}
           <Button 
             onClick={handleSubmit}
             className="bg-gradient-to-r from-torqx-secondary to-torqx-accent text-white ml-auto"
-            disabled={!formData.workshopName || !formData.phone}
+            disabled={!formData.workshopName || !formData.phone || isLoading}
           >
-            Salvar e Continuar
+            {isLoading ? 'Salvando...' : 'Salvar e Continuar'}
           </Button>
         </div>
       </div>
