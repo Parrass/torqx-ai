@@ -8,6 +8,21 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Função para validar e formatar URL da Evolution API
+function formatEvolutionApiUrl(url: string): string {
+  if (!url) {
+    throw new Error('EVOLUTION_API_URL não configurada');
+  }
+  
+  // Se não tem protocolo, adiciona https://
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    url = `https://${url}`;
+  }
+  
+  // Remove barra final se houver
+  return url.replace(/\/$/, '');
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -41,15 +56,15 @@ serve(async (req) => {
     console.log('Usuário autenticado:', user.id);
 
     // Verificar credenciais da Evolution API
-    const evolutionApiUrl = Deno.env.get('EVOLUTION_API_URL');
+    const rawEvolutionApiUrl = Deno.env.get('EVOLUTION_API_URL');
     const evolutionApiKey = Deno.env.get('EVOLUTION_API_KEY');
 
     console.log('Verificando credenciais Evolution API:', {
-      url: evolutionApiUrl ? 'OK' : 'FALTANDO',
+      url: rawEvolutionApiUrl ? 'OK' : 'FALTANDO',
       key: evolutionApiKey ? 'OK' : 'FALTANDO'
     });
 
-    if (!evolutionApiUrl || !evolutionApiKey) {
+    if (!rawEvolutionApiUrl || !evolutionApiKey) {
       return new Response(JSON.stringify({
         success: false,
         error: 'Credenciais da Evolution API não configuradas',
@@ -59,6 +74,10 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    // Formatar URL da Evolution API
+    const evolutionApiUrl = formatEvolutionApiUrl(rawEvolutionApiUrl);
+    console.log('URL Evolution formatada:', evolutionApiUrl);
 
     const requestBody = await req.json();
     const { action, tenantId, instanceName, ...data } = requestBody;
@@ -110,6 +129,7 @@ serve(async (req) => {
         };
 
         console.log('Payload Evolution:', JSON.stringify(instancePayload, null, 2));
+        console.log('URL de criação:', `${evolutionApiUrl}/instance/create`);
         
         try {
           response = await fetch(`${evolutionApiUrl}/instance/create`, {
