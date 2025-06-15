@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { whatsappApi, type WhatsAppApiResponse, type WhatsAppInstance } from '@/services/whatsappApi';
 import { useToast } from '@/hooks/use-toast';
@@ -18,47 +19,66 @@ export const useWhatsApp = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  // Obter tenant ID do usuário logado
+  // Obter tenant ID do usuário logado com múltiplas estratégias
   const getTenantId = useCallback(async () => {
     const { supabase } = await import('@/integrations/supabase/client');
-    const { data: { user } } = await supabase.auth.getUser();
     
-    if (!user) {
-      throw new Error('Usuário não autenticado');
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        console.error('Erro de autenticação:', userError);
+        throw new Error('Usuário não autenticado');
+      }
+      
+      console.log('User autenticado:', user.id);
+      
+      // Estratégia 1: Buscar na tabela users diretamente
+      const { data: userProfile, error: profileError } = await supabase
+        .from('users')
+        .select('tenant_id')
+        .eq('id', user.id)
+        .maybeSingle();
+      
+      console.log('Resultado da busca do perfil:', { userProfile, profileError });
+      
+      if (userProfile?.tenant_id) {
+        console.log('Tenant ID encontrado no perfil:', userProfile.tenant_id);
+        return userProfile.tenant_id;
+      }
+      
+      // Estratégia 2: Buscar na tabela tenants pelo email do usuário
+      const { data: tenantByEmail, error: tenantError } = await supabase
+        .from('tenants')
+        .select('id')
+        .eq('email', user.email)
+        .maybeSingle();
+      
+      console.log('Resultado da busca por tenant via email:', { tenantByEmail, tenantError });
+      
+      if (tenantByEmail?.id) {
+        console.log('Tenant ID encontrado via email:', tenantByEmail.id);
+        return tenantByEmail.id;
+      }
+      
+      // Estratégia 3: Usar função RPC como fallback
+      const { data: rpcTenantId, error: rpcError } = await supabase.rpc('get_current_user_tenant_id');
+      
+      console.log('Resultado da função RPC:', { rpcTenantId, rpcError });
+      
+      if (rpcTenantId) {
+        console.log('Tenant ID da função RPC:', rpcTenantId);
+        return rpcTenantId;
+      }
+      
+      // Se chegou até aqui, não encontrou tenant
+      console.error('Nenhum tenant encontrado para o usuário:', user.id);
+      throw new Error('Tenant não encontrado. O usuário pode não estar associado a uma oficina ou ser necessário completar o cadastro.');
+      
+    } catch (error) {
+      console.error('Erro ao obter tenant ID:', error);
+      throw error;
     }
-    
-    console.log('User ID:', user.id);
-    
-    // Primeiro tentar obter diretamente do perfil do usuário
-    const { data: profile, error: profileError } = await supabase
-      .from('users')
-      .select('tenant_id')
-      .eq('id', user.id)
-      .single();
-    
-    console.log('Profile query result:', { profile, profileError });
-    
-    if (profile?.tenant_id) {
-      console.log('Tenant ID encontrado no perfil:', profile.tenant_id);
-      return profile.tenant_id;
-    }
-    
-    // Se não encontrou, tentar usar a função do banco
-    const { data: tenantData, error } = await supabase.rpc('get_current_user_tenant_id');
-    
-    console.log('RPC query result:', { tenantData, error });
-    
-    if (error) {
-      console.error('Erro na função RPC:', error);
-      throw new Error(`Erro ao obter tenant: ${error.message}`);
-    }
-    
-    if (!tenantData) {
-      throw new Error('Tenant não encontrado. Verifique se o usuário está associado a uma oficina.');
-    }
-    
-    console.log('Tenant ID da função RPC:', tenantData);
-    return tenantData;
   }, []);
 
   // Criar instância WhatsApp
@@ -67,10 +87,10 @@ export const useWhatsApp = () => {
     try {
       console.log('Iniciando criação de instância...');
       const tenantId = await getTenantId();
-      console.log('Tenant ID obtido:', tenantId);
+      console.log('Tenant ID obtido para criação:', tenantId);
       
       const response = await whatsappApi.createInstance(tenantId);
-      console.log('Resposta da criação:', response);
+      console.log('Resposta da criação da instância:', response);
       
       if (response.success && response.data) {
         setConnection(prev => ({
@@ -143,7 +163,6 @@ export const useWhatsApp = () => {
     }
   }, [connection.instanceName, toast]);
 
-  // Verificar status da instância
   const checkStatus = useCallback(async () => {
     if (!connection.instanceName) return false;
 
@@ -166,7 +185,6 @@ export const useWhatsApp = () => {
     return false;
   }, [connection.instanceName]);
 
-  // Desconectar instância
   const disconnect = useCallback(async () => {
     if (!connection.instanceName) return;
 
@@ -200,7 +218,6 @@ export const useWhatsApp = () => {
     }
   }, [connection.instanceName, toast]);
 
-  // Carregar instância existente
   const loadExistingInstance = useCallback(async () => {
     setIsLoading(true);
     try {

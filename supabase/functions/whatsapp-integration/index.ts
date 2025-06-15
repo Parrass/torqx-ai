@@ -24,26 +24,32 @@ serve(async (req) => {
       }
     );
 
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) {
-      throw new Error('Unauthorized');
+    // Verificar autenticação
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    if (authError || !user) {
+      console.error('Erro de autenticação:', authError);
+      throw new Error('Usuário não autenticado');
     }
 
+    console.log('Usuário autenticado:', user.id);
+
+    // Verificar credenciais da Evolution API
     const evolutionApiUrl = Deno.env.get('EVOLUTION_API_URL');
     const evolutionApiKey = Deno.env.get('EVOLUTION_API_KEY');
 
-    console.log('Evolution API Config:', {
-      url: evolutionApiUrl ? 'SET' : 'NOT SET',
-      key: evolutionApiKey ? 'SET' : 'NOT SET'
+    console.log('Verificando credenciais Evolution API:', {
+      url: evolutionApiUrl ? 'Configurada' : 'NÃO CONFIGURADA',
+      key: evolutionApiKey ? 'Configurada' : 'NÃO CONFIGURADA'
     });
 
     if (!evolutionApiUrl || !evolutionApiKey) {
-      throw new Error('Evolution API credentials not configured');
+      throw new Error('Credenciais da Evolution API não configuradas. Configure EVOLUTION_API_URL e EVOLUTION_API_KEY nos secrets do Supabase.');
     }
 
-    const { action, tenantId, instanceName, ...data } = await req.json();
+    const requestBody = await req.json();
+    const { action, tenantId, instanceName, ...data } = requestBody;
 
-    console.log(`Received action: ${action}`, { tenantId, instanceName });
+    console.log(`Executando ação: ${action}`, { tenantId, instanceName, bodyData: data });
 
     let response;
     const headers = {
@@ -53,59 +59,79 @@ serve(async (req) => {
 
     switch (action) {
       case 'create_instance':
-        console.log('Creating instance with data:', data);
+        console.log('Criando instância com dados:', data);
         
-        // Primeiro criar no Evolution API
+        // Validar dados obrigatórios
+        if (!data.instanceName || !tenantId) {
+          throw new Error('instanceName e tenantId são obrigatórios');
+        }
+        
+        // Preparar payload para Evolution API
+        const instancePayload = {
+          instanceName: data.instanceName,
+          token: data.token || `torqx_${Date.now()}`,
+          integration: data.integration || 'WHATSAPP-BAILEYS',
+          qrcode: data.qrcode !== false,
+          rejectCall: data.rejectCall || true,
+          msgCall: data.msgCall || 'Chamadas não são aceitas. Entre em contato via mensagem.',
+          groupsIgnore: data.groupsIgnore !== false,
+          alwaysOnline: data.alwaysOnline !== false,
+          readMessages: data.readMessages !== false,
+          readStatus: data.readStatus !== false,
+          syncFullHistory: data.syncFullHistory || false,
+        };
+
+        // Adicionar webhook se fornecido
+        if (data.webhook) {
+          instancePayload.webhook = data.webhook;
+        }
+
+        console.log('Payload para Evolution API:', instancePayload);
+        
+        // Fazer requisição para Evolution API
         response = await fetch(`${evolutionApiUrl}/instance/create`, {
           method: 'POST',
           headers,
-          body: JSON.stringify({
-            instanceName: data.instanceName,
-            token: data.token,
-            integration: data.integration || 'WHATSAPP-BAILEYS',
-            qrcode: data.qrcode !== false,
-            rejectCall: data.rejectCall,
-            msgCall: data.msgCall,
-            groupsIgnore: data.groupsIgnore,
-            alwaysOnline: data.alwaysOnline,
-            readMessages: data.readMessages,
-            readStatus: data.readStatus,
-            syncFullHistory: data.syncFullHistory,
-            webhook: data.webhook,
-          }),
+          body: JSON.stringify(instancePayload),
         });
 
         const instanceResult = await response.json();
-        console.log('Evolution API Response:', { status: response.status, instanceResult });
+        console.log('Resposta da Evolution API:', { 
+          status: response.status, 
+          ok: response.ok,
+          result: instanceResult 
+        });
         
-        if (response.ok) {
-          // Salvar no banco de dados
-          const { data: dbInstance, error } = await supabaseClient
+        if (response.ok && instanceResult) {
+          // Salvar instância no banco de dados
+          const { data: dbInstance, error: dbError } = await supabaseClient
             .from('whatsapp_instances')
             .insert({
               tenant_id: tenantId,
               instance_name: data.instanceName,
-              instance_id: instanceResult.instance?.instanceId,
-              status: 'created',
-              token: data.token,
+              instance_id: instanceResult.instance?.instanceId || instanceResult.instanceId,
+              status: instanceResult.instance?.status || 'created',
+              token: instancePayload.token,
               webhook_url: data.webhook?.url,
               settings: {
-                rejectCall: data.rejectCall,
-                msgCall: data.msgCall,
-                groupsIgnore: data.groupsIgnore,
-                alwaysOnline: data.alwaysOnline,
-                readMessages: data.readMessages,
-                readStatus: data.readStatus,
-                syncFullHistory: data.syncFullHistory,
+                rejectCall: instancePayload.rejectCall,
+                msgCall: instancePayload.msgCall,
+                groupsIgnore: instancePayload.groupsIgnore,
+                alwaysOnline: instancePayload.alwaysOnline,
+                readMessages: instancePayload.readMessages,
+                readStatus: instancePayload.readStatus,
+                syncFullHistory: instancePayload.syncFullHistory,
               }
             })
             .select()
             .single();
 
-          if (error) {
-            console.error('Database error:', error);
-            throw new Error('Failed to save instance to database');
+          if (dbError) {
+            console.error('Erro ao salvar no banco:', dbError);
+            throw new Error(`Erro ao salvar instância no banco: ${dbError.message}`);
           }
+
+          console.log('Instância salva no banco:', dbInstance);
 
           return new Response(JSON.stringify({
             success: true,
@@ -115,12 +141,12 @@ serve(async (req) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         } else {
-          console.error('Evolution API error:', instanceResult);
-          throw new Error(instanceResult.message || 'Failed to create instance in Evolution API');
+          console.error('Erro na Evolution API:', { status: response.status, result: instanceResult });
+          throw new Error(instanceResult?.message || `Erro da Evolution API: ${response.status}`);
         }
 
       case 'get_qr_code':
-        console.log(`Getting QR code for instance: ${instanceName}`);
+        console.log(`Obtendo QR code para instância: ${instanceName}`);
         response = await fetch(`${evolutionApiUrl}/instance/connect/${instanceName}`, {
           method: 'GET',
           headers,
@@ -128,7 +154,7 @@ serve(async (req) => {
         break;
 
       case 'get_instance_status':
-        console.log(`Getting status for instance: ${instanceName}`);
+        console.log(`Obtendo status da instância: ${instanceName}`);
         response = await fetch(`${evolutionApiUrl}/instance/connectionState/${instanceName}`, {
           method: 'GET',
           headers,
@@ -136,7 +162,7 @@ serve(async (req) => {
         break;
 
       case 'logout_instance':
-        console.log(`Logging out instance: ${instanceName}`);
+        console.log(`Desconectando instância: ${instanceName}`);
         response = await fetch(`${evolutionApiUrl}/instance/logout/${instanceName}`, {
           method: 'DELETE',
           headers,
@@ -144,7 +170,7 @@ serve(async (req) => {
 
         if (response.ok) {
           // Atualizar status no banco
-          await supabaseClient
+          const { error: updateError } = await supabaseClient
             .from('whatsapp_instances')
             .update({ 
               is_connected: false, 
@@ -153,20 +179,24 @@ serve(async (req) => {
               pairing_code: null 
             })
             .eq('instance_name', instanceName);
+
+          if (updateError) {
+            console.error('Erro ao atualizar status no banco:', updateError);
+          }
         }
         break;
 
       case 'get_instance_by_tenant':
-        console.log(`Getting instance for tenant: ${tenantId}`);
-        const { data: instance, error } = await supabaseClient
+        console.log(`Buscando instância para tenant: ${tenantId}`);
+        const { data: instance, error: instanceError } = await supabaseClient
           .from('whatsapp_instances')
           .select('*')
           .eq('tenant_id', tenantId)
-          .single();
+          .maybeSingle();
 
-        if (error && error.code !== 'PGRST116') {
-          console.error('Database error:', error);
-          throw error;
+        if (instanceError && instanceError.code !== 'PGRST116') {
+          console.error('Erro ao buscar instância no banco:', instanceError);
+          throw new Error(`Erro ao buscar instância: ${instanceError.message}`);
         }
 
         return new Response(JSON.stringify({
@@ -177,15 +207,16 @@ serve(async (req) => {
         });
 
       default:
-        throw new Error(`Unknown action: ${action}`);
+        throw new Error(`Ação desconhecida: ${action}`);
     }
 
+    // Processar resposta da Evolution API para outras ações
     if (response) {
       const result = await response.json();
 
-      console.log(`Evolution API Response [${action}]:`, {
+      console.log(`Resposta da Evolution API para ${action}:`, {
         status: response.status,
-        success: response.ok,
+        ok: response.ok,
         data: result
       });
 
@@ -193,19 +224,20 @@ serve(async (req) => {
         success: response.ok,
         data: result,
         status: response.status,
-        error: !response.ok ? result.message || 'Evolution API error' : undefined,
+        error: !response.ok ? result.message || `Erro da Evolution API: ${response.status}` : undefined,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    throw new Error('No response generated');
+    throw new Error('Nenhuma resposta gerada para a ação solicitada');
 
   } catch (error) {
-    console.error('WhatsApp Integration Error:', error);
+    console.error('Erro na integração WhatsApp:', error);
     return new Response(JSON.stringify({
       success: false,
       error: error.message,
+      details: error.stack,
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
