@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, ArrowLeft, Check, Building, User, Wrench } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Check, User, Mail, Wrench } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 
@@ -8,13 +8,10 @@ const Register = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
-    // Dados da oficina
-    workshopName: '',
-    businessName: '',
-    documentNumber: '',
-    phone: '',
-    // Dados do usuário
+    // Dados básicos
     fullName: '',
+    phone: '',
+    // Credenciais
     email: '',
     password: '',
     confirmPassword: ''
@@ -34,19 +31,9 @@ const Register = () => {
   }, [navigate]);
 
   const steps = [
-    { id: 1, title: 'Dados da Oficina', icon: Building },
-    { id: 2, title: 'Seu Perfil', icon: User },
-    { id: 3, title: 'Confirmação', icon: Check }
+    { id: 1, title: 'Seus Dados', icon: User },
+    { id: 2, title: 'Criar Conta', icon: Mail }
   ];
-
-  // Função para aplicar máscara de CNPJ
-  const formatCNPJ = (value: string) => {
-    const numbers = value.replace(/\D/g, '');
-    if (numbers.length <= 14) {
-      return numbers.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
-    }
-    return value;
-  };
 
   // Função para aplicar máscara de telefone
   const formatPhone = (value: string) => {
@@ -75,13 +62,14 @@ const Register = () => {
     const newErrors: any = {};
     
     if (step === 1) {
-      if (!formData.workshopName) newErrors.workshopName = 'Nome da oficina é obrigatório';
-      if (!formData.documentNumber) newErrors.documentNumber = 'CNPJ é obrigatório';
-      if (!formData.phone) newErrors.phone = 'Telefone é obrigatório';
+      if (!formData.fullName) newErrors.fullName = 'Nome completo é obrigatório';
+      if (!formData.phone) newErrors.phone = 'Celular é obrigatório';
+      if (formData.phone && formData.phone.replace(/\D/g, '').length < 10) {
+        newErrors.phone = 'Celular deve ter pelo menos 10 dígitos';
+      }
     }
     
     if (step === 2) {
-      if (!formData.fullName) newErrors.fullName = 'Nome completo é obrigatório';
       if (!formData.email) newErrors.email = 'Email é obrigatório';
       if (!formData.password) newErrors.password = 'Senha é obrigatória';
       if (formData.password.length < 6) newErrors.password = 'Senha deve ter pelo menos 6 caracteres';
@@ -103,7 +91,7 @@ const Register = () => {
     try {
       console.log('Iniciando processo de registro...');
       
-      // Primeiro, criar a conta do usuário com Supabase Auth
+      // Criar a conta do usuário com Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -111,6 +99,7 @@ const Register = () => {
           emailRedirectTo: `${window.location.origin}/dashboard`,
           data: {
             full_name: formData.fullName,
+            phone: formData.phone,
             role: 'owner'
           }
         }
@@ -127,63 +116,16 @@ const Register = () => {
 
       console.log('Usuário criado com sucesso:', authData.user.id);
 
-      // Aguardar um pouco para garantir que o usuário está autenticado
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Verificar se o usuário está autenticado antes de prosseguir
+      // Verificar se o usuário está autenticado
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
         // Se não há sessão, significa que o usuário precisa confirmar o email
-        alert('Cadastro realizado com sucesso! Por favor, verifique seu email para confirmar a conta.');
-        navigate('/login');
+        setCurrentStep(3); // Mostrar mensagem de confirmação
         return;
       }
 
-      console.log('Criando oficina para o usuário:', session.user.id);
-      
-      // Criar a oficina com o usuário autenticado
-      const { data: tenantData, error: tenantError } = await supabase
-        .from('tenants')
-        .insert({
-          name: formData.workshopName,
-          document_number: formData.documentNumber.replace(/\D/g, ''),
-          phone: formData.phone.replace(/\D/g, ''),
-          email: formData.email,
-          business_name: formData.businessName || formData.workshopName
-        })
-        .select()
-        .single();
-
-      if (tenantError) {
-        console.error('Erro ao criar oficina:', tenantError);
-        throw new Error('Erro ao criar oficina: ' + tenantError.message);
-      }
-
-      console.log('Oficina criada com sucesso:', tenantData.id);
-
-      // Criar o registro na tabela users
-      const { error: userError } = await supabase
-        .from('users')
-        .insert({
-          id: session.user.id,
-          email: formData.email,
-          full_name: formData.fullName,
-          role: 'owner',
-          tenant_id: tenantData.id,
-          status: 'active'
-        });
-
-      if (userError) {
-        console.error('Erro ao criar registro de usuário:', userError);
-        // Se falhar, tentar deletar a oficina criada
-        await supabase.from('tenants').delete().eq('id', tenantData.id);
-        throw new Error('Erro ao finalizar cadastro: ' + userError.message);
-      }
-
-      console.log('Registro de usuário criado com sucesso');
-
-      // Login automático já está funcionando
+      // Se já está autenticado, redirecionar para o dashboard
       navigate('/dashboard');
 
     } catch (error: any) {
@@ -203,11 +145,6 @@ const Register = () => {
     }
   };
 
-  const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatCNPJ(e.target.value);
-    setFormData({...formData, documentNumber: formatted});
-  };
-
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatPhone(e.target.value);
     setFormData({...formData, phone: formatted});
@@ -215,53 +152,58 @@ const Register = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-md mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-6">
-            <div className="flex items-center space-x-2">
+            <button 
+              onClick={() => navigate('/')}
+              className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
+            >
               <div className="w-10 h-10 bg-gradient-to-r from-torqx-secondary to-torqx-accent rounded-xl flex items-center justify-center">
                 <Wrench className="w-6 h-6 text-white" />
               </div>
               <span className="text-2xl font-bold text-torqx-primary font-satoshi">Torqx</span>
-            </div>
+            </button>
           </div>
           <h1 className="text-3xl font-bold text-torqx-primary font-satoshi">
-            Crie sua conta grátis
+            Crie sua conta
           </h1>
           <p className="mt-2 text-gray-600 font-inter">
-            Configure sua oficina em poucos minutos
+            Comece grátis em poucos minutos
           </p>
         </div>
 
         {/* Progress Steps */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            {steps.map((step, index) => (
-              <div key={step.id} className="flex items-center">
-                <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all ${
-                  currentStep >= step.id 
-                    ? 'bg-torqx-secondary border-torqx-secondary text-white' 
-                    : 'border-gray-300 text-gray-400'
-                }`}>
-                  <step.icon className="w-5 h-5" />
-                </div>
-                <div className="ml-3 hidden sm:block">
-                  <p className={`text-sm font-medium ${
-                    currentStep >= step.id ? 'text-torqx-secondary' : 'text-gray-400'
+        {currentStep <= 2 && (
+          <div className="mb-8">
+            <div className="flex items-center justify-between">
+              {steps.map((step, index) => (
+                <div key={step.id} className="flex items-center flex-1">
+                  <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all ${
+                    currentStep >= step.id 
+                      ? 'bg-torqx-secondary border-torqx-secondary text-white' 
+                      : 'border-gray-300 text-gray-400'
                   }`}>
-                    {step.title}
-                  </p>
+                    <step.icon className="w-5 h-5" />
+                  </div>
+                  <div className="ml-3 flex-1">
+                    <p className={`text-sm font-medium ${
+                      currentStep >= step.id ? 'text-torqx-secondary' : 'text-gray-400'
+                    }`}>
+                      {step.title}
+                    </p>
+                  </div>
+                  {index < steps.length - 1 && (
+                    <div className={`flex-1 h-0.5 mx-4 ${
+                      currentStep > step.id ? 'bg-torqx-secondary' : 'bg-gray-200'
+                    }`}></div>
+                  )}
                 </div>
-                {index < steps.length - 1 && (
-                  <div className={`flex-1 h-0.5 mx-4 ${
-                    currentStep > step.id ? 'bg-torqx-secondary' : 'bg-gray-200'
-                  }`}></div>
-                )}
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Form Container */}
         <div className="bg-white rounded-2xl shadow-lg p-8">
@@ -271,69 +213,12 @@ const Register = () => {
             </div>
           )}
 
-          {/* Step 1: Dados da Oficina */}
+          {/* Step 1: Dados Básicos */}
           {currentStep === 1 && (
             <div className="space-y-6">
               <div>
                 <h3 className="text-lg font-semibold text-torqx-primary mb-4 font-satoshi">
-                  Informações da Oficina
-                </h3>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nome da Oficina *
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-torqx-secondary focus:border-transparent transition-all"
-                    placeholder="Auto Service Silva"
-                    value={formData.workshopName}
-                    onChange={(e) => setFormData({...formData, workshopName: e.target.value})}
-                  />
-                  {errors.workshopName && <p className="mt-1 text-sm text-red-600">{errors.workshopName}</p>}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    CNPJ *
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-torqx-secondary focus:border-transparent transition-all"
-                    placeholder="00.000.000/0000-00"
-                    value={formData.documentNumber}
-                    onChange={handleDocumentChange}
-                    maxLength={18}
-                  />
-                  {errors.documentNumber && <p className="mt-1 text-sm text-red-600">{errors.documentNumber}</p>}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Telefone *
-                  </label>
-                  <input
-                    type="tel"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-torqx-secondary focus:border-transparent transition-all"
-                    placeholder="(11) 99999-9999"
-                    value={formData.phone}
-                    onChange={handlePhoneChange}
-                    maxLength={15}
-                  />
-                  {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone}</p>}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Step 2: Dados do Usuário */}
-          {currentStep === 2 && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold text-torqx-primary mb-4 font-satoshi">
-                  Seus Dados
+                  Vamos começar com seus dados
                 </h3>
               </div>
 
@@ -354,70 +239,86 @@ const Register = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email *
+                    Celular *
                   </label>
                   <input
-                    type="email"
+                    type="tel"
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-torqx-secondary focus:border-transparent transition-all"
-                    placeholder="joao@autoservice.com"
-                    value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    placeholder="(11) 99999-9999"
+                    value={formData.phone}
+                    onChange={handlePhoneChange}
+                    maxLength={15}
                   />
-                  {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
+                  {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone}</p>}
                 </div>
+              </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <div className="flex items-start space-x-3">
+                  <Check className="w-5 h-5 text-blue-600 mt-0.5" />
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Senha *
-                    </label>
-                    <input
-                      type="password"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-torqx-secondary focus:border-transparent transition-all"
-                      placeholder="Mínimo 6 caracteres"
-                      value={formData.password}
-                      onChange={(e) => setFormData({...formData, password: e.target.value})}
-                    />
-                    {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Confirmar Senha *
-                    </label>
-                    <input
-                      type="password"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-torqx-secondary focus:border-transparent transition-all"
-                      placeholder="Repita a senha"
-                      value={formData.confirmPassword}
-                      onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
-                    />
-                    {errors.confirmPassword && <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>}
+                    <p className="text-sm font-medium text-blue-800">
+                      Por que precisamos desses dados?
+                    </p>
+                    <p className="text-sm text-blue-600 mt-1">
+                      Para personalizar sua experiência e enviar atualizações importantes sobre sua oficina.
+                    </p>
                   </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Step 3: Confirmação */}
-          {currentStep === 3 && (
+          {/* Step 2: Credenciais */}
+          {currentStep === 2 && (
             <div className="space-y-6">
               <div>
                 <h3 className="text-lg font-semibold text-torqx-primary mb-4 font-satoshi">
-                  Confirme seus dados
+                  Agora crie suas credenciais
                 </h3>
               </div>
 
-              <div className="bg-gray-50 rounded-xl p-6 space-y-4">
+              <div className="space-y-4">
                 <div>
-                  <h4 className="font-medium text-gray-900">Oficina</h4>
-                  <p className="text-gray-600">{formData.workshopName}</p>
-                  <p className="text-sm text-gray-500">{formData.documentNumber}</p>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email *
+                  </label>
+                  <input
+                    type="email"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-torqx-secondary focus:border-transparent transition-all"
+                    placeholder="joao@email.com"
+                    value={formData.email}
+                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  />
+                  {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
                 </div>
+
                 <div>
-                  <h4 className="font-medium text-gray-900">Responsável</h4>
-                  <p className="text-gray-600">{formData.fullName}</p>
-                  <p className="text-sm text-gray-500">{formData.email}</p>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Senha *
+                  </label>
+                  <input
+                    type="password"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-torqx-secondary focus:border-transparent transition-all"
+                    placeholder="Mínimo 6 caracteres"
+                    value={formData.password}
+                    onChange={(e) => setFormData({...formData, password: e.target.value})}
+                  />
+                  {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Confirmar Senha *
+                  </label>
+                  <input
+                    type="password"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-torqx-secondary focus:border-transparent transition-all"
+                    placeholder="Repita a senha"
+                    value={formData.confirmPassword}
+                    onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+                  />
+                  {errors.confirmPassword && <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>}
                 </div>
               </div>
 
@@ -429,7 +330,7 @@ const Register = () => {
                       Teste grátis por 30 dias
                     </p>
                     <p className="text-sm text-gray-600">
-                      Sem cartão de crédito. Cancele quando quiser.
+                      Sem cartão de crédito. Configure sua oficina após criar a conta.
                     </p>
                   </div>
                 </div>
@@ -437,57 +338,97 @@ const Register = () => {
             </div>
           )}
 
-          {/* Navigation Buttons */}
-          <div className="flex justify-between pt-8 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={handlePrev}
-              className={`flex items-center px-6 py-3 text-sm font-medium rounded-xl transition-all ${
-                currentStep === 1 
-                  ? 'text-gray-400 cursor-not-allowed' 
-                  : 'text-gray-700 hover:text-torqx-primary hover:bg-gray-50'
-              }`}
-              disabled={currentStep === 1}
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Voltar
-            </button>
+          {/* Step 3: Confirmação */}
+          {currentStep === 3 && (
+            <div className="text-center space-y-6">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                <Mail className="w-8 h-8 text-green-600" />
+              </div>
+              
+              <div>
+                <h3 className="text-xl font-semibold text-torqx-primary mb-2 font-satoshi">
+                  Verifique seu email
+                </h3>
+                <p className="text-gray-600">
+                  Enviamos um link de confirmação para <strong>{formData.email}</strong>
+                </p>
+                <p className="text-sm text-gray-500 mt-2">
+                  Clique no link para ativar sua conta e começar a usar o Torqx.
+                </p>
+              </div>
 
-            {currentStep < 3 ? (
+              <div className="bg-gray-50 rounded-xl p-4">
+                <p className="text-sm text-gray-600">
+                  Não recebeu o email? Verifique sua caixa de spam ou{' '}
+                  <button 
+                    onClick={() => navigate('/login')}
+                    className="text-torqx-secondary hover:text-torqx-secondary-dark font-medium"
+                  >
+                    tente fazer login
+                  </button>
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Navigation Buttons */}
+          {currentStep <= 2 && (
+            <div className="flex justify-between pt-8 border-t border-gray-200">
               <button
                 type="button"
-                onClick={handleNext}
-                className="flex items-center px-6 py-3 bg-gradient-to-r from-torqx-secondary to-torqx-accent text-white text-sm font-medium rounded-xl hover:from-torqx-secondary-dark hover:to-torqx-accent-dark transition-all shadow-lg"
+                onClick={handlePrev}
+                className={`flex items-center px-6 py-3 text-sm font-medium rounded-xl transition-all ${
+                  currentStep === 1 
+                    ? 'text-gray-400 cursor-not-allowed' 
+                    : 'text-gray-700 hover:text-torqx-primary hover:bg-gray-50'
+                }`}
+                disabled={currentStep === 1}
               >
-                Próximo
-                <ArrowRight className="w-4 h-4 ml-2" />
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Voltar
               </button>
-            ) : (
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={isLoading}
-                className="flex items-center px-6 py-3 bg-gradient-to-r from-torqx-secondary to-torqx-accent text-white text-sm font-medium rounded-xl hover:from-torqx-secondary-dark hover:to-torqx-accent-dark disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg"
-              >
-                {isLoading ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                ) : (
-                  <Check className="w-4 h-4 mr-2" />
-                )}
-                Criar Conta
-              </button>
-            )}
-          </div>
+
+              {currentStep < 2 ? (
+                <button
+                  type="button"
+                  onClick={handleNext}
+                  className="flex items-center px-6 py-3 bg-gradient-to-r from-torqx-secondary to-torqx-accent text-white text-sm font-medium rounded-xl hover:from-torqx-secondary-dark hover:to-torqx-accent-dark transition-all shadow-lg"
+                >
+                  Próximo
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={isLoading}
+                  className="flex items-center px-6 py-3 bg-gradient-to-r from-torqx-secondary to-torqx-accent text-white text-sm font-medium rounded-xl hover:from-torqx-secondary-dark hover:to-torqx-accent-dark disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg"
+                >
+                  {isLoading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  ) : (
+                    <Check className="w-4 h-4 mr-2" />
+                  )}
+                  Criar Conta
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Login Link */}
-          <div className="text-center pt-4">
-            <p className="text-sm text-gray-600">
-              Já tem uma conta?{' '}
-              <a href="/login" className="font-medium text-torqx-secondary hover:text-torqx-secondary-dark transition-colors">
-                Faça login
-              </a>
-            </p>
-          </div>
+          {currentStep <= 2 && (
+            <div className="text-center pt-4">
+              <p className="text-sm text-gray-600">
+                Já tem uma conta?{' '}
+                <button 
+                  onClick={() => navigate('/login')}
+                  className="font-medium text-torqx-secondary hover:text-torqx-secondary-dark transition-colors"
+                >
+                  Faça login
+                </button>
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
