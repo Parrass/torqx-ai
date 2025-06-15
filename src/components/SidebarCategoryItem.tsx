@@ -38,12 +38,14 @@ const SidebarCategoryItem = ({ category, userPermissions }: SidebarCategoryItemP
         onClick={() => setIsExpanded(!isExpanded)}
         className="flex items-center w-full py-2 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-torqx-primary-light transition-colors text-left min-h-[40px] relative"
       >
-        {/* Icon container - sempre visível e centralizado quando colapsado */}
+        {/* Icon container - centralizado quando colapsado */}
         <div className={`
           flex items-center justify-center flex-shrink-0 transition-all duration-300
-          ${open ? 'w-4 h-4 mr-3' : 'w-full h-4'}
+          ${open ? 'w-5 h-5 mr-3' : 'w-full'}
         `}>
-          {category.icon}
+          <div className="w-5 h-5 flex items-center justify-center">
+            {category.icon}
+          </div>
         </div>
         
         {/* Category label - só aparece quando expandido */}

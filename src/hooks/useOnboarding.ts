@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -118,16 +117,32 @@ export const useOnboarding = () => {
 
   useEffect(() => {
     if (user) {
+      console.log('useOnboarding: Usuário carregado, iniciando loadOnboardingProgress');
       loadOnboardingProgress();
     }
   }, [user]);
 
   const loadOnboardingProgress = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('useOnboarding: Usuário não encontrado');
+      setIsLoading(false);
+      return;
+    }
     
+    console.log('useOnboarding: Carregando progresso para usuário:', user.id);
     setIsLoading(true);
     
     try {
+      // Verificar se o usuário tem tenant_id
+      const tenantId = user.user_metadata?.tenant_id;
+      console.log('useOnboarding: tenant_id do usuário:', tenantId);
+      
+      if (!tenantId) {
+        console.error('useOnboarding: Usuário sem tenant_id');
+        setIsLoading(false);
+        return;
+      }
+
       // Buscar progresso do onboarding
       const { data: progressData, error: progressError } = await supabase
         .from('onboarding_progress')
@@ -136,9 +151,12 @@ export const useOnboarding = () => {
         .maybeSingle();
 
       if (progressError && progressError.code !== 'PGRST116') {
-        console.error('Error loading onboarding progress:', progressError);
+        console.error('useOnboarding: Erro ao carregar progresso:', progressError);
+        setIsLoading(false);
         return;
       }
+
+      console.log('useOnboarding: Dados de progresso encontrados:', progressData);
 
       // Buscar tarefas do onboarding
       const { data: tasksData, error: tasksError } = await supabase
@@ -147,9 +165,10 @@ export const useOnboarding = () => {
         .eq('user_id', user.id);
 
       if (tasksError) {
-        console.error('Error loading onboarding tasks:', tasksError);
-        return;
+        console.error('useOnboarding: Erro ao carregar tarefas:', tasksError);
       }
+
+      console.log('useOnboarding: Tarefas encontradas:', tasksData);
 
       if (progressData) {
         const mappedProgress: OnboardingProgress = {
@@ -167,7 +186,8 @@ export const useOnboarding = () => {
         const current = steps.find(step => step.id === progressData.current_step);
         setCurrentStep(current || steps[0]);
       } else {
-        // Criar novo progresso
+        // Criar novo progresso automaticamente
+        console.log('useOnboarding: Criando progresso inicial');
         await createInitialProgress();
       }
 
@@ -183,24 +203,30 @@ export const useOnboarding = () => {
         }));
         setTasks(mappedTasks);
       } else {
-        // Criar tarefas padrão
+        // Criar tarefas padrão automaticamente
+        console.log('useOnboarding: Criando tarefas iniciais');
         await createInitialTasks();
       }
     } catch (error) {
-      console.error('Error in loadOnboardingProgress:', error);
+      console.error('useOnboarding: Erro geral em loadOnboardingProgress:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
   const createInitialProgress = async () => {
-    if (!user) return;
+    if (!user) {
+      console.error('useOnboarding: Usuário não encontrado ao criar progresso inicial');
+      return;
+    }
 
     const tenantId = user.user_metadata?.tenant_id;
     if (!tenantId) {
-      console.error('No tenant_id found for user');
+      console.error('useOnboarding: tenant_id não encontrado ao criar progresso inicial');
       return;
     }
+
+    console.log('useOnboarding: Criando progresso inicial para tenant:', tenantId);
 
     const newProgress = {
       user_id: user.id,
@@ -218,9 +244,11 @@ export const useOnboarding = () => {
       .single();
 
     if (error) {
-      console.error('Error creating initial progress:', error);
+      console.error('useOnboarding: Erro ao criar progresso inicial:', error);
       return;
     }
+
+    console.log('useOnboarding: Progresso inicial criado:', data);
 
     const mappedProgress: OnboardingProgress = {
       userId: data.user_id,
@@ -238,10 +266,18 @@ export const useOnboarding = () => {
   };
 
   const createInitialTasks = async () => {
-    if (!user) return;
+    if (!user) {
+      console.error('useOnboarding: Usuário não encontrado ao criar tarefas iniciais');
+      return;
+    }
 
     const tenantId = user.user_metadata?.tenant_id;
-    if (!tenantId) return;
+    if (!tenantId) {
+      console.error('useOnboarding: tenant_id não encontrado ao criar tarefas iniciais');
+      return;
+    }
+
+    console.log('useOnboarding: Criando tarefas iniciais para tenant:', tenantId);
 
     const tasksToInsert = defaultTasks.map(task => ({
       user_id: user.id,
@@ -260,10 +296,11 @@ export const useOnboarding = () => {
       .insert(tasksToInsert);
 
     if (error) {
-      console.error('Error creating initial tasks:', error);
+      console.error('useOnboarding: Erro ao criar tarefas iniciais:', error);
       return;
     }
 
+    console.log('useOnboarding: Tarefas iniciais criadas');
     setTasks(defaultTasks);
   };
 

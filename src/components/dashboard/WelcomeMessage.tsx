@@ -19,28 +19,24 @@ const WelcomeMessage: React.FC<WelcomeMessageProps> = ({ onStartTour }) => {
   const [bannerDismissed, setBannerDismissed] = useState(false);
 
   useEffect(() => {
-    console.log('Onboarding progress:', progress);
-    console.log('Is loading:', isLoading);
+    console.log('WelcomeMessage: Progresso do onboarding:', progress);
+    console.log('WelcomeMessage: Carregando:', isLoading);
   }, [progress, isLoading]);
 
-  // Se ainda estiver carregando, não mostrar nada
+  // Enquanto estiver carregando, mostrar um skeleton ou nada
   if (isLoading) {
-    return null;
-  }
-
-  // Se o onboarding não foi completado e o banner não foi dispensado, mostrar banner
-  if (progress && !progress.isCompleted && !bannerDismissed) {
     return (
-      <>
-        <OnboardingBanner 
-          onOpenWizard={() => setShowWizard(true)}
-          onDismiss={() => setBannerDismissed(true)}
-        />
-        <OnboardingWizard 
-          isOpen={showWizard}
-          onClose={() => setShowWizard(false)}
-        />
-      </>
+      <Card className="bg-gray-100 animate-pulse mb-6">
+        <CardContent className="p-6">
+          <div className="flex items-center space-x-4">
+            <div className="w-16 h-16 bg-gray-300 rounded-full"></div>
+            <div className="flex-1 space-y-2">
+              <div className="h-6 bg-gray-300 rounded w-3/4"></div>
+              <div className="h-4 bg-gray-300 rounded w-1/2"></div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -100,7 +96,23 @@ const WelcomeMessage: React.FC<WelcomeMessageProps> = ({ onStartTour }) => {
     );
   }
 
-  // Se não há progresso de onboarding, mostrar um botão para iniciar
+  // Se há progresso em andamento e não foi dispensado, mostrar banner
+  if (progress && !progress.isCompleted && !bannerDismissed) {
+    return (
+      <>
+        <OnboardingBanner 
+          onOpenWizard={() => setShowWizard(true)}
+          onDismiss={() => setBannerDismissed(true)}
+        />
+        <OnboardingWizard 
+          isOpen={showWizard}
+          onClose={() => setShowWizard(false)}
+        />
+      </>
+    );
+  }
+
+  // Se não há progresso ou foi dispensado, mostrar convite para iniciar
   return (
     <Card className="bg-gradient-to-r from-torqx-primary to-torqx-primary-light text-white border-0 shadow-lg mb-6">
       <CardContent className="p-6">

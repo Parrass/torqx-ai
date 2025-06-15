@@ -187,12 +187,14 @@ export const SidebarLink = ({
       )}
       {...props}
     >
-      {/* Icon container - sempre visível e centralizado quando colapsado */}
+      {/* Icon container - centralizado quando colapsado */}
       <div className={cn(
         "flex items-center justify-center flex-shrink-0 transition-all duration-300",
-        open ? "w-4 h-4 mr-3" : "w-full h-4"
+        open ? "w-5 h-5 mr-3" : "w-full"
       )}>
-        {link.icon}
+        <div className="w-5 h-5 flex items-center justify-center">
+          {link.icon}
+        </div>
       </div>
       
       {/* Text with animation - só aparece quando expandido */}
