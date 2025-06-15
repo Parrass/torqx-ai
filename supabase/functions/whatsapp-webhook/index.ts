@@ -15,10 +15,18 @@ serve(async (req) => {
   try {
     const webhookData = await req.json();
     
+    // Extrair o evento da URL se estiver usando webhook by events
+    const url = new URL(req.url);
+    const pathParts = url.pathname.split('/');
+    const eventFromPath = pathParts[pathParts.length - 1]; // Último segmento da URL
+    
     console.log('=== WEBHOOK RECEBIDO ===');
+    console.log('URL completa:', req.url);
+    console.log('Caminho:', url.pathname);
+    console.log('Evento da URL:', eventFromPath);
     console.log('Dados completos:', JSON.stringify(webhookData, null, 2));
-    console.log('Event:', webhookData.event);
-    console.log('Type:', webhookData.type);
+    console.log('Event do payload:', webhookData.event);
+    console.log('Type do payload:', webhookData.type);
     console.log('Instance:', webhookData.instance?.instanceName);
 
     // Verificar URL do N8N
@@ -36,15 +44,20 @@ serve(async (req) => {
       });
     }
 
+    // Determinar o evento real (da URL ou do payload)
+    const actualEvent = webhookData.event || webhookData.type || eventFromPath;
+    
     // Lógica mais ampla para detectar eventos de mensagem
-    const isMessageEvent = webhookData.event === 'MESSAGES_UPSERT' || 
-                          webhookData.event === 'MESSAGE_RECEIVED' ||
-                          webhookData.event === 'MESSAGE_SENT' ||
-                          webhookData.type === 'MESSAGE_RECEIVED' ||
-                          webhookData.type === 'MESSAGE_SENT' ||
+    const isMessageEvent = actualEvent === 'MESSAGES_UPSERT' || 
+                          actualEvent === 'MESSAGE_RECEIVED' ||
+                          actualEvent === 'MESSAGE_SENT' ||
+                          eventFromPath === 'MESSAGES_UPSERT' ||
+                          eventFromPath === 'MESSAGE_RECEIVED' ||
+                          eventFromPath === 'MESSAGE_SENT' ||
                           (webhookData.data && webhookData.data.messages) ||
                           (webhookData.messages && webhookData.messages.length > 0);
 
+    console.log('Evento determinado:', actualEvent);
     console.log('É evento de mensagem?', isMessageEvent);
 
     // SEMPRE redirecionar para N8N para debug
@@ -63,7 +76,10 @@ serve(async (req) => {
             processed_at: new Date().toISOString(),
             is_message_event: isMessageEvent,
             source: 'evolution-api',
-            webhook_url: req.url
+            webhook_url: req.url,
+            webhook_path: url.pathname,
+            event_from_path: eventFromPath,
+            actual_event: actualEvent
           }
         }),
       });
@@ -83,7 +99,8 @@ serve(async (req) => {
           success: true,
           message: 'Webhook processado com sucesso pelo N8N',
           n8nStatus: n8nResponse.status,
-          eventType: webhookData.event || webhookData.type || 'unknown'
+          eventType: actualEvent,
+          eventFromPath: eventFromPath
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });

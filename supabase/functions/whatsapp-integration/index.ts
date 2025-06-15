@@ -419,16 +419,16 @@ serve(async (req) => {
             'QRCODE_UPDATED'
           ];
 
-          // Estrutura correta do payload para Evolution API (seguindo o curl fornecido)
+          // Estrutura correta do payload para Evolution API (SEM webhookByEvents para evitar rotas separadas)
           const webhookPayload = {
             enabled: isWebhookEnabled,
             url: webhookConfig?.url || `${Deno.env.get('SUPABASE_URL')}/functions/v1/whatsapp-webhook`,
-            webhookByEvents: true,
+            webhookByEvents: false, // IMPORTANTE: false para receber tudo numa URL só
             webhookBase64: true,
             events: isWebhookEnabled ? defaultEvents : [] // Se desabilitado, array vazio
           };
 
-          console.log('Configurando webhook:', JSON.stringify(webhookPayload, null, 2));
+          console.log('Configurando webhook (SEM byEvents):', JSON.stringify(webhookPayload, null, 2));
 
           response = await fetch(`${evolutionApiUrl}/webhook/set/${instanceName}`, {
             method: 'POST',

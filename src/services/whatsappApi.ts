@@ -201,7 +201,18 @@ class WhatsAppApi {
     return this.makeRequest('/whatsapp-integration', {
       action: 'set_webhook',
       instanceName,
-      webhookConfig,
+      webhookConfig: {
+        enabled: true,
+        url: `${this.baseUrl}/whatsapp-webhook`,
+        webhookByEvents: false, // IMPORTANTE: false para receber tudo numa URL só
+        webhookBase64: true,
+        events: [
+          'APPLICATION_STARTUP',
+          'MESSAGES_UPSERT',
+          'CONNECTION_UPDATE',
+          'QRCODE_UPDATED'
+        ]
+      },
     });
   }
 
