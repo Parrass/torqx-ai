@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
@@ -265,6 +264,52 @@ serve(async (req) => {
           }
         } catch (fetchError) {
           throw new Error(`Erro ao obter status: ${fetchError.message}`);
+        }
+
+      case 'fetch_instance':
+        console.log(`=== BUSCAR DADOS da ${instanceName} ===`);
+        
+        if (!instanceName) {
+          throw new Error('instanceName é obrigatório para buscar dados da instância');
+        }
+        
+        try {
+          response = await fetch(`${evolutionApiUrl}/instance/fetchInstances?instanceName=${instanceName}`, {
+            method: 'GET',
+            headers,
+          });
+
+          if (response.ok) {
+            const fetchResult = await response.json();
+            console.log('Dados da instância obtidos:', fetchResult);
+            
+            // Se retornou dados, atualizar no banco
+            if (fetchResult && fetchResult.length > 0) {
+              const instanceData = fetchResult[0];
+              const isConnected = instanceData.instance?.state === 'open';
+              
+              await supabaseClient
+                .from('whatsapp_instances')
+                .update({ 
+                  is_connected: isConnected,
+                  status: instanceData.instance?.state || 'unknown',
+                  last_connected_at: isConnected ? new Date().toISOString() : null
+                })
+                .eq('instance_name', instanceName);
+            }
+            
+            return new Response(JSON.stringify({
+              success: true,
+              data: fetchResult && fetchResult.length > 0 ? fetchResult[0] : null
+            }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          } else {
+            const errorResult = await response.json();
+            throw new Error(errorResult?.message || `Erro ao buscar dados da instância: ${response.status}`);
+          }
+        } catch (fetchError) {
+          throw new Error(`Erro ao buscar dados da instância: ${fetchError.message}`);
         }
 
       case 'logout_instance':

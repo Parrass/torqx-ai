@@ -1,4 +1,3 @@
-
 interface WhatsAppApiResponse<T = any> {
   success: boolean;
   data?: T;
@@ -152,6 +151,14 @@ class WhatsAppApi {
   async getInstanceStatus(instanceName: string): Promise<WhatsAppApiResponse> {
     return this.makeRequest('/whatsapp-integration', {
       action: 'get_instance_status',
+      instanceName,
+    });
+  }
+
+  // Buscar dados completos da instância
+  async fetchInstance(instanceName: string): Promise<WhatsAppApiResponse> {
+    return this.makeRequest('/whatsapp-integration', {
+      action: 'fetch_instance',
       instanceName,
     });
   }

@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { whatsappApi, type WhatsAppApiResponse, type WhatsAppInstance } from '@/services/whatsappApi';
 import { useToast } from '@/hooks/use-toast';
@@ -131,6 +130,9 @@ export const useWhatsApp = () => {
           qrCode: qrCodeData ? 'Presente' : 'Ausente',
           pairingCode: response.data.pairingCode
         });
+
+        // Iniciar verificação de status após gerar QR code
+        startStatusPolling();
       } else {
         throw new Error(response.error || 'Erro ao gerar QR Code');
       }
@@ -154,11 +156,27 @@ export const useWhatsApp = () => {
       
       if (response.success && response.data) {
         const isConnected = response.data.instance?.state === 'open';
+        const newStatus = response.data.instance?.state;
+        
         setConnection(prev => ({
           ...prev,
           isConnected,
-          status: response.data.instance?.state,
+          status: newStatus,
         }));
+
+        // Se conectou, limpar QR code e mostrar toast
+        if (isConnected && !connection.isConnected) {
+          setConnection(prev => ({
+            ...prev,
+            qrCode: undefined,
+            pairingCode: undefined,
+          }));
+          
+          toast({
+            title: 'WhatsApp Conectado!',
+            description: 'Sua instância WhatsApp foi conectada com sucesso.',
+          });
+        }
         
         return isConnected;
       }
@@ -166,7 +184,57 @@ export const useWhatsApp = () => {
       console.error('Erro ao verificar status:', error);
     }
     return false;
-  }, [connection.instanceName]);
+  }, [connection.instanceName, connection.isConnected, toast]);
+
+  const startStatusPolling = useCallback(() => {
+    const pollInterval = setInterval(async () => {
+      const isConnected = await checkStatus();
+      
+      // Se conectou, parar o polling
+      if (isConnected) {
+        clearInterval(pollInterval);
+      }
+    }, 3000); // Verificar a cada 3 segundos
+
+    // Parar polling após 5 minutos para evitar requisições desnecessárias
+    setTimeout(() => {
+      clearInterval(pollInterval);
+    }, 300000); // 5 minutos
+  }, [checkStatus]);
+
+  const fetchInstanceData = useCallback(async () => {
+    if (!connection.instanceName) return;
+
+    setIsLoading(true);
+    try {
+      const response = await whatsappApi.fetchInstance(connection.instanceName);
+      
+      if (response.success && response.data) {
+        const isConnected = response.data.instance?.state === 'open';
+        
+        setConnection(prev => ({
+          ...prev,
+          isConnected,
+          status: response.data.instance?.state,
+          instance: response.data,
+        }));
+        
+        toast({
+          title: 'Status atualizado',
+          description: `Status da instância: ${response.data.instance?.state || 'desconhecido'}`,
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao buscar dados da instância:', error);
+      toast({
+        title: 'Erro ao atualizar status',
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [connection.instanceName, toast]);
 
   const disconnect = useCallback(async () => {
     if (!connection.instanceName) return;
@@ -262,6 +330,7 @@ export const useWhatsApp = () => {
     createInstance,
     generateQRCode,
     checkStatus,
+    fetchInstanceData,
     disconnect,
     loadExistingInstance,
     sendAIMessage,

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,7 +28,7 @@ const WhatsAppConnection = ({
   setBotStatus,
   metrics 
 }: WhatsAppConnectionProps) => {
-  const { connection, isLoading, createInstance, generateQRCode, checkStatus, disconnect, loadExistingInstance } = useWhatsApp();
+  const { connection, isLoading, createInstance, generateQRCode, checkStatus, fetchInstanceData, disconnect, loadExistingInstance } = useWhatsApp();
   const [showQRCode, setShowQRCode] = useState(false);
 
   // Carregar instância existente ao montar o componente
@@ -72,6 +71,14 @@ const WhatsAppConnection = ({
     await disconnect();
     setBotStatus('paused');
     setShowQRCode(false);
+  };
+
+  const handleRefreshStatus = async () => {
+    try {
+      await fetchInstanceData();
+    } catch (error) {
+      console.error('Erro ao atualizar status:', error);
+    }
   };
 
   // Determinar se tem instância criada
@@ -127,6 +134,9 @@ const WhatsAppConnection = ({
                       </>
                     )}
                   </Button>
+                  <Button variant="outline" size="sm" onClick={handleRefreshStatus}>
+                    <RefreshCw className="w-4 h-4" />
+                  </Button>
                   <Button variant="outline" size="sm" onClick={handleDisconnect}>
                     Desconectar
                   </Button>
@@ -149,6 +159,9 @@ const WhatsAppConnection = ({
                         Gerar QR Code
                       </>
                     )}
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleRefreshStatus}>
+                    <RefreshCw className="w-4 h-4" />
                   </Button>
                   <Button variant="outline" size="sm" onClick={handleDisconnect}>
                     Remover Instância
