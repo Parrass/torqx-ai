@@ -19,14 +19,13 @@ export const useWhatsApp = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  // Função simplificada para obter tenant ID usando a função do banco
+  // Função para obter tenant ID
   const getTenantId = useCallback(async () => {
     const { supabase } = await import('@/integrations/supabase/client');
     
     try {
       console.log('Obtendo tenant ID...');
       
-      // Verificar se usuário está autenticado
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       
       if (userError || !user) {
@@ -36,7 +35,6 @@ export const useWhatsApp = () => {
       
       console.log('Usuário autenticado:', user.id, user.email);
       
-      // Usar a função do banco para obter ou criar tenant
       const { data: tenantId, error: tenantError } = await supabase
         .rpc('get_or_create_tenant_for_user');
       
@@ -79,7 +77,7 @@ export const useWhatsApp = () => {
         
         toast({
           title: 'Instância criada',
-          description: 'Instância WhatsApp criada com sucesso.',
+          description: 'Instância WhatsApp criada com sucesso. Agora você pode gerar o QR Code.',
         });
         
         return response.data;
@@ -89,8 +87,8 @@ export const useWhatsApp = () => {
     } catch (error) {
       console.error('Erro ao criar instância:', error);
       toast({
-        title: 'Erro',
-        description: error instanceof Error ? error.message : 'Erro ao criar instância WhatsApp',
+        title: 'Erro ao criar instância',
+        description: error instanceof Error ? error.message : 'Erro desconhecido ao criar instância WhatsApp',
         variant: 'destructive',
       });
       throw error;
@@ -116,13 +114,13 @@ export const useWhatsApp = () => {
       if (response.success && response.data) {
         setConnection(prev => ({
           ...prev,
-          qrCode: response.data.code || response.data.qrcode,
+          qrCode: response.data.code || response.data.qrcode || response.data.base64,
           pairingCode: response.data.pairingCode,
         }));
         
         toast({
           title: 'QR Code gerado',
-          description: 'QR Code gerado com sucesso.',
+          description: 'QR Code gerado com sucesso. Escaneie com seu WhatsApp.',
         });
       } else {
         throw new Error(response.error || 'Erro ao gerar QR Code');
@@ -130,8 +128,8 @@ export const useWhatsApp = () => {
     } catch (error) {
       console.error('Erro ao gerar QR Code:', error);
       toast({
-        title: 'Erro',
-        description: 'Erro ao gerar QR Code',
+        title: 'Erro ao gerar QR Code',
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
         variant: 'destructive',
       });
     } finally {
@@ -185,8 +183,8 @@ export const useWhatsApp = () => {
     } catch (error) {
       console.error('Erro ao desconectar:', error);
       toast({
-        title: 'Erro',
-        description: 'Erro ao desconectar WhatsApp',
+        title: 'Erro ao desconectar',
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
         variant: 'destructive',
       });
     } finally {
@@ -208,6 +206,8 @@ export const useWhatsApp = () => {
           status: response.data.status,
           isConnected: response.data.is_connected,
         }));
+        
+        console.log('Instância existente carregada:', response.data);
       }
     } catch (error) {
       console.error('Erro ao carregar instância:', error);
@@ -237,8 +237,8 @@ export const useWhatsApp = () => {
     } catch (error) {
       console.error('Erro ao enviar mensagem IA:', error);
       toast({
-        title: 'Erro',
-        description: 'Erro ao processar mensagem com IA',
+        title: 'Erro na IA',
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
         variant: 'destructive',
       });
       return null;

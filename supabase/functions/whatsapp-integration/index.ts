@@ -79,19 +79,31 @@ serve(async (req) => {
           throw new Error('instanceName e tenantId são obrigatórios');
         }
         
-        // Payload otimizado para Evolution API
+        // Payload seguindo exatamente a API da Evolution
         const instancePayload = {
           instanceName: data.instanceName,
           token: data.token || `torqx_${Date.now()}`,
-          integration: 'WHATSAPP-BAILEYS',
           qrcode: true,
+          integration: 'WHATSAPP-BAILEYS',
           rejectCall: true,
           msgCall: 'Chamadas não são aceitas. Entre em contato via mensagem.',
           groupsIgnore: true,
           alwaysOnline: true,
           readMessages: true,
           readStatus: true,
-          syncFullHistory: false
+          syncFullHistory: false,
+          webhook: {
+            url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/whatsapp-webhook`,
+            byEvents: true,
+            base64: true,
+            events: [
+              'APPLICATION_STARTUP',
+              'MESSAGE_RECEIVED', 
+              'MESSAGE_SENT',
+              'CONNECTION_UPDATE',
+              'QRCODE_UPDATED'
+            ]
+          }
         };
 
         console.log('Payload Evolution:', JSON.stringify(instancePayload, null, 2));
@@ -120,7 +132,9 @@ serve(async (req) => {
                 instance_id: instanceResult.instance?.instanceId || data.instanceName,
                 status: instanceResult.instance?.status || 'created',
                 token: instancePayload.token,
-                settings: instancePayload
+                webhook_url: instancePayload.webhook.url,
+                settings: instancePayload,
+                is_connected: false
               })
               .select()
               .single();
@@ -153,10 +167,35 @@ serve(async (req) => {
             method: 'GET',
             headers,
           });
+
+          if (response.ok) {
+            const qrResult = await response.json();
+            console.log('QR Code obtido:', qrResult);
+            
+            // Atualizar instância no banco com QR code
+            if (qrResult.code || qrResult.qrcode || qrResult.base64) {
+              await supabaseClient
+                .from('whatsapp_instances')
+                .update({ 
+                  qr_code: qrResult.code || qrResult.qrcode || qrResult.base64,
+                  pairing_code: qrResult.pairingCode 
+                })
+                .eq('instance_name', instanceName);
+            }
+            
+            return new Response(JSON.stringify({
+              success: true,
+              data: qrResult
+            }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          } else {
+            const errorResult = await response.json();
+            throw new Error(errorResult?.message || `Erro ao gerar QR code: ${response.status}`);
+          }
         } catch (fetchError) {
           throw new Error(`Erro ao obter QR code: ${fetchError.message}`);
         }
-        break;
 
       case 'get_instance_status':
         console.log(`=== STATUS da ${instanceName} ===`);
@@ -165,10 +204,35 @@ serve(async (req) => {
             method: 'GET',
             headers,
           });
+
+          if (response.ok) {
+            const statusResult = await response.json();
+            console.log('Status obtido:', statusResult);
+            
+            // Atualizar status no banco
+            const isConnected = statusResult.instance?.state === 'open';
+            await supabaseClient
+              .from('whatsapp_instances')
+              .update({ 
+                is_connected: isConnected,
+                status: statusResult.instance?.state || 'unknown',
+                last_connected_at: isConnected ? new Date().toISOString() : null
+              })
+              .eq('instance_name', instanceName);
+            
+            return new Response(JSON.stringify({
+              success: true,
+              data: statusResult
+            }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          } else {
+            const errorResult = await response.json();
+            throw new Error(errorResult?.message || `Erro ao obter status: ${response.status}`);
+          }
         } catch (fetchError) {
           throw new Error(`Erro ao obter status: ${fetchError.message}`);
         }
-        break;
 
       case 'logout_instance':
         console.log(`=== LOGOUT da ${instanceName} ===`);
@@ -178,22 +242,29 @@ serve(async (req) => {
             headers,
           });
 
-          if (response.ok) {
-            // Atualizar status no banco
-            await supabaseClient
-              .from('whatsapp_instances')
-              .update({ 
-                is_connected: false, 
-                status: 'disconnected',
-                qr_code: null,
-                pairing_code: null 
-              })
-              .eq('instance_name', instanceName);
-          }
+          const logoutResult = response.ok ? await response.json() : { message: 'Logout realizado' };
+          console.log('Logout resultado:', logoutResult);
+
+          // Atualizar status no banco
+          await supabaseClient
+            .from('whatsapp_instances')
+            .update({ 
+              is_connected: false, 
+              status: 'disconnected',
+              qr_code: null,
+              pairing_code: null 
+            })
+            .eq('instance_name', instanceName);
+          
+          return new Response(JSON.stringify({
+            success: true,
+            data: logoutResult
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
         } catch (fetchError) {
           throw new Error(`Erro ao desconectar: ${fetchError.message}`);
         }
-        break;
 
       case 'get_instance_by_tenant':
         console.log(`=== BUSCAR INSTÂNCIA do tenant ${tenantId} ===`);
@@ -220,27 +291,6 @@ serve(async (req) => {
       default:
         throw new Error(`Ação desconhecida: ${action}`);
     }
-
-    // Processar resposta da Evolution API
-    if (response) {
-      const result = await response.json();
-
-      console.log(`Resposta Evolution para ${action}:`, {
-        status: response.status,
-        ok: response.ok,
-        data: result
-      });
-
-      return new Response(JSON.stringify({
-        success: response.ok,
-        data: result,
-        error: !response.ok ? result.message || result.error || `Erro ${response.status}` : undefined,
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    throw new Error('Nenhuma resposta gerada');
 
   } catch (error) {
     console.error('ERRO GERAL na integração WhatsApp:', {

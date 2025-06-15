@@ -1,3 +1,4 @@
+
 interface WhatsAppApiResponse<T = any> {
   success: boolean;
   data?: T;
@@ -8,48 +9,21 @@ interface WhatsAppApiResponse<T = any> {
 interface CreateInstanceData {
   instanceName: string;
   token?: string;
-  integration?: string;
   qrcode?: boolean;
+  integration?: string;
+  rejectCall?: boolean;
+  msgCall?: string;
+  groupsIgnore?: boolean;
+  alwaysOnline?: boolean;
+  readMessages?: boolean;
+  readStatus?: boolean;
+  syncFullHistory?: boolean;
   webhook?: {
     url: string;
     byEvents: boolean;
     base64: boolean;
     events: string[];
   };
-  rejectCall?: boolean;
-  msgCall?: string;
-  groupsIgnore?: boolean;
-  alwaysOnline?: boolean;
-  readMessages?: boolean;
-  readStatus?: boolean;
-  syncFullHistory?: boolean;
-}
-
-interface WebhookConfig {
-  enabled: boolean;
-  url: string;
-  webhookByEvents: boolean;
-  webhookBase64: boolean;
-  events: string[];
-}
-
-interface InstanceSettings {
-  rejectCall?: boolean;
-  msgCall?: string;
-  groupsIgnore?: boolean;
-  alwaysOnline?: boolean;
-  readMessages?: boolean;
-  readStatus?: boolean;
-  syncFullHistory?: boolean;
-}
-
-interface InstanceInfo {
-  instanceName: string;
-  instanceId: string;
-  status: string;
-  serverUrl?: string;
-  apikey?: string;
-  owner?: string;
 }
 
 interface WhatsAppInstance {
@@ -124,7 +98,7 @@ class WhatsAppApi {
 
   // Criar instância para oficina
   async createInstance(tenantId: string): Promise<WhatsAppApiResponse<WhatsAppInstance>> {
-    const instanceName = `torqx_${tenantId}`;
+    const instanceName = `torqx_${tenantId.substring(0, 8)}`;
     const token = this.generateToken();
     
     console.log('Criando instância:', { instanceName, tenantId });
@@ -132,8 +106,8 @@ class WhatsAppApi {
     const data: CreateInstanceData = {
       instanceName,
       token,
-      integration: 'WHATSAPP-BAILEYS',
       qrcode: true,
+      integration: 'WHATSAPP-BAILEYS',
       rejectCall: true,
       msgCall: 'Chamadas não são aceitas. Entre em contato via mensagem.',
       groupsIgnore: true,
@@ -212,9 +186,6 @@ class WhatsAppApi {
 export const whatsappApi = new WhatsAppApi();
 export type { 
   CreateInstanceData, 
-  WebhookConfig, 
-  InstanceSettings, 
-  InstanceInfo,
   WhatsAppApiResponse,
   WhatsAppInstance
 };
