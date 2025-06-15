@@ -418,7 +418,7 @@ serve(async (req) => {
               events: webhookConfig.events
             };
           } else {
-            // Usar webhook padrão do Supabase que faz proxy para N8N
+            // Usar webhook padrão do Supabase que faz proxy para N8N com TODOS os eventos de mensagem
             webhookPayload = {
               enabled: true,
               url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/whatsapp-webhook`,
