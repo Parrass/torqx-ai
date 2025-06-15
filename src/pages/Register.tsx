@@ -62,15 +62,15 @@ const Register = () => {
     const newErrors: any = {};
     
     if (step === 1) {
-      if (!formData.fullName) newErrors.fullName = 'Nome completo é obrigatório';
-      if (!formData.phone) newErrors.phone = 'Celular é obrigatório';
+      if (!formData.fullName.trim()) newErrors.fullName = 'Nome completo é obrigatório';
+      if (!formData.phone.trim()) newErrors.phone = 'Celular é obrigatório';
       if (formData.phone && formData.phone.replace(/\D/g, '').length < 10) {
         newErrors.phone = 'Celular deve ter pelo menos 10 dígitos';
       }
     }
     
     if (step === 2) {
-      if (!formData.email) newErrors.email = 'Email é obrigatório';
+      if (!formData.email.trim()) newErrors.email = 'Email é obrigatório';
       if (!formData.password) newErrors.password = 'Senha é obrigatória';
       if (formData.password.length < 6) newErrors.password = 'Senha deve ter pelo menos 6 caracteres';
       if (formData.password !== formData.confirmPassword) {
@@ -93,14 +93,13 @@ const Register = () => {
       
       // Criar a conta do usuário com Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
+        email: formData.email.trim(),
         password: formData.password,
         options: {
           emailRedirectTo: `${window.location.origin}/dashboard`,
           data: {
-            full_name: formData.fullName,
-            phone: formData.phone,
-            role: 'owner'
+            full_name: formData.fullName.trim(),
+            phone: formData.phone.trim()
           }
         }
       });
@@ -125,18 +124,20 @@ const Register = () => {
         return;
       }
 
-      // Se já está autenticado, redirecionar para o dashboard
+      // Se já está autenticado, redirecionar para o dashboard (onboarding será iniciado lá)
       navigate('/dashboard');
 
     } catch (error: any) {
       console.error('Erro no registro:', error);
       
-      if (error.message.includes('User already registered')) {
+      if (error.message?.includes('User already registered')) {
         setErrors({ general: 'Este email já está cadastrado. Tente fazer login.' });
-      } else if (error.message.includes('Password should be at least 6 characters')) {
+      } else if (error.message?.includes('Password should be at least 6 characters')) {
         setErrors({ password: 'A senha deve ter pelo menos 6 caracteres' });
-      } else if (error.message.includes('Invalid email')) {
+      } else if (error.message?.includes('Invalid email')) {
         setErrors({ email: 'Email inválido' });
+      } else if (error.message?.includes('Signup requires a valid password')) {
+        setErrors({ password: 'Senha inválida' });
       } else {
         setErrors({ general: error.message || 'Erro ao criar conta. Tente novamente.' });
       }
@@ -330,7 +331,7 @@ const Register = () => {
                       Teste grátis por 30 dias
                     </p>
                     <p className="text-sm text-gray-600">
-                      Sem cartão de crédito. Configure sua oficina após criar a conta.
+                      Sem cartão de crédito. Configure sua oficina no próximo passo.
                     </p>
                   </div>
                 </div>

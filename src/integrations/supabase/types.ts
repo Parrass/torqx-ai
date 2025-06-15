@@ -1450,7 +1450,7 @@ export type Database = {
           preferences: Json | null
           role: string
           status: string | null
-          tenant_id: string
+          tenant_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -1467,7 +1467,7 @@ export type Database = {
           preferences?: Json | null
           role: string
           status?: string | null
-          tenant_id: string
+          tenant_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -1484,7 +1484,7 @@ export type Database = {
           preferences?: Json | null
           role?: string
           status?: string | null
-          tenant_id?: string
+          tenant_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
