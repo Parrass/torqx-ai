@@ -25,6 +25,9 @@ import { useUserPermissions } from '@/hooks/useUserPermissions';
 const TorqxSidebar = () => {
   const { permissions, loading } = useUserPermissions();
 
+  console.log('TorqxSidebar - Permissões do usuário:', permissions);
+  console.log('TorqxSidebar - Loading:', loading);
+
   // Links principais (sempre visíveis)
   const mainLinks = [
     {
@@ -172,6 +175,8 @@ const TorqxSidebar = () => {
     );
   }
 
+  console.log('TorqxSidebar - Renderizando categorias. Total de permissões:', permissions.length);
+
   return (
     <SidebarBody>
       <div className="flex flex-col flex-1 overflow-y-auto">
@@ -183,6 +188,13 @@ const TorqxSidebar = () => {
           
           {/* Separador */}
           <div className="border-t border-gray-200 dark:border-torqx-primary-light my-3"></div>
+          
+          {/* Debug info - remover em produção */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="text-xs text-gray-500 p-2">
+              Permissões: {permissions.length > 0 ? permissions.join(', ') : 'Nenhuma'}
+            </div>
+          )}
           
           {/* Categorias */}
           {categories.map((category, idx) => (

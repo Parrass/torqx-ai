@@ -1929,6 +1929,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_current_user_tenant_id: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -1936,6 +1940,14 @@ export type Database = {
       get_or_create_tenant_for_user: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      initialize_owner_permissions: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      user_has_module_access: {
+        Args: { module_name: string }
+        Returns: boolean
       }
     }
     Enums: {
