@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Map, Play, CheckCircle, BarChart3, Users, Car, Wrench, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useOnboarding } from '@/hooks/useOnboarding';
 
 interface PlatformTourStepProps {
   onNext: () => void;
@@ -10,6 +11,7 @@ interface PlatformTourStepProps {
 
 const PlatformTourStep: React.FC<PlatformTourStepProps> = ({ onNext, onSkip }) => {
   const [tourCompleted, setTourCompleted] = useState(false);
+  const { steps, completeStep } = useOnboarding();
 
   const features = [
     {
@@ -44,7 +46,17 @@ const PlatformTourStep: React.FC<PlatformTourStepProps> = ({ onNext, onSkip }) =
     }
   ];
 
-  const handleStartTour = () => {
+  const handleStartTour = async () => {
+    // Completar todos os passos anteriores que ainda não foram completados
+    const incompleteSteps = steps.filter(step => 
+      !step.isCompleted && step.id !== 'tour'
+    );
+    
+    // Completar cada passo em sequência
+    for (const step of incompleteSteps) {
+      completeStep(step.id);
+    }
+    
     // Simular tour
     setTourCompleted(true);
     setTimeout(() => {
@@ -118,6 +130,9 @@ const PlatformTourStep: React.FC<PlatformTourStepProps> = ({ onNext, onSkip }) =
           <p className="text-gray-600">
             Vamos mostrar como usar cada funcionalidade com exemplos práticos. 
             Você pode pular se preferir explorar por conta própria.
+          </p>
+          <p className="text-sm text-torqx-secondary font-medium">
+            💡 Completar o tour marcará automaticamente todos os passos anteriores como concluídos
           </p>
           
           <div className="flex justify-center space-x-4">
