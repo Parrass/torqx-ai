@@ -15,7 +15,7 @@ const customerSchema = z.object({
   email: z.string().email('Email inválido').optional().or(z.literal('')),
   phone: z.string().min(1, 'Telefone é obrigatório'),
   document_number: z.string().optional(),
-  document_type: z.enum(['cpf', 'cnpj']).optional(),
+  document_type: z.enum(['cpf', 'cnpj']),
   customer_type: z.enum(['individual', 'business']),
   secondary_phone: z.string().optional(),
   preferred_contact: z.enum(['phone', 'email', 'whatsapp']),
@@ -59,7 +59,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
       email: customer.email || '',
       phone: customer.phone || '',
       document_number: customer.document_number || '',
-      document_type: customer.document_type as 'cpf' | 'cnpj' || 'cpf',
+      document_type: (customer.document_type as 'cpf' | 'cnpj') || 'cpf',
       customer_type: customer.customer_type,
       secondary_phone: customer.secondary_phone || '',
       preferred_contact: customer.preferred_contact,
@@ -73,18 +73,29 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
   });
 
   const customerType = watch('customer_type');
+  const documentType = watch('document_type');
 
   // Atualizar document_type automaticamente quando customer_type muda
   useEffect(() => {
-    if (customerType === 'individual') {
+    if (customerType === 'individual' && documentType !== 'cpf') {
       setValue('document_type', 'cpf');
-    } else if (customerType === 'business') {
+    } else if (customerType === 'business' && documentType !== 'cnpj') {
       setValue('document_type', 'cnpj');
     }
-  }, [customerType, setValue]);
+  }, [customerType, documentType, setValue]);
+
+  const handleFormSubmit = (data: CustomerFormData) => {
+    // Garantir que document_type está correto antes de enviar
+    const submitData = {
+      ...data,
+      document_type: data.customer_type === 'individual' ? 'cpf' : 'cnpj'
+    };
+    console.log('Dados do formulário antes de enviar:', submitData);
+    onSubmit(submitData);
+  };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="name">Nome *</Label>
