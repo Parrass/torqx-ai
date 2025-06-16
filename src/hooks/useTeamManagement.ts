@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -333,6 +334,45 @@ export const useTeamManagement = () => {
     try {
       setLoading(true);
 
+      // Buscar dados do convite para verificar se o usuário já foi criado
+      const { data: invitation, error: invitationError } = await supabase
+        .from('user_invitations')
+        .select('email, status')
+        .eq('id', invitationId)
+        .single();
+
+      if (invitationError) {
+        console.error('Erro ao buscar convite:', invitationError);
+        throw new Error('Convite não encontrado');
+      }
+
+      // Verificar se existe um usuário com este email no sistema
+      const { data: existingUser, error: userError } = await supabase
+        .from('users')
+        .select('id, status')
+        .eq('email', invitation.email)
+        .maybeSingle();
+
+      if (userError) {
+        console.error('Erro ao verificar usuário:', userError);
+      }
+
+      // Se o usuário existe e o convite foi aceito, desativar o usuário
+      if (existingUser && invitation.status === 'accepted') {
+        const { error: deactivateError } = await supabase
+          .from('users')
+          .update({ status: 'inactive' })
+          .eq('id', existingUser.id);
+
+        if (deactivateError) {
+          console.error('Erro ao desativar usuário:', deactivateError);
+          // Não falhar o cancelamento se não conseguir desativar
+        } else {
+          console.log('Usuário desativado devido ao cancelamento do convite');
+        }
+      }
+
+      // Cancelar o convite
       const { error } = await supabase
         .from('user_invitations')
         .update({ status: 'cancelled' })
@@ -341,6 +381,7 @@ export const useTeamManagement = () => {
       if (error) throw error;
 
       await fetchInvitations();
+      await fetchUsers(); // Atualizar lista de usuários para refletir mudanças de status
       
       toast({
         title: 'Sucesso',

@@ -1,42 +1,59 @@
 
-import React from "react";
-import LandingHeader from "../components/LandingHeader";
-import HeroSection from "../components/HeroSection";
-import SolutionSection from "../components/SolutionSection";
-import ROICalculator from "../components/ROICalculator";
-import CaseStudies from "../components/CaseStudies";
-import PricingSection from "../components/PricingSection";
-import FinalCTA from "../components/FinalCTA";
-import LandingFooter from "../components/LandingFooter";
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import LandingHeader from '@/components/LandingHeader';
+import HeroSection from '@/components/HeroSection';
+import SolutionSection from '@/components/SolutionSection';
+import ROICalculator from '@/components/ROICalculator';
+import CaseStudies from '@/components/CaseStudies';
+import PricingSection from '@/components/PricingSection';
+import FinalCTA from '@/components/FinalCTA';
+import LandingFooter from '@/components/LandingFooter';
 
 const Index = () => {
-  return (
-    <div className="min-h-screen bg-white font-inter">
-      {/* Header/Navegação padrão */}
-      <LandingHeader />
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
 
-      {/* HERO: focado em ROI e diferenciação da IA */}
-      <HeroSection />
+  useEffect(() => {
+    // Se o usuário está autenticado, redirecionar para o dashboard
+    if (!loading && user) {
+      navigate('/dashboard');
+    }
+  }, [user, loading, navigate]);
 
-      {/* Solução completa, 3 pilares */}
-      <SolutionSection />
+  // Mostrar loading enquanto verifica autenticação
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-torqx-secondary mx-auto"></div>
+          <p className="mt-2 text-gray-600">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
 
-      {/* Seção calculadora de ROI interativa */}
-      <ROICalculator />
+  // Se o usuário não está autenticado, mostrar landing page
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-white">
+        <LandingHeader />
+        <main>
+          <HeroSection />
+          <SolutionSection />
+          <ROICalculator />
+          <CaseStudies />
+          <PricingSection />
+          <FinalCTA />
+        </main>
+        <LandingFooter />
+      </div>
+    );
+  }
 
-      {/* Casos de sucesso/Depoimentos */}
-      <CaseStudies />
-
-      {/* Preços e planos */}
-      <PricingSection />
-
-      {/* Call-to-action com reforço de garantias */}
-      <FinalCTA />
-
-      {/* Footer padrão Torqx */}
-      <LandingFooter />
-    </div>
-  );
+  // Fallback (não deve acontecer devido ao useEffect)
+  return null;
 };
 
 export default Index;

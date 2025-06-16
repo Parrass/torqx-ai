@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
@@ -38,27 +39,31 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
+            {/* Rotas públicas */}
             <Route path="/" element={<Index />} />
-            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/customers" element={<Customers />} />
-            <Route path="/vehicles" element={<Vehicles />} />
-            <Route path="/service-orders" element={<ServiceOrders />} />
-            <Route path="/inventory" element={<Inventory />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/team-management" element={<TeamManagement />} />
-            <Route path="/welcome" element={<Welcome />} />
-            <Route path="/workshop-settings" element={<WorkshopSettings />} />
-            <Route path="/workshop-services" element={<WorkshopServices />} />
-            <Route path="/ai-assistant" element={<AIAssistant />} />
-            <Route path="/whatsapp-ai" element={<WhatsAppAI />} />
-            <Route path="/purchases" element={<Purchases />} />
-            <Route path="/suppliers" element={<Suppliers />} />
-            <Route path="/assets" element={<Assets />} />
             <Route path="/accept-invitation" element={<AcceptInvitation />} />
+            
+            {/* Rotas protegidas */}
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
+            <Route path="/vehicles" element={<ProtectedRoute><Vehicles /></ProtectedRoute>} />
+            <Route path="/service-orders" element={<ProtectedRoute><ServiceOrders /></ProtectedRoute>} />
+            <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
+            <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            <Route path="/team-management" element={<ProtectedRoute><TeamManagement /></ProtectedRoute>} />
+            <Route path="/welcome" element={<ProtectedRoute><Welcome /></ProtectedRoute>} />
+            <Route path="/workshop-settings" element={<ProtectedRoute><WorkshopSettings /></ProtectedRoute>} />
+            <Route path="/workshop-services" element={<ProtectedRoute><WorkshopServices /></ProtectedRoute>} />
+            <Route path="/ai-assistant" element={<ProtectedRoute><AIAssistant /></ProtectedRoute>} />
+            <Route path="/whatsapp-ai" element={<ProtectedRoute><WhatsAppAI /></ProtectedRoute>} />
+            <Route path="/purchases" element={<ProtectedRoute><Purchases /></ProtectedRoute>} />
+            <Route path="/suppliers" element={<ProtectedRoute><Suppliers /></ProtectedRoute>} />
+            <Route path="/assets" element={<ProtectedRoute><Assets /></ProtectedRoute>} />
+            
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
