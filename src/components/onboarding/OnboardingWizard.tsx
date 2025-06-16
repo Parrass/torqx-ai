@@ -29,6 +29,13 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ isOpen, onClose }) 
 
   const handleNext = () => {
     completeStep(currentStep.id);
+    
+    // Se for o último passo, fechar o modal após um pequeno delay
+    if (isLastStep) {
+      setTimeout(() => {
+        onClose();
+      }, 1000);
+    }
   };
 
   const handleSkip = () => {
