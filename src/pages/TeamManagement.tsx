@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Plus, Edit, Users, Shield, UserCheck, UserX, Mail, Clock, X } from 'lucide-react';
+import { Plus, Edit, Users, Shield, UserCheck, UserX, Mail, Clock, X, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +19,8 @@ const TeamManagement = () => {
     createUserInvitation, 
     updateUserPermissions, 
     updateUserStatus,
-    cancelInvitation
+    cancelInvitation,
+    resendInvitation
   } = useTeamManagement();
   const [showAddUser, setShowAddUser] = useState(false);
   const [editingUser, setEditingUser] = useState<TeamUser | null>(null);
@@ -102,6 +102,10 @@ const TeamManagement = () => {
 
   const handleCancelInvitation = async (invitationId: string) => {
     await cancelInvitation(invitationId);
+  };
+
+  const handleResendInvitation = async (invitationId: string) => {
+    await resendInvitation(invitationId);
   };
 
   const stats = [
@@ -208,14 +212,26 @@ const TeamManagement = () => {
                       </div>
                       <div className="flex items-center space-x-3">
                         {getInvitationStatusBadge(invitation.status, invitation.expires_at)}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleCancelInvitation(invitation.id)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleResendInvitation(invitation.id)}
+                            className="text-blue-600 hover:text-blue-700"
+                            title="Reenviar convite"
+                          >
+                            <RefreshCw className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleCancelInvitation(invitation.id)}
+                            className="text-red-600 hover:text-red-700"
+                            title="Cancelar convite"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}

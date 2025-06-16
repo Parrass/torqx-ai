@@ -212,6 +212,71 @@ export const useTeamManagement = () => {
     }
   };
 
+  const resendInvitation = async (invitationId: string) => {
+    try {
+      setLoading(true);
+
+      // Buscar dados do convite
+      const { data: invitation, error: fetchError } = await supabase
+        .from('user_invitations_with_details')
+        .select('*')
+        .eq('id', invitationId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      if (!invitation) {
+        throw new Error('Convite não encontrado');
+      }
+
+      // Atualizar a data de expiração do convite
+      const { error: updateError } = await supabase
+        .from('user_invitations')
+        .update({ 
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 dias a partir de agora
+          status: 'pending'
+        })
+        .eq('id', invitationId);
+
+      if (updateError) throw updateError;
+
+      // Reenviar através da edge function
+      const { data, error } = await supabase.functions.invoke('send-team-invitation', {
+        body: {
+          email: invitation.email,
+          full_name: invitation.full_name,
+          phone: invitation.phone,
+          role: invitation.role,
+          permissions: invitation.permissions,
+          tenant_id: invitation.tenant_id,
+          invited_by_user_id: invitation.invited_by_user_id,
+          company_name: invitation.company_name
+        }
+      });
+
+      if (error) throw error;
+
+      await fetchInvitations();
+      
+      toast({
+        title: 'Sucesso',
+        description: `Convite reenviado para ${invitation.email}`,
+      });
+
+      return { success: true };
+    } catch (err: any) {
+      const errorMessage = err.message || 'Erro ao reenviar convite';
+      toast({
+        title: 'Erro',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+      return { success: false, error: errorMessage };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const acceptInvitation = async (invitationId: string) => {
     try {
       setLoading(true);
@@ -375,6 +440,7 @@ export const useTeamManagement = () => {
     createUserInvitation,
     acceptInvitation,
     cancelInvitation,
+    resendInvitation,
     updateUserPermissions,
     updateUserStatus,
     refetch: fetchUsers
