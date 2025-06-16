@@ -118,8 +118,8 @@ const AcceptInvitation = () => {
 
       if (error) throw error;
 
-      // Cast the response to the expected type
-      const response = data as RpcResponse;
+      // Safe cast the response to the expected type using unknown
+      const response = data as unknown as RpcResponse;
 
       if (!response.success) {
         throw new Error(response.error || 'Erro ao aceitar convite');

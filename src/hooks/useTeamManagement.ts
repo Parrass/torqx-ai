@@ -109,11 +109,13 @@ export const useTeamManagement = () => {
 
       if (error) throw error;
 
-      // Transform the data to match UserInvitation interface
+      // Transform the data to match UserInvitation interface with safe type conversion
       const transformedInvitations: UserInvitation[] = (data || []).map(invitation => ({
         ...invitation,
-        permissions: typeof invitation.permissions === 'object' && invitation.permissions !== null
-          ? invitation.permissions as Record<string, UserPermission>
+        permissions: typeof invitation.permissions === 'object' && 
+                    invitation.permissions !== null && 
+                    !Array.isArray(invitation.permissions)
+          ? invitation.permissions as unknown as Record<string, UserPermission>
           : {}
       }));
 
@@ -215,8 +217,8 @@ export const useTeamManagement = () => {
 
       if (error) throw error;
 
-      // Cast the response to the expected type
-      const response = data as RpcResponse;
+      // Safe cast the response to the expected type using unknown
+      const response = data as unknown as RpcResponse;
 
       if (!response.success) {
         throw new Error(response.error || 'Erro ao aceitar convite');
