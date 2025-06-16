@@ -86,9 +86,9 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
 
   const handleFormSubmit = (data: CustomerFormData) => {
     // Garantir que document_type está correto antes de enviar
-    const submitData = {
+    const submitData: CustomerFormData = {
       ...data,
-      document_type: data.customer_type === 'individual' ? 'cpf' : 'cnpj'
+      document_type: data.customer_type === 'individual' ? 'cpf' as const : 'cnpj' as const
     };
     console.log('Dados do formulário antes de enviar:', submitData);
     onSubmit(submitData);

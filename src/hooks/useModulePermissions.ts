@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { initializeUserPermissions } from '@/utils/permissionsUtils';
 
 export interface ModulePermission {
   module_name: string;
@@ -25,6 +26,10 @@ export const useModulePermissions = () => {
 
     try {
       setLoading(true);
+      console.log('Buscando permissões para usuário:', user.id);
+
+      // Primeiro, inicializar permissões se necessário
+      await initializeUserPermissions();
 
       // Buscar role do usuário
       const { data: userData, error: userError } = await supabase
@@ -40,11 +45,7 @@ export const useModulePermissions = () => {
       }
 
       setUserRole(userData.role);
-
-      // Se for owner, tem todas as permissões - garantir que estejam inicializadas
-      if (userData.role === 'owner') {
-        await supabase.rpc('initialize_owner_permissions');
-      }
+      console.log('Role do usuário:', userData.role);
 
       // Buscar permissões específicas do usuário
       const { data: userPermissions, error: permissionsError } = await supabase
@@ -54,11 +55,10 @@ export const useModulePermissions = () => {
 
       if (permissionsError) {
         console.error('Erro ao buscar permissões:', permissionsError);
-        setLoading(false);
-        return;
+      } else {
+        console.log('Permissões encontradas:', userPermissions);
+        setPermissions(userPermissions || []);
       }
-
-      setPermissions(userPermissions || []);
     } catch (error) {
       console.error('Erro ao carregar permissões:', error);
     } finally {
@@ -69,26 +69,33 @@ export const useModulePermissions = () => {
   const hasPermission = (moduleName: string, permissionType: 'create' | 'read' | 'update' | 'delete'): boolean => {
     // Owner tem todas as permissões
     if (userRole === 'owner') {
+      console.log(`Owner tem permissão ${permissionType} para ${moduleName}`);
       return true;
     }
 
     const modulePermission = permissions.find(p => p.module_name === moduleName);
     if (!modulePermission) {
+      console.log(`Nenhuma permissão encontrada para módulo ${moduleName}`);
       return false;
     }
 
-    switch (permissionType) {
-      case 'create':
-        return modulePermission.can_create;
-      case 'read':
-        return modulePermission.can_read;
-      case 'update':
-        return modulePermission.can_update;
-      case 'delete':
-        return modulePermission.can_delete;
-      default:
-        return false;
-    }
+    const hasAccess = (() => {
+      switch (permissionType) {
+        case 'create':
+          return modulePermission.can_create;
+        case 'read':
+          return modulePermission.can_read;
+        case 'update':
+          return modulePermission.can_update;
+        case 'delete':
+          return modulePermission.can_delete;
+        default:
+          return false;
+      }
+    })();
+
+    console.log(`Permissão ${permissionType} para ${moduleName}:`, hasAccess);
+    return hasAccess;
   };
 
   const hasModuleAccess = (moduleName: string): boolean => {
