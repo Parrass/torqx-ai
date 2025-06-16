@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -48,6 +49,12 @@ export interface UserInvitation {
   accepted_at?: string;
   invited_by_name?: string;
   company_name?: string;
+}
+
+interface RpcResponse {
+  success: boolean;
+  error?: string;
+  user_id?: string;
 }
 
 export const useTeamManagement = () => {
@@ -102,7 +109,15 @@ export const useTeamManagement = () => {
 
       if (error) throw error;
 
-      setInvitations(data || []);
+      // Transform the data to match UserInvitation interface
+      const transformedInvitations: UserInvitation[] = (data || []).map(invitation => ({
+        ...invitation,
+        permissions: typeof invitation.permissions === 'object' && invitation.permissions !== null
+          ? invitation.permissions as Record<string, UserPermission>
+          : {}
+      }));
+
+      setInvitations(transformedInvitations);
     } catch (err: any) {
       console.error('Erro ao carregar convites:', err);
     }
@@ -200,8 +215,11 @@ export const useTeamManagement = () => {
 
       if (error) throw error;
 
-      if (!data.success) {
-        throw new Error(data.error || 'Erro ao aceitar convite');
+      // Cast the response to the expected type
+      const response = data as RpcResponse;
+
+      if (!response.success) {
+        throw new Error(response.error || 'Erro ao aceitar convite');
       }
 
       toast({

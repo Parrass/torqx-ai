@@ -18,6 +18,12 @@ interface InvitationDetails {
   status: string;
 }
 
+interface RpcResponse {
+  success: boolean;
+  error?: string;
+  user_id?: string;
+}
+
 const AcceptInvitation = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -112,8 +118,11 @@ const AcceptInvitation = () => {
 
       if (error) throw error;
 
-      if (!data.success) {
-        throw new Error(data.error || 'Erro ao aceitar convite');
+      // Cast the response to the expected type
+      const response = data as RpcResponse;
+
+      if (!response.success) {
+        throw new Error(response.error || 'Erro ao aceitar convite');
       }
 
       setSuccess(true);
