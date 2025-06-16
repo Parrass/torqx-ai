@@ -48,8 +48,14 @@ const PlatformTourStep: React.FC<PlatformTourStepProps> = ({ onNext, onSkip }) =
     // Simular tour
     setTourCompleted(true);
     setTimeout(() => {
+      // Finalizar o onboarding completamente
       onNext();
     }, 2000);
+  };
+
+  const handleSkipTour = () => {
+    // Se pular, também finalizar o onboarding
+    onNext();
   };
 
   if (tourCompleted) {
@@ -62,9 +68,14 @@ const PlatformTourStep: React.FC<PlatformTourStepProps> = ({ onNext, onSkip }) =
           Tour Concluído!
         </h2>
         <p className="text-gray-600">
-          Parabéns! Você completou a configuração inicial. 
-          Agora você está pronto para usar o Torqx.
+          Parabéns! Você completou toda a configuração inicial. 
+          Agora você está pronto para usar o Torqx com todo seu potencial.
         </p>
+        <div className="bg-torqx-accent/10 rounded-xl p-4 text-center">
+          <p className="text-torqx-accent font-medium">
+            🎉 Onboarding 100% concluído! Bem-vindo ao Torqx!
+          </p>
+        </div>
       </div>
     );
   }
@@ -110,11 +121,9 @@ const PlatformTourStep: React.FC<PlatformTourStepProps> = ({ onNext, onSkip }) =
           </p>
           
           <div className="flex justify-center space-x-4">
-            {onSkip && (
-              <Button variant="outline" onClick={onSkip}>
-                Explorar sozinho
-              </Button>
-            )}
+            <Button variant="outline" onClick={handleSkipTour}>
+              Explorar sozinho
+            </Button>
             <Button 
               onClick={handleStartTour}
               className="bg-gradient-to-r from-torqx-secondary to-torqx-accent text-white"

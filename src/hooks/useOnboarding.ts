@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -159,7 +158,7 @@ export const useOnboarding = () => {
     }
   }, [userId, tenantId, isInitialized, progress, progressLoading, initializeMutation]);
 
-  // Complete step mutation
+  // Complete step mutation with correct progress calculation
   const completeStepMutation = useMutation({
     mutationFn: async (stepId: string) => {
       if (!userId || !progress) return;
@@ -171,14 +170,24 @@ export const useOnboarding = () => {
 
       const currentStepIndex = ONBOARDING_STEPS.findIndex(s => s.id === stepId);
       const nextStep = ONBOARDING_STEPS[currentStepIndex + 1];
+      
+      // Calcular progresso correto: se todos os steps foram completados, é 100%
       const newProgress = Math.round((newCompletedSteps.length / ONBOARDING_STEPS.length) * 100);
+      const isOnboardingCompleted = newCompletedSteps.length === ONBOARDING_STEPS.length;
+
+      console.log('useOnboarding: Completing step:', stepId, {
+        completedStepsCount: newCompletedSteps.length,
+        totalSteps: ONBOARDING_STEPS.length,
+        newProgress,
+        isOnboardingCompleted
+      });
 
       const updates = {
         completed_steps: newCompletedSteps,
         current_step: nextStep ? nextStep.id : stepId,
         progress: newProgress,
-        is_completed: newProgress === 100,
-        completed_at: newProgress === 100 ? new Date().toISOString() : null,
+        is_completed: isOnboardingCompleted,
+        completed_at: isOnboardingCompleted ? new Date().toISOString() : null,
         updated_at: new Date().toISOString()
       };
 
@@ -273,7 +282,9 @@ export const useOnboarding = () => {
     isCompleted: progress?.isCompleted,
     isLoading,
     initializationPending: initializeMutation.isPending,
-    currentStepId: progress?.currentStep
+    currentStepId: progress?.currentStep,
+    completedStepsCount: progress?.completedSteps.length,
+    totalSteps: ONBOARDING_STEPS.length
   });
 
   return {
