@@ -8,7 +8,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     description: 'Conheça a plataforma e seus benefícios',
     component: 'WelcomeStep',
     isCompleted: false,
-    isOptional: false,
+    isOptional: true,
     order: 1
   },
   {
@@ -17,7 +17,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     description: 'Complete as informações da sua oficina',
     component: 'WorkshopSetupStep',
     isCompleted: false,
-    isOptional: false,
+    isOptional: true,
     order: 2
   },
   {
@@ -35,7 +35,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     description: 'Cadastre seu primeiro cliente',
     component: 'FirstCustomerStep',
     isCompleted: false,
-    isOptional: false,
+    isOptional: true,
     order: 4
   },
   {
@@ -44,7 +44,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     description: 'Cadastre o primeiro veículo',
     component: 'FirstVehicleStep',
     isCompleted: false,
-    isOptional: false,
+    isOptional: true,
     order: 5
   },
   {
@@ -53,7 +53,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     description: 'Crie sua primeira ordem de serviço',
     component: 'FirstServiceOrderStep',
     isCompleted: false,
-    isOptional: false,
+    isOptional: true,
     order: 6
   },
   {
