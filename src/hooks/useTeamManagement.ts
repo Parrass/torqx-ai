@@ -70,6 +70,12 @@ export const useTeamManagement = () => {
       setLoading(true);
       setError(null);
 
+      // Primeiro, garantir que as permissões dos owners estejam corretas
+      const { error: ensureError } = await supabase.rpc('ensure_owner_permissions');
+      if (ensureError) {
+        console.warn('Erro ao garantir permissões do owner:', ensureError);
+      }
+
       const { data, error } = await supabase
         .from('users_with_permissions')
         .select('*')
@@ -223,6 +229,9 @@ export const useTeamManagement = () => {
       if (!response.success) {
         throw new Error(response.error || 'Erro ao aceitar convite');
       }
+
+      // Garantir que as permissões sejam inicializadas após aceitar convite
+      await supabase.rpc('ensure_owner_permissions');
 
       toast({
         title: 'Sucesso',
