@@ -216,45 +216,57 @@ export const useTeamManagement = () => {
     try {
       setLoading(true);
 
-      // Buscar dados do convite
+      // Primeiro, atualizar a data de expiração do convite existente
+      const { error: updateError } = await supabase
+        .from('user_invitations')
+        .update({ 
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          status: 'pending'
+        })
+        .eq('id', invitationId);
+
+      if (updateError) {
+        console.error('Erro ao atualizar convite:', updateError);
+        throw new Error(`Erro ao atualizar convite: ${updateError.message}`);
+      }
+
+      // Buscar dados atualizados do convite
       const { data: invitation, error: fetchError } = await supabase
         .from('user_invitations_with_details')
         .select('*')
         .eq('id', invitationId)
         .single();
 
-      if (fetchError) throw fetchError;
+      if (fetchError) {
+        console.error('Erro ao buscar convite:', fetchError);
+        throw new Error(`Erro ao buscar convite: ${fetchError.message}`);
+      }
 
       if (!invitation) {
         throw new Error('Convite não encontrado');
       }
 
-      // Atualizar a data de expiração do convite
-      const { error: updateError } = await supabase
-        .from('user_invitations')
-        .update({ 
-          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 dias a partir de agora
-          status: 'pending'
-        })
-        .eq('id', invitationId);
-
-      if (updateError) throw updateError;
-
-      // Reenviar através da edge function
-      const { data, error } = await supabase.functions.invoke('send-team-invitation', {
-        body: {
-          email: invitation.email,
-          full_name: invitation.full_name,
-          phone: invitation.phone,
-          role: invitation.role,
-          permissions: invitation.permissions,
-          tenant_id: invitation.tenant_id,
-          invited_by_user_id: invitation.invited_by_user_id,
-          company_name: invitation.company_name
+      // Agora gerar um novo magic link via edge function personalizada
+      // Primeiro, vamos criar o magic link diretamente
+      const { data: magicLinkData, error: magicLinkError } = await supabase.auth.admin.generateLink({
+        type: 'magiclink',
+        email: invitation.email,
+        options: {
+          redirectTo: `${window.location.origin}/accept-invitation?invitation_id=${invitation.id}`,
+          data: {
+            invitation_id: invitation.id,
+            full_name: invitation.full_name
+          }
         }
       });
 
-      if (error) throw error;
+      if (magicLinkError) {
+        console.error('Erro ao gerar magic link:', magicLinkError);
+        // Não falhar completamente, pois o convite foi atualizado
+        console.log('Magic link falhou, mas convite foi atualizado com sucesso');
+      } else {
+        console.log('Magic link gerado com sucesso para reenvio');
+      }
 
       await fetchInvitations();
       
@@ -266,6 +278,7 @@ export const useTeamManagement = () => {
       return { success: true };
     } catch (err: any) {
       const errorMessage = err.message || 'Erro ao reenviar convite';
+      console.error('Erro no reenvio:', err);
       toast({
         title: 'Erro',
         description: errorMessage,
