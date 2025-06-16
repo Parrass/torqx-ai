@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Users, Plus, Search, MoreVertical, 
@@ -15,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import DashboardLayout from '@/components/DashboardLayout';
 import CustomerForm from '@/components/CustomerForm';
 import CustomerImport from '@/components/CustomerImport';
+import PermissionGate from '@/components/PermissionGate';
 import { useCustomers, useCustomerStats, useCreateCustomer, useUpdateCustomer, useDeleteCustomer, Customer } from '@/hooks/useCustomers';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -40,19 +40,31 @@ const Customers = () => {
 
   // Event handlers
   const handleCreateCustomer = async (data: any) => {
-    await createCustomer.mutateAsync(data);
-    setShowAddModal(false);
+    try {
+      await createCustomer.mutateAsync(data);
+      setShowAddModal(false);
+    } catch (error) {
+      console.error('Erro ao criar cliente:', error);
+    }
   };
 
   const handleUpdateCustomer = async (data: any) => {
     if (editingCustomer) {
-      await updateCustomer.mutateAsync({ id: editingCustomer.id, ...data });
-      setEditingCustomer(null);
+      try {
+        await updateCustomer.mutateAsync({ id: editingCustomer.id, ...data });
+        setEditingCustomer(null);
+      } catch (error) {
+        console.error('Erro ao atualizar cliente:', error);
+      }
     }
   };
 
   const handleDeleteCustomer = async (id: string) => {
-    await deleteCustomer.mutateAsync(id);
+    try {
+      await deleteCustomer.mutateAsync(id);
+    } catch (error) {
+      console.error('Erro ao excluir cliente:', error);
+    }
   };
 
   const CustomerCard = ({ customer }: { customer: Customer }) => (
@@ -77,45 +89,53 @@ const Customers = () => {
               </div>
             </div>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <MoreVertical className="w-4 h-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => {}}>
-                <Eye className="w-4 h-4 mr-2" />
-                Ver Detalhes
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setEditingCustomer(customer)}>
-                <Edit className="w-4 h-4 mr-2" />
-                Editar
-              </DropdownMenuItem>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Excluir
+          <PermissionGate module="customers" permission="update" showError={false}>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <MoreVertical className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <PermissionGate module="customers" permission="read" showError={false}>
+                  <DropdownMenuItem onClick={() => {}}>
+                    <Eye className="w-4 h-4 mr-2" />
+                    Ver Detalhes
                   </DropdownMenuItem>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Tem certeza que deseja excluir o cliente "{customer.name}"? Esta ação não pode ser desfeita.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => handleDeleteCustomer(customer.id)}>
-                      Excluir
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                </PermissionGate>
+                <PermissionGate module="customers" permission="update" showError={false}>
+                  <DropdownMenuItem onClick={() => setEditingCustomer(customer)}>
+                    <Edit className="w-4 h-4 mr-2" />
+                    Editar
+                  </DropdownMenuItem>
+                </PermissionGate>
+                <PermissionGate module="customers" permission="delete" showError={false}>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Excluir
+                      </DropdownMenuItem>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Tem certeza que deseja excluir o cliente "{customer.name}"? Esta ação não pode ser desfeita.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleDeleteCustomer(customer.id)}>
+                          Excluir
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </PermissionGate>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </PermissionGate>
         </div>
 
         <div className="space-y-2 mb-4">
@@ -160,244 +180,229 @@ const Customers = () => {
         </div>
 
         <div className="flex space-x-2">
-          <Button variant="outline" className="flex-1" onClick={() => {}}>
-            <Eye className="w-4 h-4 mr-1" />
-            Ver Detalhes
-          </Button>
-          <Button variant="outline" className="flex-1" onClick={() => setEditingCustomer(customer)}>
-            <Edit className="w-4 h-4 mr-1" />
-            Editar
-          </Button>
+          <PermissionGate module="customers" permission="read" showError={false}>
+            <Button variant="outline" className="flex-1" onClick={() => {}}>
+              <Eye className="w-4 h-4 mr-1" />
+              Ver Detalhes
+            </Button>
+          </PermissionGate>
+          <PermissionGate module="customers" permission="update" showError={false}>
+            <Button variant="outline" className="flex-1" onClick={() => setEditingCustomer(customer)}>
+              <Edit className="w-4 h-4 mr-1" />
+              Editar
+            </Button>
+          </PermissionGate>
         </div>
       </CardContent>
     </Card>
   );
 
-  if (!user) {
-    return (
-      <DashboardLayout>
-        <div className="p-6 text-center">
-          <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Acesso Negado
-          </h3>
-          <p className="text-gray-500">
-            Você precisa estar logado para acessar esta página.
-          </p>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  if (error) {
-    return (
-      <DashboardLayout>
-        <div className="p-6 text-center">
-          <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Erro ao Carregar Clientes
-          </h3>
-          <p className="text-gray-500 mb-4">
-            Ocorreu um erro ao carregar os dados dos clientes.
-          </p>
-          <Button onClick={() => window.location.reload()}>
-            Tentar Novamente
-          </Button>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <DashboardLayout>
-        <div className="p-6">
-          <div className="animate-pulse space-y-6">
-            <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-24 bg-gray-200 rounded"></div>
-              ))}
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="h-64 bg-gray-200 rounded"></div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
   return (
     <DashboardLayout>
-      <div className="p-6">
-        {/* Page Title */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-torqx-primary font-satoshi mb-2">
-            Clientes
-          </h1>
-          <div className="flex items-center justify-between">
-            <p className="text-gray-600">Gerencie seus clientes e relacionamentos</p>
-            <div className="flex items-center space-x-4">
-              <Button variant="outline" size="sm">
-                <Download className="w-4 h-4 mr-2" />
-                Exportar
-              </Button>
-              <CustomerImport />
-              <Button onClick={() => setShowAddModal(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Novo Cliente
-              </Button>
+      <PermissionGate module="customers" permission="read">
+        <div className="p-6">
+          {/* Page Title */}
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-torqx-primary font-satoshi mb-2">
+              Clientes
+            </h1>
+            <div className="flex items-center justify-between">
+              <p className="text-gray-600">Gerencie seus clientes e relacionamentos</p>
+              <div className="flex items-center space-x-4">
+                <PermissionGate module="customers" permission="read" showError={false}>
+                  <Button variant="outline" size="sm">
+                    <Download className="w-4 h-4 mr-2" />
+                    Exportar
+                  </Button>
+                </PermissionGate>
+                <PermissionGate module="customers" permission="create" showError={false}>
+                  <CustomerImport />
+                </PermissionGate>
+                <PermissionGate module="customers" permission="create" showError={false}>
+                  <Button onClick={() => setShowAddModal(true)}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Novo Cliente
+                  </Button>
+                </PermissionGate>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total de Clientes</p>
-                  <p className="text-2xl font-bold text-torqx-primary">{stats?.totalCustomers || 0}</p>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Total de Clientes</p>
+                    <p className="text-2xl font-bold text-torqx-primary">{stats?.totalCustomers || 0}</p>
+                  </div>
+                  <Users className="w-8 h-8 text-torqx-secondary" />
                 </div>
-                <Users className="w-8 h-8 text-torqx-secondary" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Novos este Mês</p>
-                  <p className="text-2xl font-bold text-torqx-primary">{stats?.newThisMonth || 0}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Novos este Mês</p>
+                    <p className="text-2xl font-bold text-torqx-primary">{stats?.newThisMonth || 0}</p>
+                  </div>
+                  <UserPlus className="w-8 h-8 text-torqx-accent" />
                 </div>
-                <UserPlus className="w-8 h-8 text-torqx-accent" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Receita Total</p>
-                  <p className="text-2xl font-bold text-torqx-primary">
-                    R$ {(stats?.totalRevenue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Receita Total</p>
+                    <p className="text-2xl font-bold text-torqx-primary">
+                      R$ {(stats?.totalRevenue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                  <div className="w-8 h-8 bg-torqx-accent/10 rounded-lg flex items-center justify-center">
+                    <span className="text-torqx-accent font-bold">R$</span>
+                  </div>
                 </div>
-                <div className="w-8 h-8 bg-torqx-accent/10 rounded-lg flex items-center justify-center">
-                  <span className="text-torqx-accent font-bold">R$</span>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Ticket Médio</p>
+                    <p className="text-2xl font-bold text-torqx-primary">
+                      R$ {(stats?.averageTicket || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                  <div className="w-8 h-8 bg-torqx-secondary/10 rounded-lg flex items-center justify-center">
+                    <span className="text-torqx-secondary font-bold">₢</span>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Ticket Médio</p>
-                  <p className="text-2xl font-bold text-torqx-primary">
-                    R$ {(stats?.averageTicket || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </p>
-                </div>
-                <div className="w-8 h-8 bg-torqx-secondary/10 rounded-lg flex items-center justify-center">
-                  <span className="text-torqx-secondary font-bold">₢</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Filters */}
-        <Card className="mb-6">
-          <CardContent className="p-4">
-            <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <Input
-                  placeholder="Buscar clientes..."
-                  className="pl-10"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <select
-                className="px-4 py-2 border border-input rounded-md focus:ring-2 focus:ring-ring"
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value as any)}
-              >
-                <option value="all">Todos os Status</option>
-                <option value="active">Ativos</option>
-                <option value="inactive">Inativos</option>
-              </select>
-              <select
-                className="px-4 py-2 border border-input rounded-md focus:ring-2 focus:ring-ring"
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value as any)}
-              >
-                <option value="all">Todos os Tipos</option>
-                <option value="individual">Pessoa Física</option>
-                <option value="business">Pessoa Jurídica</option>
-              </select>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Customers Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {customers.map(customer => (
-            <CustomerCard key={customer.id} customer={customer} />
-          ))}
-        </div>
-
-        {customers.length === 0 && !isLoading && (
-          <div className="text-center py-12">
-            <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Nenhum cliente encontrado
-            </h3>
-            <p className="text-gray-500 mb-6">
-              {searchTerm ? 'Tente ajustar os filtros de busca' : 'Comece adicionando seu primeiro cliente'}
-            </p>
-            <Button onClick={() => setShowAddModal(true)}>
-              <Plus className="w-5 h-5 mr-2" />
-              Adicionar Cliente
-            </Button>
+              </CardContent>
+            </Card>
           </div>
-        )}
 
-        {/* Create Customer Modal */}
-        <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Novo Cliente</DialogTitle>
-            </DialogHeader>
-            <CustomerForm
-              onSubmit={handleCreateCustomer}
-              onCancel={() => setShowAddModal(false)}
-              isLoading={createCustomer.isPending}
-            />
-          </DialogContent>
-        </Dialog>
+          {/* Filters */}
+          <Card className="mb-6">
+            <CardContent className="p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <Input
+                    placeholder="Buscar clientes..."
+                    className="pl-10"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                <select
+                  className="px-4 py-2 border border-input rounded-md focus:ring-2 focus:ring-ring"
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value as any)}
+                >
+                  <option value="all">Todos os Status</option>
+                  <option value="active">Ativos</option>
+                  <option value="inactive">Inativos</option>
+                </select>
+                <select
+                  className="px-4 py-2 border border-input rounded-md focus:ring-2 focus:ring-ring"
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value as any)}
+                >
+                  <option value="all">Todos os Tipos</option>
+                  <option value="individual">Pessoa Física</option>
+                  <option value="business">Pessoa Jurídica</option>
+                </select>
+              </div>
+            </CardContent>
+          </Card>
 
-        <Dialog open={!!editingCustomer} onOpenChange={() => setEditingCustomer(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Editar Cliente</DialogTitle>
-            </DialogHeader>
-            {editingCustomer && (
+          {/* Loading state */}
+          {isLoading && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="h-64 bg-gray-200 rounded animate-pulse"></div>
+              ))}
+            </div>
+          )}
+
+          {/* Error state */}
+          {error && (
+            <div className="text-center py-12">
+              <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Erro ao Carregar Clientes
+              </h3>
+              <p className="text-gray-500 mb-4">
+                Ocorreu um erro ao carregar os dados dos clientes.
+              </p>
+              <Button onClick={() => window.location.reload()}>
+                Tentar Novamente
+              </Button>
+            </div>
+          )}
+
+          {/* Customers Grid */}
+          {!isLoading && !error && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {customers.map(customer => (
+                <CustomerCard key={customer.id} customer={customer} />
+              ))}
+            </div>
+          )}
+
+          {/* Empty state */}
+          {!isLoading && !error && customers.length === 0 && (
+            <div className="text-center py-12">
+              <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Nenhum cliente encontrado
+              </h3>
+              <p className="text-gray-500 mb-6">
+                {searchTerm ? 'Tente ajustar os filtros de busca' : 'Comece adicionando seu primeiro cliente'}
+              </p>
+              <PermissionGate module="customers" permission="create" showError={false}>
+                <Button onClick={() => setShowAddModal(true)}>
+                  <Plus className="w-5 h-5 mr-2" />
+                  Adicionar Cliente
+                </Button>
+              </PermissionGate>
+            </div>
+          )}
+
+          {/* Create Customer Modal */}
+          <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Novo Cliente</DialogTitle>
+              </DialogHeader>
               <CustomerForm
-                customer={editingCustomer}
-                onSubmit={handleUpdateCustomer}
-                onCancel={() => setEditingCustomer(null)}
-                isLoading={updateCustomer.isPending}
+                onSubmit={handleCreateCustomer}
+                onCancel={() => setShowAddModal(false)}
+                isLoading={createCustomer.isPending}
               />
-            )}
-          </DialogContent>
-        </Dialog>
-      </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Edit Customer Modal */}
+          <Dialog open={!!editingCustomer} onOpenChange={() => setEditingCustomer(null)}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Editar Cliente</DialogTitle>
+              </DialogHeader>
+              {editingCustomer && (
+                <CustomerForm
+                  customer={editingCustomer}
+                  onSubmit={handleUpdateCustomer}
+                  onCancel={() => setEditingCustomer(null)}
+                  isLoading={updateCustomer.isPending}
+                />
+              )}
+            </DialogContent>
+          </Dialog>
+        </div>
+      </PermissionGate>
     </DashboardLayout>
   );
 };

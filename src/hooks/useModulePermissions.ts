@@ -35,14 +35,14 @@ export const useModulePermissions = () => {
 
       if (userError) {
         console.error('Erro ao buscar dados do usuário:', userError);
+        setLoading(false);
         return;
       }
 
       setUserRole(userData.role);
 
-      // Se for owner, tem todas as permissões
+      // Se for owner, tem todas as permissões - garantir que estejam inicializadas
       if (userData.role === 'owner') {
-        // Garantir que as permissões do owner estão inicializadas
         await supabase.rpc('initialize_owner_permissions');
       }
 
@@ -54,6 +54,7 @@ export const useModulePermissions = () => {
 
       if (permissionsError) {
         console.error('Erro ao buscar permissões:', permissionsError);
+        setLoading(false);
         return;
       }
 

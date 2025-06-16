@@ -19,7 +19,7 @@ const PermissionGate: React.FC<PermissionGateProps> = ({
   fallback,
   showError = true
 }) => {
-  const { hasPermission, loading } = useModulePermissions();
+  const { hasPermission, userRole, loading } = useModulePermissions();
 
   if (loading) {
     return (
@@ -27,6 +27,11 @@ const PermissionGate: React.FC<PermissionGateProps> = ({
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-torqx-secondary"></div>
       </div>
     );
+  }
+
+  // Owners sempre têm acesso
+  if (userRole === 'owner') {
+    return <>{children}</>;
   }
 
   const hasAccess = hasPermission(module, permission);
@@ -41,7 +46,7 @@ const PermissionGate: React.FC<PermissionGateProps> = ({
         <Alert className="border-red-200 bg-red-50">
           <Shield className="h-4 w-4 text-red-600" />
           <AlertDescription className="text-red-800">
-            Você não tem permissão para acessar este recurso.
+            Você não tem permissão para {permission === 'create' ? 'criar' : permission === 'read' ? 'visualizar' : permission === 'update' ? 'editar' : 'excluir'} {module === 'customers' ? 'clientes' : 'este recurso'}.
           </AlertDescription>
         </Alert>
       );
