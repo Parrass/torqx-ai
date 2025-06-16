@@ -29,6 +29,9 @@ const handler = async (req: Request): Promise<Response> => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
+    const requestData = await req.json();
+    console.log("Dados recebidos:", JSON.stringify(requestData, null, 2));
+
     const {
       email,
       full_name,
@@ -38,20 +41,26 @@ const handler = async (req: Request): Promise<Response> => {
       tenant_id,
       invited_by_user_id,
       company_name
-    }: InvitationRequest = await req.json();
+    }: InvitationRequest = requestData;
 
     console.log("Processando convite para:", email);
 
     // Verificar se já existe um convite pendente
-    const { data: existingInvitation } = await supabaseClient
+    const { data: existingInvitation, error: checkError } = await supabaseClient
       .from('user_invitations')
       .select('id, status')
       .eq('email', email)
       .eq('tenant_id', tenant_id)
       .eq('status', 'pending')
-      .single();
+      .maybeSingle();
+
+    if (checkError) {
+      console.error("Erro ao verificar convite existente:", checkError);
+      throw new Error(`Erro ao verificar convite: ${checkError.message}`);
+    }
 
     if (existingInvitation) {
+      console.log("Convite pendente já existe para:", email);
       return new Response(
         JSON.stringify({ 
           error: "Já existe um convite pendente para este email" 
@@ -78,14 +87,17 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (invitationError) {
       console.error("Erro ao criar convite:", invitationError);
-      throw invitationError;
+      throw new Error(`Erro ao criar convite: ${invitationError.message}`);
     }
 
-    console.log("Convite criado:", invitation.id);
+    console.log("Convite criado com sucesso:", invitation.id);
 
     // Criar magic link para o usuário
     const redirectUrl = `${req.headers.get('origin')}/accept-invitation?invitation_id=${invitation.id}`;
     
+    console.log("Gerando magic link para:", email);
+    console.log("Redirect URL:", redirectUrl);
+
     const { data: magicLinkData, error: magicLinkError } = await supabaseClient.auth.admin
       .generateLink({
         type: 'magiclink',
@@ -101,30 +113,29 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (magicLinkError) {
       console.error("Erro ao gerar magic link:", magicLinkError);
-      throw magicLinkError;
+      // Não falhar se o magic link não for gerado, pois o convite já foi criado
+      console.log("Convite criado mas magic link falhou. Usuário pode aceitar manualmente.");
+    } else {
+      console.log("Magic link gerado com sucesso");
     }
 
-    console.log("Magic link gerado com sucesso");
-
-    // Buscar dados da empresa para o email
+    // Buscar dados da empresa para logs
     const { data: invitedBy } = await supabaseClient
       .from('users')
       .select('full_name')
       .eq('id', invited_by_user_id)
-      .single();
+      .maybeSingle();
 
     const { data: tenant } = await supabaseClient
       .from('tenants')
       .select('business_name, name')
       .eq('id', tenant_id)
-      .single();
+      .maybeSingle();
 
     const companyDisplayName = tenant?.business_name || tenant?.name || company_name || "Oficina";
     const inviterName = invitedBy?.full_name || "Equipe";
 
-    // Enviar email usando o sistema nativo do Supabase
-    // Como o magic link já foi gerado, o Supabase enviará automaticamente
-    // Vamos retornar sucesso pois o magic link foi criado
+    console.log(`Convite processado com sucesso para ${email} da empresa ${companyDisplayName} por ${inviterName}`);
     
     return new Response(
       JSON.stringify({ 
@@ -140,9 +151,12 @@ const handler = async (req: Request): Promise<Response> => {
 
   } catch (error: any) {
     console.error("Erro na função de convite:", error);
+    console.error("Stack trace:", error.stack);
+    
     return new Response(
       JSON.stringify({ 
-        error: error.message || "Erro interno do servidor" 
+        error: error.message || "Erro interno do servidor",
+        details: error.stack || "Sem detalhes disponíveis"
       }),
       { 
         status: 500, 
