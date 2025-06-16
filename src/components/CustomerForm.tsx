@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -73,6 +73,15 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
   });
 
   const customerType = watch('customer_type');
+
+  // Atualizar document_type automaticamente quando customer_type muda
+  useEffect(() => {
+    if (customerType === 'individual') {
+      setValue('document_type', 'cpf');
+    } else if (customerType === 'business') {
+      setValue('document_type', 'cnpj');
+    }
+  }, [customerType, setValue]);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
