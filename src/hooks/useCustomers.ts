@@ -9,7 +9,7 @@ export interface Customer {
   email: string | null;
   phone: string | null;
   document_number: string | null;
-  document_type: string | null;
+  document_type: 'cpf' | 'cnpj' | null;
   customer_type: 'individual' | 'business';
   address: any;
   notes: string | null;
@@ -86,6 +86,7 @@ export const useCustomers = (filters: CustomerFilters = {}) => {
         customer_type: (customer.customer_type as 'individual' | 'business') || 'individual',
         status: (customer.status as 'active' | 'inactive') || 'active',
         preferred_contact: (customer.preferred_contact as 'phone' | 'email' | 'whatsapp') || 'phone',
+        document_type: customer.document_type as 'cpf' | 'cnpj' | null,
         vehicles_count: customer.vehicles?.[0]?.count || 0
       })) || [];
     },
@@ -140,27 +141,59 @@ export const useCreateCustomer = () => {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async (customerData: Omit<Customer, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (customerData: any) => {
       if (!user) throw new Error('User not authenticated');
 
+      console.log('Creating customer with data:', customerData);
+
       // Get user's tenant_id
-      const { data: userData } = await supabase
+      const { data: userData, error: userError } = await supabase
         .from('users')
         .select('tenant_id')
         .eq('id', user.id)
         .single();
 
-      if (!userData?.tenant_id) {
+      if (userError || !userData?.tenant_id) {
+        console.error('Error getting user tenant:', userError);
         throw new Error('User tenant not found');
       }
 
+      console.log('User tenant_id:', userData.tenant_id);
+
+      // Prepare customer data with proper types
+      const cleanedData = {
+        name: customerData.name,
+        email: customerData.email || null,
+        phone: customerData.phone || null,
+        document_number: customerData.document_number || null,
+        document_type: customerData.document_type || null,
+        customer_type: customerData.customer_type || 'individual',
+        secondary_phone: customerData.secondary_phone || null,
+        preferred_contact: customerData.preferred_contact || 'phone',
+        notes: customerData.notes || null,
+        address: customerData.address || null,
+        status: 'active',
+        credit_limit: 0,
+        payment_terms: 0,
+        total_spent: 0,
+        total_orders: 0,
+        tenant_id: userData.tenant_id
+      };
+
+      console.log('Cleaned customer data:', cleanedData);
+
       const { data, error } = await supabase
         .from('customers')
-        .insert([{ ...customerData, tenant_id: userData.tenant_id }])
+        .insert([cleanedData])
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+
+      console.log('Customer created successfully:', data);
       return data;
     },
     onSuccess: () => {
@@ -168,9 +201,21 @@ export const useCreateCustomer = () => {
       queryClient.invalidateQueries({ queryKey: ['customer-stats'] });
       toast.success('Cliente criado com sucesso!');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Error creating customer:', error);
-      toast.error('Erro ao criar cliente. Tente novamente.');
+      
+      // Mensagens de erro mais específicas
+      let errorMessage = 'Erro ao criar cliente. Tente novamente.';
+      
+      if (error?.message?.includes('duplicate key')) {
+        errorMessage = 'Cliente com este documento já existe.';
+      } else if (error?.message?.includes('violates check constraint')) {
+        errorMessage = 'Dados do cliente inválidos. Verifique os campos obrigatórios.';
+      } else if (error?.message?.includes('permission')) {
+        errorMessage = 'Você não tem permissão para criar clientes.';
+      }
+      
+      toast.error(errorMessage);
     },
   });
 };

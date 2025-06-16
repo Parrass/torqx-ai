@@ -15,7 +15,7 @@ const customerSchema = z.object({
   email: z.string().email('Email inválido').optional().or(z.literal('')),
   phone: z.string().min(1, 'Telefone é obrigatório'),
   document_number: z.string().optional(),
-  document_type: z.enum(['cpf', 'cnpj']),
+  document_type: z.enum(['cpf', 'cnpj']).optional(),
   customer_type: z.enum(['individual', 'business']),
   secondary_phone: z.string().optional(),
   preferred_contact: z.enum(['phone', 'email', 'whatsapp']),
@@ -59,7 +59,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
       email: customer.email || '',
       phone: customer.phone || '',
       document_number: customer.document_number || '',
-      document_type: (customer.document_type as 'cpf' | 'cnpj') || 'cpf',
+      document_type: customer.document_type || undefined,
       customer_type: customer.customer_type,
       secondary_phone: customer.secondary_phone || '',
       preferred_contact: customer.preferred_contact,
@@ -68,7 +68,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
     } : {
       customer_type: 'individual',
       preferred_contact: 'phone',
-      document_type: 'cpf',
+      document_type: undefined,
     },
   });
 
@@ -77,21 +77,28 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
 
   // Atualizar document_type automaticamente quando customer_type muda
   useEffect(() => {
-    if (customerType === 'individual' && documentType !== 'cpf') {
+    if (customerType === 'individual') {
       setValue('document_type', 'cpf');
-    } else if (customerType === 'business' && documentType !== 'cnpj') {
+    } else if (customerType === 'business') {
       setValue('document_type', 'cnpj');
     }
-  }, [customerType, documentType, setValue]);
+  }, [customerType, setValue]);
 
   const handleFormSubmit = (data: CustomerFormData) => {
-    // Garantir que document_type está correto antes de enviar
-    const submitData: CustomerFormData = {
+    // Limpar campos vazios e garantir tipos corretos
+    const cleanedData = {
       ...data,
-      document_type: data.customer_type === 'individual' ? 'cpf' as const : 'cnpj' as const
+      email: data.email?.trim() || null,
+      phone: data.phone?.trim() || null,
+      document_number: data.document_number?.trim() || null,
+      secondary_phone: data.secondary_phone?.trim() || null,
+      notes: data.notes?.trim() || null,
+      document_type: data.customer_type === 'individual' ? 'cpf' as const : 'cnpj' as const,
+      address: data.address && Object.values(data.address).some(v => v?.trim()) ? data.address : null
     };
-    console.log('Dados do formulário antes de enviar:', submitData);
-    onSubmit(submitData);
+
+    console.log('Dados do formulário antes de enviar:', cleanedData);
+    onSubmit(cleanedData);
   };
 
   return (
