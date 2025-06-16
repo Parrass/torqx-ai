@@ -2039,6 +2039,10 @@ export type Database = {
         Args: { invitation_id: string }
         Returns: Json
       }
+      can_manage_team: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       check_user_permission: {
         Args: {
           _user_id: string

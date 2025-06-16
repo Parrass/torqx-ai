@@ -213,6 +213,49 @@ export const useTeamManagement = () => {
     }
   };
 
+  const deleteUser = async (userId: string) => {
+    try {
+      setLoading(true);
+
+      // Delete user permissions first
+      const { error: permissionsError } = await supabase
+        .from('user_module_permissions')
+        .delete()
+        .eq('user_id', userId);
+
+      if (permissionsError) {
+        console.warn('Erro ao deletar permissões:', permissionsError);
+      }
+
+      // Delete user
+      const { error } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      await fetchUsers();
+      
+      toast({
+        title: 'Sucesso',
+        description: 'Usuário excluído com sucesso',
+      });
+
+      return { success: true };
+    } catch (err: any) {
+      const errorMessage = err.message || 'Erro ao excluir usuário';
+      toast({
+        title: 'Erro',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+      return { success: false, error: errorMessage };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const resendInvitation = async (invitationId: string) => {
     try {
       setLoading(true);
@@ -245,28 +288,6 @@ export const useTeamManagement = () => {
 
       if (!invitation) {
         throw new Error('Convite não encontrado');
-      }
-
-      // Agora gerar um novo magic link via edge function personalizada
-      // Primeiro, vamos criar o magic link diretamente
-      const { data: magicLinkData, error: magicLinkError } = await supabase.auth.admin.generateLink({
-        type: 'magiclink',
-        email: invitation.email,
-        options: {
-          redirectTo: `${window.location.origin}/accept-invitation?invitation_id=${invitation.id}`,
-          data: {
-            invitation_id: invitation.id,
-            full_name: invitation.full_name
-          }
-        }
-      });
-
-      if (magicLinkError) {
-        console.error('Erro ao gerar magic link:', magicLinkError);
-        // Não falhar completamente, pois o convite foi atualizado
-        console.log('Magic link falhou, mas convite foi atualizado com sucesso');
-      } else {
-        console.log('Magic link gerado com sucesso para reenvio');
       }
 
       await fetchInvitations();
@@ -497,6 +518,7 @@ export const useTeamManagement = () => {
     resendInvitation,
     updateUserPermissions,
     updateUserStatus,
+    deleteUser,
     refetch: fetchUsers
   };
 };
