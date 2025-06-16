@@ -16,6 +16,7 @@ interface UserPermissionsManagerProps {
   initialPermissions: UserPermission[];
   onSave: (permissions: Record<string, UserPermission>) => void;
   loading?: boolean;
+  submitButtonText?: string;
 }
 
 const iconMap: Record<string, React.ComponentType<any>> = {
@@ -45,7 +46,8 @@ const UserPermissionsManager = ({
   modules, 
   initialPermissions, 
   onSave, 
-  loading = false 
+  loading = false,
+  submitButtonText = "Salvar Permissões"
 }: UserPermissionsManagerProps) => {
   const [permissions, setPermissions] = useState<Record<string, UserPermission>>({});
 
@@ -246,7 +248,7 @@ const UserPermissionsManager = ({
           disabled={loading}
           className="bg-torqx-secondary hover:bg-torqx-secondary-dark text-white"
         >
-          {loading ? 'Salvando...' : 'Salvar Permissões'}
+          {loading ? 'Processando...' : submitButtonText}
         </Button>
       </div>
     </div>

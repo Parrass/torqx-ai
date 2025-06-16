@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Plus, Edit, Users, Shield, UserCheck, UserX } from 'lucide-react';
+import { Plus, Edit, Users, Shield, UserCheck, UserX, Mail, Clock, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +12,16 @@ import UserPermissionsManager from '@/components/UserPermissionsManager';
 import { useTeamManagement, TeamUser, UserPermission } from '@/hooks/useTeamManagement';
 
 const TeamManagement = () => {
-  const { users, modules, loading, createUser, updateUserPermissions, updateUserStatus } = useTeamManagement();
+  const { 
+    users, 
+    invitations, 
+    modules, 
+    loading, 
+    createUserInvitation, 
+    updateUserPermissions, 
+    updateUserStatus,
+    cancelInvitation
+  } = useTeamManagement();
   const [showAddUser, setShowAddUser] = useState(false);
   const [editingUser, setEditingUser] = useState<TeamUser | null>(null);
   const [showPermissions, setShowPermissions] = useState(false);
@@ -20,6 +29,10 @@ const TeamManagement = () => {
   const formatLastLogin = (lastLogin?: string) => {
     if (!lastLogin) return 'Nunca';
     return new Date(lastLogin).toLocaleDateString('pt-BR');
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
   const getRoleLabel = (role: string) => {
@@ -37,6 +50,25 @@ const TeamManagement = () => {
       return <Badge className="bg-green-100 text-green-800">Ativo</Badge>;
     }
     return <Badge className="bg-red-100 text-red-800">Inativo</Badge>;
+  };
+
+  const getInvitationStatusBadge = (status: string, expiresAt: string) => {
+    const isExpired = new Date(expiresAt) < new Date();
+    
+    if (isExpired) {
+      return <Badge className="bg-red-100 text-red-800">Expirado</Badge>;
+    }
+    
+    switch (status) {
+      case 'pending':
+        return <Badge className="bg-yellow-100 text-yellow-800">Pendente</Badge>;
+      case 'accepted':
+        return <Badge className="bg-green-100 text-green-800">Aceito</Badge>;
+      case 'cancelled':
+        return <Badge className="bg-gray-100 text-gray-800">Cancelado</Badge>;
+      default:
+        return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
+    }
   };
 
   const countPermissions = (permissions: UserPermission[]) => {
@@ -68,6 +100,10 @@ const TeamManagement = () => {
     }
   };
 
+  const handleCancelInvitation = async (invitationId: string) => {
+    await cancelInvitation(invitationId);
+  };
+
   const stats = [
     {
       title: 'Total de Usuários',
@@ -84,11 +120,11 @@ const TeamManagement = () => {
       bgColor: 'bg-green-50'
     },
     {
-      title: 'Usuários Inativos',
-      value: users.filter(u => u.status !== 'active').length,
-      icon: UserX,
-      color: 'text-red-600',
-      bgColor: 'bg-red-50'
+      title: 'Convites Pendentes',
+      value: invitations.length,
+      icon: Mail,
+      color: 'text-orange-600',
+      bgColor: 'bg-orange-50'
     },
     {
       title: 'Módulos Disponíveis',
@@ -110,7 +146,7 @@ const TeamManagement = () => {
                 Gestão de Equipe
               </h1>
               <p className="text-gray-600 mt-2">
-                Gerencie usuários e suas permissões modulares
+                Gerencie usuários, convites e permissões modulares
               </p>
             </div>
             <Button
@@ -118,7 +154,7 @@ const TeamManagement = () => {
               className="bg-torqx-secondary hover:bg-torqx-secondary-dark text-white"
             >
               <Plus className="w-4 h-4 mr-2" />
-              Adicionar Usuário
+              Convidar Usuário
             </Button>
           </div>
 
@@ -142,6 +178,51 @@ const TeamManagement = () => {
               </Card>
             ))}
           </div>
+
+          {/* Pending Invitations */}
+          {invitations.length > 0 && (
+            <Card className="border-0 shadow-sm mb-8">
+              <CardHeader>
+                <CardTitle className="font-satoshi text-xl text-torqx-primary flex items-center">
+                  <Mail className="w-5 h-5 mr-2" />
+                  Convites Pendentes
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {invitations.map((invitation) => (
+                    <div key={invitation.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
+                      <div className="flex items-center space-x-4">
+                        <div className="p-2 bg-orange-100 rounded-full">
+                          <Mail className="w-4 h-4 text-orange-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-torqx-primary">{invitation.full_name}</p>
+                          <p className="text-sm text-gray-600">{invitation.email}</p>
+                          <p className="text-xs text-gray-500">
+                            Cargo: {getRoleLabel(invitation.role)} • 
+                            Enviado em: {formatDate(invitation.created_at)} • 
+                            Expira em: {formatDate(invitation.expires_at)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        {getInvitationStatusBadge(invitation.status, invitation.expires_at)}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleCancelInvitation(invitation.id)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Users Table */}
           <Card className="border-0 shadow-sm">
@@ -238,11 +319,11 @@ const TeamManagement = () => {
         <Dialog open={showAddUser} onOpenChange={setShowAddUser}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Adicionar Novo Usuário</DialogTitle>
+              <DialogTitle>Convidar Novo Membro da Equipe</DialogTitle>
             </DialogHeader>
             <UserForm
               modules={modules}
-              onSubmit={createUser}
+              onSubmit={createUserInvitation}
               loading={loading}
               onCancel={() => setShowAddUser(false)}
             />

@@ -88,6 +88,7 @@ const UserForm = ({ modules, onSubmit, loading = false, onCancel }: UserFormProp
       setPermissions({});
       setShowPermissions(false);
       setFormData(null);
+      if (onCancel) onCancel();
     }
   };
 
@@ -111,7 +112,7 @@ const UserForm = ({ modules, onSubmit, loading = false, onCancel }: UserFormProp
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span className="font-satoshi text-xl text-torqx-primary">
-                Definir Permissões
+                Definir Permissões e Enviar Convite
               </span>
               <Button variant="outline" onClick={handleBack}>
                 Voltar
@@ -120,7 +121,7 @@ const UserForm = ({ modules, onSubmit, loading = false, onCancel }: UserFormProp
           </CardHeader>
           <CardContent>
             <div className="mb-6 p-4 bg-blue-50 rounded-lg">
-              <h3 className="font-medium text-torqx-primary mb-2">Resumo do Usuário</h3>
+              <h3 className="font-medium text-torqx-primary mb-2">Resumo do Convite</h3>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-gray-600">Nome:</span>
@@ -143,6 +144,12 @@ const UserForm = ({ modules, onSubmit, loading = false, onCancel }: UserFormProp
                   </div>
                 )}
               </div>
+              <div className="mt-4 p-3 bg-yellow-50 rounded border-l-4 border-yellow-400">
+                <p className="text-sm text-yellow-800">
+                  <strong>Atenção:</strong> Um convite será enviado por email para {formData.email}. 
+                  O usuário receberá um link mágico para acessar a plataforma e definir sua senha.
+                </p>
+              </div>
             </div>
 
             <UserPermissionsManager
@@ -153,6 +160,7 @@ const UserForm = ({ modules, onSubmit, loading = false, onCancel }: UserFormProp
                 handleFormSubmit(formData);
               }}
               loading={loading}
+              submitButtonText="Enviar Convite"
             />
           </CardContent>
         </Card>
@@ -164,8 +172,11 @@ const UserForm = ({ modules, onSubmit, loading = false, onCancel }: UserFormProp
     <Card className="border-0 shadow-sm">
       <CardHeader>
         <CardTitle className="font-satoshi text-xl text-torqx-primary">
-          Adicionar Novo Usuário
+          Convidar Novo Membro da Equipe
         </CardTitle>
+        <p className="text-sm text-gray-600">
+          Preencha os dados básicos do novo membro. Um convite será enviado por email.
+        </p>
       </CardHeader>
       <CardContent>
         <Form {...form}>

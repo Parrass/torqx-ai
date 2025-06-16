@@ -1,10 +1,11 @@
 
 import React, { useState } from 'react';
-import { Users, UserPlus, Shield } from 'lucide-react';
+import { Users, UserPlus, Shield, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent } from '@/components/ui/card';
 
 interface TeamSetupStepProps {
   onNext: () => void;
@@ -38,7 +39,8 @@ const TeamSetupStep: React.FC<TeamSetupStepProps> = ({ onNext, onSkip }) => {
   };
 
   const handleSubmit = () => {
-    console.log('Saving team members:', teamMembers);
+    console.log('Saving team members for later invitation:', teamMembers);
+    // Nota: Os convites serão enviados posteriormente via Team Management
     onNext();
   };
 
@@ -52,22 +54,39 @@ const TeamSetupStep: React.FC<TeamSetupStepProps> = ({ onNext, onSkip }) => {
           Configure sua Equipe
         </h2>
         <p className="text-gray-600 max-w-2xl mx-auto">
-          Adicione os membros da sua equipe e defina suas permissões. 
-          Você pode fazer isso depois se preferir começar sozinho.
+          Configure os membros da sua equipe agora ou pule esta etapa. 
+          Você pode convidar novos membros a qualquer momento pela seção "Gestão de Equipe".
         </p>
       </div>
 
       <div className="max-w-2xl mx-auto space-y-6">
+        {/* Info sobre o sistema de convites */}
+        <Card className="bg-blue-50 border-blue-200">
+          <CardContent className="p-4">
+            <div className="flex items-start space-x-3">
+              <Mail className="w-5 h-5 text-blue-600 mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-blue-900 mb-1">Sistema de Convites por Email</h3>
+                <p className="text-sm text-blue-800">
+                  Quando você adicionar membros aqui, eles receberão um convite por email com um link mágico 
+                  para acessar a plataforma. Eles poderão definir sua própria senha no primeiro acesso.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Roles Info */}
-        <div className="bg-blue-50 rounded-xl p-4">
-          <h3 className="font-semibold text-blue-900 mb-2 flex items-center">
+        <div className="bg-gray-50 rounded-xl p-4">
+          <h3 className="font-semibold text-gray-900 mb-2 flex items-center">
             <Shield className="w-4 h-4 mr-2" />
             Tipos de Usuário
           </h3>
-          <div className="text-sm text-blue-800 space-y-1">
-            <p><strong>Proprietário:</strong> Acesso total ao sistema</p>
+          <div className="text-sm text-gray-700 space-y-1">
+            <p><strong>Proprietário:</strong> Acesso total ao sistema (você já é o proprietário)</p>
             <p><strong>Gerente:</strong> Pode gerenciar operações e ver relatórios</p>
-            <p><strong>Técnico:</strong> Pode atualizar ordens de serviço</p>
+            <p><strong>Técnico:</strong> Pode atualizar ordens de serviço e acessar informações técnicas</p>
+            <p><strong>Recepcionista:</strong> Pode gerenciar clientes e agendamentos</p>
           </div>
         </div>
 
@@ -113,6 +132,7 @@ const TeamSetupStep: React.FC<TeamSetupStepProps> = ({ onNext, onSkip }) => {
                     <SelectContent>
                       <SelectItem value="manager">Gerente</SelectItem>
                       <SelectItem value="technician">Técnico</SelectItem>
+                      <SelectItem value="receptionist">Recepcionista</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -143,6 +163,14 @@ const TeamSetupStep: React.FC<TeamSetupStepProps> = ({ onNext, onSkip }) => {
           </Button>
         </div>
 
+        {/* Info adicional */}
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <p className="text-sm text-yellow-800">
+            <strong>Importante:</strong> Após concluir o onboarding, você poderá enviar os convites 
+            para os membros da equipe na seção "Gestão de Equipe" do sistema.
+          </p>
+        </div>
+
         {/* Actions */}
         <div className="flex justify-between pt-4">
           {onSkip && (
@@ -154,7 +182,7 @@ const TeamSetupStep: React.FC<TeamSetupStepProps> = ({ onNext, onSkip }) => {
             onClick={handleSubmit}
             className="bg-gradient-to-r from-torqx-secondary to-torqx-accent text-white ml-auto"
           >
-            Salvar e Continuar
+            Continuar
           </Button>
         </div>
       </div>

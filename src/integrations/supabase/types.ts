@@ -1370,6 +1370,80 @@ export type Database = {
         }
         Relationships: []
       }
+      user_invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string | null
+          email: string
+          expires_at: string | null
+          full_name: string
+          id: string
+          invited_by_user_id: string
+          permissions: Json
+          phone: string | null
+          role: string
+          status: string
+          tenant_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string | null
+          email: string
+          expires_at?: string | null
+          full_name: string
+          id?: string
+          invited_by_user_id: string
+          permissions?: Json
+          phone?: string | null
+          role: string
+          status?: string
+          tenant_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string | null
+          email?: string
+          expires_at?: string | null
+          full_name?: string
+          id?: string
+          invited_by_user_id?: string
+          permissions?: Json
+          phone?: string | null
+          role?: string
+          status?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_invitations_invited_by_user_id_fkey"
+            columns: ["invited_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "technician_performance"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_invitations_invited_by_user_id_fkey"
+            columns: ["invited_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_invitations_invited_by_user_id_fkey"
+            columns: ["invited_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_permissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_invitations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_module_permissions: {
         Row: {
           can_create: boolean | null
@@ -1887,6 +1961,54 @@ export type Database = {
           },
         ]
       }
+      user_invitations_with_details: {
+        Row: {
+          accepted_at: string | null
+          company_name: string | null
+          created_at: string | null
+          email: string | null
+          expires_at: string | null
+          full_name: string | null
+          id: string | null
+          invited_by_name: string | null
+          invited_by_user_id: string | null
+          permissions: Json | null
+          phone: string | null
+          role: string | null
+          status: string | null
+          tenant_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_invitations_invited_by_user_id_fkey"
+            columns: ["invited_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "technician_performance"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_invitations_invited_by_user_id_fkey"
+            columns: ["invited_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_invitations_invited_by_user_id_fkey"
+            columns: ["invited_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_permissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_invitations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users_with_permissions: {
         Row: {
           created_at: string | null
@@ -1913,6 +2035,10 @@ export type Database = {
       }
     }
     Functions: {
+      accept_user_invitation: {
+        Args: { invitation_id: string }
+        Returns: Json
+      }
       check_user_permission: {
         Args: {
           _user_id: string
