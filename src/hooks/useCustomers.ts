@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -160,18 +161,20 @@ export const useCreateCustomer = () => {
 
       console.log('User tenant_id:', userData.tenant_id);
 
-      // Prepare customer data with proper types
+      // Validate and clean data
       const cleanedData = {
-        name: customerData.name,
-        email: customerData.email || null,
-        phone: customerData.phone || null,
-        document_number: customerData.document_number || null,
+        name: customerData.name?.trim() || '',
+        email: customerData.email?.trim() || null,
+        phone: customerData.phone?.trim() || null,
+        document_number: customerData.document_number?.trim() || null,
         document_type: customerData.document_type || null,
         customer_type: customerData.customer_type || 'individual',
-        secondary_phone: customerData.secondary_phone || null,
+        secondary_phone: customerData.secondary_phone?.trim() || null,
         preferred_contact: customerData.preferred_contact || 'phone',
-        notes: customerData.notes || null,
-        address: customerData.address || null,
+        notes: customerData.notes?.trim() || null,
+        address: customerData.address && Object.values(customerData.address).some(v => v?.toString().trim()) 
+          ? customerData.address 
+          : null,
         status: 'active',
         credit_limit: 0,
         payment_terms: 0,
@@ -179,6 +182,22 @@ export const useCreateCustomer = () => {
         total_orders: 0,
         tenant_id: userData.tenant_id
       };
+
+      // Basic validation
+      if (!cleanedData.name) {
+        throw new Error('Nome é obrigatório');
+      }
+
+      if (!cleanedData.phone) {
+        throw new Error('Telefone é obrigatório');
+      }
+
+      // Validate document_type consistency
+      if (cleanedData.customer_type === 'individual' && cleanedData.document_number) {
+        cleanedData.document_type = 'cpf';
+      } else if (cleanedData.customer_type === 'business' && cleanedData.document_number) {
+        cleanedData.document_type = 'cnpj';
+      }
 
       console.log('Cleaned customer data:', cleanedData);
 
@@ -189,7 +208,7 @@ export const useCreateCustomer = () => {
         .single();
 
       if (error) {
-        console.error('Supabase error:', error);
+        console.error('Supabase error details:', error);
         throw error;
       }
 
@@ -210,9 +229,15 @@ export const useCreateCustomer = () => {
       if (error?.message?.includes('duplicate key')) {
         errorMessage = 'Cliente com este documento já existe.';
       } else if (error?.message?.includes('violates check constraint')) {
-        errorMessage = 'Dados do cliente inválidos. Verifique os campos obrigatórios.';
+        errorMessage = 'Dados inválidos. Verifique os campos obrigatórios.';
       } else if (error?.message?.includes('permission')) {
         errorMessage = 'Você não tem permissão para criar clientes.';
+      } else if (error?.message?.includes('Nome é obrigatório')) {
+        errorMessage = 'Nome é obrigatório.';
+      } else if (error?.message?.includes('Telefone é obrigatório')) {
+        errorMessage = 'Telefone é obrigatório.';
+      } else if (error?.code === '23514') {
+        errorMessage = 'Tipo de documento inválido. Verifique se está correto para pessoa física ou jurídica.';
       }
       
       toast.error(errorMessage);

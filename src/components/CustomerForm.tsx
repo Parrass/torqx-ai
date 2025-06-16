@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,9 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Customer } from '@/hooks/useCustomers';
 
 const customerSchema = z.object({
-  name: z.string().min(1, 'Nome é obrigatório'),
+  name: z.string().min(1, 'Nome é obrigatório').trim(),
   email: z.string().email('Email inválido').optional().or(z.literal('')),
-  phone: z.string().min(1, 'Telefone é obrigatório'),
+  phone: z.string().min(1, 'Telefone é obrigatório').trim(),
   document_number: z.string().optional(),
   document_type: z.enum(['cpf', 'cnpj']).optional(),
   customer_type: z.enum(['individual', 'business']),
@@ -73,7 +72,6 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
   });
 
   const customerType = watch('customer_type');
-  const documentType = watch('document_type');
 
   // Atualizar document_type automaticamente quando customer_type muda
   useEffect(() => {
@@ -85,19 +83,31 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
   }, [customerType, setValue]);
 
   const handleFormSubmit = (data: CustomerFormData) => {
+    // Validar campos obrigatórios antes de enviar
+    if (!data.name?.trim()) {
+      return;
+    }
+
+    if (!data.phone?.trim()) {
+      return;
+    }
+
     // Limpar campos vazios e garantir tipos corretos
     const cleanedData = {
       ...data,
+      name: data.name.trim(),
       email: data.email?.trim() || null,
-      phone: data.phone?.trim() || null,
+      phone: data.phone.trim(),
       document_number: data.document_number?.trim() || null,
       secondary_phone: data.secondary_phone?.trim() || null,
       notes: data.notes?.trim() || null,
       document_type: data.customer_type === 'individual' ? 'cpf' as const : 'cnpj' as const,
-      address: data.address && Object.values(data.address).some(v => v?.trim()) ? data.address : null
+      address: data.address && Object.values(data.address).some(v => v?.toString().trim()) 
+        ? data.address 
+        : null
     };
 
-    console.log('Dados do formulário antes de enviar:', cleanedData);
+    console.log('Dados do formulário validados:', cleanedData);
     onSubmit(cleanedData);
   };
 
@@ -110,6 +120,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
             id="name"
             {...register('name')}
             placeholder="Nome completo ou razão social"
+            className={errors.name ? 'border-red-500' : ''}
           />
           {errors.name && (
             <p className="text-sm text-red-500">{errors.name.message}</p>
@@ -139,6 +150,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
             type="email"
             {...register('email')}
             placeholder="email@exemplo.com"
+            className={errors.email ? 'border-red-500' : ''}
           />
           {errors.email && (
             <p className="text-sm text-red-500">{errors.email.message}</p>
@@ -151,6 +163,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
             id="phone"
             {...register('phone')}
             placeholder="(11) 99999-9999"
+            className={errors.phone ? 'border-red-500' : ''}
           />
           {errors.phone && (
             <p className="text-sm text-red-500">{errors.phone.message}</p>
