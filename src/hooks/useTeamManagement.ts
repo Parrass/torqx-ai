@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -71,7 +70,7 @@ export const useTeamManagement = () => {
       setError(null);
 
       // Primeiro, garantir que as permissões dos owners estejam corretas
-      const { error: ensureError } = await supabase.rpc('ensure_owner_permissions');
+      const { error: ensureError } = await supabase.rpc('initialize_owner_permissions');
       if (ensureError) {
         console.warn('Erro ao garantir permissões do owner:', ensureError);
       }
@@ -231,7 +230,7 @@ export const useTeamManagement = () => {
       }
 
       // Garantir que as permissões sejam inicializadas após aceitar convite
-      await supabase.rpc('ensure_owner_permissions');
+      await supabase.rpc('initialize_owner_permissions');
 
       toast({
         title: 'Sucesso',
